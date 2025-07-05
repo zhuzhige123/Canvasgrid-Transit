@@ -229,5 +229,7 @@ canvas-grid-view/
 5. Submit a pull request
 
 ---
+![微信图片_20250705170742](https://github.com/user-attachments/assets/2f670ff3-110c-457d-9633-87809b9151fe)![微信图片_20250705170730](https://github.com/user-attachments/assets/739695e7-1750-44d8-8b27-91b083cbc742)
+
 
 **Made with ❤️ for the Obsidian community**

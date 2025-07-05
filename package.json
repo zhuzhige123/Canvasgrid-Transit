@@ -1,0 +1,28 @@
+{
+	"name": "canvas-grid-view",
+	"version": "1.3.0",
+	"description": "Adds a grid card view to Obsidian Canvas with enhanced editing capabilities",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"dev-watch": "node dev-simple.js",
+		"dev-deploy": "powershell -ExecutionPolicy Bypass -File dev-deploy.ps1",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"build-only": "node esbuild.config.mjs production",
+		"type-check": "tsc -noEmit -skipLibCheck",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^20.11.0",
+		"@typescript-eslint/eslint-plugin": "^7.0.0",
+		"@typescript-eslint/parser": "^7.0.0",
+		"builtin-modules": "^3.3.0",
+		"esbuild": "^0.20.0",
+		"obsidian": "latest",
+		"tslib": "^2.6.0",
+		"typescript": "^5.3.0"
+	}
+}

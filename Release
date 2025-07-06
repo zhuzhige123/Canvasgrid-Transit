@@ -1,1 +1,44 @@
 
+🎉 Major Release - Complete Plugin Rebranding and Enhancement
+
+## 🚀 What's New
+
+### ⭐ Major Features
+- ⏰ **Time Capsule**: Revolutionary content collection with countdown timer
+- 🔗 **Fast Bookmarks**: Lightning-fast web link parsing and display  
+- 🎨 **Smart Group Management**: Enhanced Canvas group handling
+- 🌐 **Multi-language Support**: Complete Chinese and English localization
+- 🔍 **Advanced Search & Filter**: Full-text search and color filtering
+
+### 🔧 Critical Fixes
+- ✅ Fixed view initialization errors
+- ✅ Fixed multi-language system errors  
+- ✅ Restored sorting functionality
+- ✅ Optimized return button icon display
+
+### 🎨 UI/UX Improvements
+- Enhanced icon sizing and positioning
+- Improved hover animations
+- Better visual consistency
+- Responsive design optimizations
+
+## 📥 Installation
+
+### Manual Installation
+1. Download the release files below (main.js, manifest.json, styles.css)
+2. Create folder: `VaultFolder/.obsidian/plugins/canvasgrid-transit/`
+3. Copy the 3 files to this folder
+4. Restart Obsidian and enable the plugin in Settings > Community Plugins
+
+### BRAT Plugin
+1. Install BRAT plugin in Obsidian
+2. Add repository: `zhuzhige123/Canvasgrid-Transit`
+3. Enable in Community Plugins
+
+## 🔗 Links
+- [Documentation](https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/README.md)
+- [Support](https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/SUPPORT.md)
+- [Issues](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
+
+---
+Made with ❤️ for the Obsidian community

@@ -32,14 +32,30 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var DEFAULT_SETTINGS = {
-  cardWidth: 300,
-  cardHeight: 200,
-  cardSpacing: 20,
   enableAutoLayout: true,
   colorFilterColors: ["1", "2", "4", "6", "7"],
   // 默认显示红、橙、绿、蓝、紫
-  language: "zh"
+  language: "zh",
   // 默认中文
+  enableColorCategories: true,
+  // 启用颜色分类
+  colorCategories: [
+    { id: "important", name: "\u91CD\u8981", description: "\u91CD\u8981\u5185\u5BB9\u548C\u7D27\u6025\u4E8B\u9879", color: "1" },
+    // 红色
+    { id: "todo", name: "\u5F85\u529E", description: "\u5F85\u529E\u4E8B\u9879\u548C\u4EFB\u52A1", color: "2" },
+    // 橙色
+    { id: "note", name: "\u8BB0\u4E8B", description: "\u4E00\u822C\u7B14\u8BB0\u548C\u8BB0\u5F55", color: "6" },
+    // 蓝色
+    { id: "inspiration", name: "\u7075\u611F", description: "\u521B\u610F\u60F3\u6CD5\u548C\u7075\u611F", color: "7" },
+    // 紫色
+    { id: "collection", name: "\u6536\u96C6", description: "\u65F6\u95F4\u80F6\u56CA\u6536\u96C6\u7684\u5185\u5BB9", color: "5" }
+    // 青色
+  ]
+};
+var CARD_CONSTANTS = {
+  width: 300,
+  height: 200,
+  spacing: 20
 };
 var CANVAS_GRID_VIEW_TYPE = "canvas-grid-view";
 var I18N_TEXTS = {
@@ -56,7 +72,7 @@ var I18N_TEXTS = {
     // 网格视图
     gridView: "\u7F51\u683C\u89C6\u56FE",
     switchToGridView: "\u5207\u6362\u5230\u7F51\u683C\u89C6\u56FE",
-    canvasGridView: "Canvas\u7F51\u683C\u89C6\u56FE",
+    canvasGridView: "Canvasgrid Transit",
     noCanvasData: "\u6CA1\u6709Canvas\u6570\u636E",
     loadingCanvas: "\u52A0\u8F7DCanvas\u4E2D...",
     // 菜单
@@ -81,9 +97,6 @@ var I18N_TEXTS = {
     groupMembers: "\u6210\u5458",
     // 设置
     gridLayoutSettings: "\u7F51\u683C\u5E03\u5C40\u8BBE\u7F6E",
-    cardMinWidth: "\u5361\u7247\u6700\u5C0F\u5BBD\u5EA6",
-    cardMinHeight: "\u5361\u7247\u6700\u5C0F\u9AD8\u5EA6",
-    cardSpacing: "\u5361\u7247\u95F4\u8DDD",
     enableAutoLayout: "\u542F\u7528\u81EA\u52A8\u5E03\u5C40",
     interfaceLanguage: "\u754C\u9762\u8BED\u8A00",
     colorFilterSettings: "\u989C\u8272\u7B5B\u9009\u5668\u8BBE\u7F6E",
@@ -95,6 +108,8 @@ var I18N_TEXTS = {
     feedback: "\u53CD\u9988\u5EFA\u8BAE",
     contact: "\u8054\u7CFB\u4F5C\u8005",
     buyCoffee: "\u8BF7\u559D\u5496\u5561",
+    alipaySupport: "\u652F\u4ED8\u5B9D\u652F\u6301",
+    githubSponsor: "GitHub\u8D5E\u52A9",
     projectLinks: "\u9879\u76EE\u94FE\u63A5"
   },
   en: {
@@ -110,7 +125,7 @@ var I18N_TEXTS = {
     // 网格视图
     gridView: "Grid View",
     switchToGridView: "Switch to Grid View",
-    canvasGridView: "Canvas Grid View",
+    canvasGridView: "Canvasgrid Transit",
     noCanvasData: "No Canvas Data",
     loadingCanvas: "Loading Canvas...",
     // 菜单
@@ -135,9 +150,6 @@ var I18N_TEXTS = {
     groupMembers: "Members",
     // 设置
     gridLayoutSettings: "Grid Layout Settings",
-    cardMinWidth: "Card Min Width",
-    cardMinHeight: "Card Min Height",
-    cardSpacing: "Card Spacing",
     enableAutoLayout: "Enable Auto Layout",
     interfaceLanguage: "Interface Language",
     colorFilterSettings: "Color Filter Settings",
@@ -149,6 +161,8 @@ var I18N_TEXTS = {
     feedback: "Feedback",
     contact: "Contact",
     buyCoffee: "Buy Me a Coffee",
+    alipaySupport: "Alipay Support",
+    githubSponsor: "GitHub Sponsor",
     projectLinks: "Project Links"
   }
 };
@@ -251,6 +265,66 @@ var LinkedTabManager = class {
     }
   }
 };
+var GroupRenameModal = class extends import_obsidian.Modal {
+  constructor(app, currentName, onRename) {
+    super(app);
+    this.inputEl = null;
+    this.currentName = currentName;
+    this.onRename = onRename;
+  }
+  onOpen() {
+    this.titleEl.setText("\u91CD\u547D\u540D\u5206\u7EC4");
+    this.createContent();
+  }
+  createContent() {
+    const content = this.contentEl;
+    content.empty();
+    const inputContainer = content.createDiv("group-rename-input-container");
+    const label = inputContainer.createEl("label", {
+      text: "\u5206\u7EC4\u540D\u79F0:",
+      cls: "group-rename-label"
+    });
+    this.inputEl = inputContainer.createEl("input", {
+      type: "text",
+      value: this.currentName,
+      cls: "group-rename-input"
+    });
+    this.inputEl.focus();
+    this.inputEl.select();
+    const buttonContainer = content.createDiv("group-rename-buttons");
+    const confirmBtn = buttonContainer.createEl("button", {
+      text: "\u786E\u8BA4",
+      cls: "mod-cta"
+    });
+    confirmBtn.onclick = () => this.handleConfirm();
+    const cancelBtn = buttonContainer.createEl("button", {
+      text: "\u53D6\u6D88"
+    });
+    cancelBtn.onclick = () => this.close();
+    this.inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        this.handleConfirm();
+      } else if (e.key === "Escape") {
+        this.close();
+      }
+    });
+  }
+  handleConfirm() {
+    if (!this.inputEl)
+      return;
+    const newName = this.inputEl.value.trim();
+    if (!newName) {
+      new import_obsidian.Notice("\u5206\u7EC4\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
+      return;
+    }
+    if (newName === this.currentName) {
+      this.close();
+      return;
+    }
+    this.onRename(newName);
+    this.close();
+  }
+};
 var CanvasSelectionModal = class extends import_obsidian.Modal {
   constructor(app, gridView, onSelect) {
     super(app);
@@ -330,13 +404,25 @@ var CanvasSelectionModal = class extends import_obsidian.Modal {
 };
 var CanvasGridView = class extends import_obsidian.ItemView {
   // 当前查看的分组ID
-  constructor(leaf, settings) {
+  constructor(leaf, plugin) {
     super(leaf);
     this.canvasData = null;
     // 拖拽相关属性
     this.isDragging = false;
     this.dragData = null;
     this.dropIndicator = null;
+    // 长按拖拽相关属性
+    this.longPressTimer = null;
+    this.longPressStartTime = 0;
+    this.longPressThreshold = 500;
+    // 500ms长按阈值
+    this.isDragFromGrid = false;
+    this.dragStartPosition = { x: 0, y: 0 };
+    this.currentDragCard = null;
+    // 拖拽预览相关属性
+    this.dragPreviewElement = null;
+    // 🔧 修复：文件修改保护机制
+    this.fileModificationLocks = /* @__PURE__ */ new Set();
     this.linkedCanvasFile = null;
     this.linkedIndicatorEl = null;
     this.updateTimeout = null;
@@ -351,6 +437,20 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     this.activeColorFilter = null;
     // 当前激活的颜色筛选器
     this.colorFilterContainer = null;
+    // 时间胶囊相关属性
+    this.timeCapsuleState = {
+      isActive: false,
+      startTime: 0,
+      duration: 15 * 60 * 1e3,
+      // 默认15分钟
+      remainingTime: 0,
+      groupId: null,
+      collectedItems: [],
+      groupName: ""
+    };
+    this.timeCapsuleButton = null;
+    this.timeCapsuleTimer = null;
+    this.timeCapsuleUpdateInterval = null;
     // 宽度控制相关属性
     this.resizeObserver = null;
     this.minWidth = 300;
@@ -496,8 +596,34 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         }
       }
     };
-    this.settings = settings;
-    i18n.setLanguage(settings.language);
+    // 全局鼠标事件监听器引用
+    this.globalMouseMoveHandler = null;
+    this.globalMouseUpHandler = null;
+    // 窗口失焦处理器
+    this.handleWindowBlur = () => {
+      setTimeout(() => {
+        if (this.isDragFromGrid && !document.hasFocus()) {
+          console.log("Window lost focus, canceling drag...");
+          this.cancelDrag();
+        }
+      }, 100);
+    };
+    // ESC键取消拖拽处理器
+    this.handleDragEscape = (e) => {
+      if (e.key === "Escape" && this.isDragFromGrid) {
+        console.log("ESC pressed, canceling drag...");
+        this.cancelDrag();
+      }
+    };
+    // 清理拖拽预览的函数（会被动态赋值，保持向后兼容）
+    this.cleanupDragPreview = () => {
+      this.forceCleanupDragPreview();
+    };
+    // 拖拽提示元素
+    this.dragHintElement = null;
+    this.plugin = plugin;
+    this.settings = plugin.settings;
+    i18n.setLanguage(plugin.settings.language);
     this.linkedTabManager = new LinkedTabManager(this.app);
   }
   // 安全的事件监听器添加方法
@@ -574,7 +700,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     return CANVAS_GRID_VIEW_TYPE;
   }
   getDisplayText() {
-    return "Canvas Grid View";
+    return "Canvasgrid Transit";
   }
   getIcon() {
     return "grid";
@@ -582,13 +708,17 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   async onOpen() {
     const container = this.containerEl.children[1];
     if (!container) {
-      console.error("Canvas Grid View: Container element not found");
+      console.error("Canvasgrid Transit: Container element not found");
       return;
     }
     container.empty();
-    this.createToolbar(container);
-    this.createColorFilter(container);
     this.gridContainer = container.createDiv("canvas-grid-container");
+    this.createToolbar(container);
+    this.gridContainer.remove();
+    this.gridContainer = container.createDiv("canvas-grid-container");
+    this.gridContainer.classList.remove("toolbar-hidden");
+    this.gridContainer.style.removeProperty("margin-top");
+    this.gridContainer.style.removeProperty("height");
     this.setupGridStyles();
     this.setupEventDelegation();
     await this.loadActiveCanvas();
@@ -602,17 +732,26 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 初始化搜索和排序功能
   initializeSearchAndSort() {
+    console.log("\u{1F527} Initializing search and sort functionality");
     this.filteredNodes = this.canvasData?.nodes || [];
+    this.searchQuery = "";
+    this.activeColorFilter = null;
+    console.log(`\u{1F4CA} Initialized with ${this.filteredNodes.length} nodes`);
+    console.log(`\u{1F504} Default sort: ${this.sortBy} (${this.sortOrder})`);
     this.applySortAndFilter();
   }
-  // 创建工具栏
+  // 创建新的工具栏布局
   createToolbar(container) {
     const toolbar = container.createDiv("canvas-grid-toolbar");
-    const leftSection = toolbar.createDiv("canvas-grid-toolbar-left");
+    const mainRow = toolbar.createDiv("canvas-grid-toolbar-main-row");
+    const leftSection = mainRow.createDiv("canvas-grid-toolbar-left");
     this.createMainMenuButton(leftSection);
-    const middleSection = toolbar.createDiv("canvas-grid-toolbar-middle");
+    const middleSection = mainRow.createDiv("canvas-grid-toolbar-middle");
     this.createSearchBox(middleSection);
-    const rightSection = toolbar.createDiv("canvas-grid-toolbar-right");
+    const rightSection = mainRow.createDiv("canvas-grid-toolbar-right");
+    this.createTimeCapsuleButton(rightSection);
+    const colorRow = toolbar.createDiv("canvas-grid-toolbar-color-row");
+    this.createColorFilter(colorRow);
   }
   // 创建主菜单按钮
   createMainMenuButton(container) {
@@ -742,6 +881,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   // 创建排序和筛选部分
   createSortFilterSection(container) {
     const section = container.createDiv("canvas-grid-menu-section");
+    i18n.setLanguage(this.settings.language);
     const sortItem = section.createDiv("canvas-grid-menu-item canvas-grid-submenu-item");
     sortItem.innerHTML = `
 			<svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -749,7 +889,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
 				<path d="M7 12h10"/>
 				<path d="M10 18h4"/>
 			</svg>
-			<span class="menu-text">\u6392\u5E8F\u65B9\u5F0F</span>
+			<span class="menu-text">${i18n.t("sortBy")}</span>
 			<svg class="menu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<polyline points="9,18 15,12 9,6"/>
 			</svg>
@@ -824,11 +964,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 创建合并排序子菜单（排序方式+顺序）
   createSortSubmenu(container) {
+    i18n.setLanguage(this.settings.language);
     const sortOptions = [
-      { key: "created", label: "\u521B\u5EFA\u65F6\u95F4" },
-      { key: "modified", label: "\u4FEE\u6539\u65F6\u95F4" },
-      { key: "title", label: "\u6807\u9898" }
+      { key: "created", label: i18n.t("sortByCreated") },
+      { key: "modified", label: i18n.t("sortByModified") },
+      { key: "title", label: i18n.t("sortByTitle") }
     ];
+    console.log(`\u{1F39B}\uFE0F Creating sort submenu with current sort: ${this.sortBy} (${this.sortOrder})`);
     sortOptions.forEach((option) => {
       const item = container.createDiv("canvas-grid-menu-item");
       const isActive = this.sortBy === option.key;
@@ -841,12 +983,19 @@ var CanvasGridView = class extends import_obsidian.ItemView {
 				<span class="menu-text">${option.label}</span>
 				<span class="menu-status">${statusIcon}</span>
 			`;
+      if (isActive) {
+        item.style.backgroundColor = "var(--background-modifier-hover)";
+        item.style.fontWeight = "600";
+      }
       item.addEventListener("click", () => {
+        console.log(`\u{1F504} Sort option clicked: ${option.key} (current: ${this.sortBy})`);
         if (this.sortBy === option.key) {
           this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
+          console.log(`\u{1F504} Toggled sort order to: ${this.sortOrder}`);
         } else {
           this.sortBy = option.key;
-          this.sortOrder = "asc";
+          this.sortOrder = "desc";
+          console.log(`\u{1F504} Changed sort to: ${this.sortBy} (${this.sortOrder})`);
         }
         this.applySortAndFilter();
         this.hideAllDropdowns();
@@ -973,7 +1122,9 @@ var CanvasGridView = class extends import_obsidian.ItemView {
 				<path d="M8 12h3"/>
 			</svg>
 		`;
-    officialLinkBtn.onclick = () => this.useOfficialTabLink();
+    officialLinkBtn.onclick = () => {
+      new import_obsidian.Notice("\u5B98\u65B9\u5173\u8054\u529F\u80FD\u5DF2\u6574\u5408\u5230\u81EA\u52A8\u5173\u8054\u4E2D");
+    };
     const linkBtn = actionsEl.createEl("button", {
       cls: "canvas-grid-action-btn",
       title: "\u81EA\u5B9A\u4E49\u5173\u8054Canvas\u6587\u4EF6"
@@ -1036,6 +1187,36 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       }
     });
   }
+  // 创建时间胶囊按钮
+  createTimeCapsuleButton(container) {
+    const buttonContainer = container.createDiv("canvas-grid-time-capsule-container");
+    this.timeCapsuleButton = buttonContainer.createEl("button", {
+      cls: "canvas-grid-time-capsule-btn",
+      title: "\u65F6\u95F4\u80F6\u56CA - \u70B9\u51FB\u5F00\u59CB\u6536\u96C6"
+    });
+    this.updateTimeCapsuleButton();
+    this.timeCapsuleButton.addEventListener("click", () => {
+      this.toggleTimeCapsuleInternal();
+    });
+    let longPressTimer = null;
+    this.timeCapsuleButton.addEventListener("mousedown", () => {
+      longPressTimer = setTimeout(() => {
+        this.showDurationMenu();
+      }, 800);
+    });
+    this.timeCapsuleButton.addEventListener("mouseup", () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+    this.timeCapsuleButton.addEventListener("mouseleave", () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
+  }
   // 创建颜色筛选器
   createColorFilter(container) {
     this.colorFilterContainer = container.createDiv("canvas-grid-color-filter");
@@ -1070,10 +1251,15 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         colorDot.style.backgroundColor = color;
         colorDot.style.borderColor = color;
       }
-      const colorNames = ["\u7EA2", "\u6A59", "\u9EC4", "\u7EFF", "\u9752", "\u84DD", "\u7D2B"];
-      const index = parseInt(colorValue) - 1;
-      if (index >= 0 && index < colorNames.length) {
-        colorDot.title = `\u7B5B\u9009${colorNames[index]}\u8272\u5361\u7247`;
+      const colorCategory = this.settings.colorCategories.find((cat) => cat.color === colorValue);
+      if (colorCategory) {
+        colorDot.title = this.settings.language === "zh" ? `\u7B5B\u9009${colorCategory.name}\u5361\u7247` : `Filter ${colorCategory.name} cards`;
+      } else {
+        const colorNames = this.settings.language === "zh" ? ["\u7EA2", "\u6A59", "\u9EC4", "\u7EFF", "\u9752", "\u84DD", "\u7D2B"] : ["Red", "Orange", "Yellow", "Green", "Cyan", "Blue", "Purple"];
+        const index = parseInt(colorValue) - 1;
+        if (index >= 0 && index < colorNames.length) {
+          colorDot.title = this.settings.language === "zh" ? `\u7B5B\u9009${colorNames[index]}\u8272\u5361\u7247` : `Filter ${colorNames[index]} cards`;
+        }
       }
       colorDot.addEventListener("click", () => {
         this.setColorFilter(colorValue);
@@ -1113,6 +1299,373 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     console.log("\u6267\u884C\u989C\u8272\u7B5B\u9009\uFF0C\u5F53\u524D\u7B5B\u9009\u989C\u8272:", this.activeColorFilter);
     this.performSearch();
   }
+  // ==================== 时间胶囊功能方法 ====================
+  // 更新时间胶囊按钮显示
+  updateTimeCapsuleButton() {
+    if (!this.timeCapsuleButton)
+      return;
+    const state = this.timeCapsuleState;
+    if (state.isActive) {
+      const minutes = Math.floor(state.remainingTime / 6e4);
+      const seconds = Math.floor(state.remainingTime % 6e4 / 1e3);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      let colorClass = "active";
+      if (state.remainingTime < 6e4) {
+        colorClass = "warning";
+      }
+      this.timeCapsuleButton.className = `canvas-grid-time-capsule-btn ${colorClass}`;
+      this.timeCapsuleButton.innerHTML = `
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M6 2v6h.01L6 8.01 10 12l-4 4-.01.01V22h12v-5.99-.01L18 16l-4-4 4-3.99.01-.01V2H6z"/>
+				</svg>
+				<span class="time-display">${timeText}</span>
+			`;
+      this.timeCapsuleButton.title = `\u65F6\u95F4\u80F6\u56CA\u6536\u96C6\u4E2D - \u5269\u4F59 ${timeText}`;
+    } else {
+      this.timeCapsuleButton.className = "canvas-grid-time-capsule-btn";
+      this.timeCapsuleButton.innerHTML = `
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M6 2v6h.01L6 8.01 10 12l-4 4-.01.01V22h12v-5.99-.01L18 16l-4-4 4-3.99.01-.01V2H6z"/>
+				</svg>
+			`;
+      this.timeCapsuleButton.title = "\u65F6\u95F4\u80F6\u56CA - \u70B9\u51FB\u5F00\u59CB\u6536\u96C6";
+    }
+  }
+  // 切换时间胶囊状态（私有方法，供按钮点击使用）
+  toggleTimeCapsuleInternal() {
+    if (this.timeCapsuleState.isActive) {
+      this.stopTimeCapsule();
+    } else {
+      this.startTimeCapsule();
+    }
+  }
+  // 开始时间胶囊
+  startTimeCapsule() {
+    const duration = this.timeCapsuleState.duration;
+    const now = Date.now();
+    const groupName = `\u65F6\u95F4\u80F6\u56CA ${(/* @__PURE__ */ new Date()).toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    })}`;
+    this.timeCapsuleState = {
+      isActive: true,
+      startTime: now,
+      duration,
+      remainingTime: duration,
+      groupId: null,
+      // 稍后创建分组时设置
+      collectedItems: [],
+      groupName
+    };
+    this.createTimeCapsuleGroup();
+    this.startTimeCapsuleTimer();
+    this.renderGrid();
+    new import_obsidian.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u542F\u52A8\uFF01\u6536\u96C6\u65F6\u957F\uFF1A${Math.floor(duration / 6e4)}\u5206\u949F`);
+    console.log("\u65F6\u95F4\u80F6\u56CA\u5DF2\u542F\u52A8\uFF0C\u7F51\u683C\u89C6\u56FE\u5DF2\u5237\u65B0:", this.timeCapsuleState);
+  }
+  // 停止时间胶囊
+  stopTimeCapsule() {
+    if (this.timeCapsuleTimer) {
+      clearTimeout(this.timeCapsuleTimer);
+      this.timeCapsuleTimer = null;
+    }
+    if (this.timeCapsuleUpdateInterval) {
+      clearInterval(this.timeCapsuleUpdateInterval);
+      this.timeCapsuleUpdateInterval = null;
+    }
+    const collectedCount = this.timeCapsuleState.collectedItems.length;
+    this.timeCapsuleState = {
+      isActive: false,
+      startTime: 0,
+      duration: 15 * 60 * 1e3,
+      remainingTime: 0,
+      groupId: null,
+      collectedItems: [],
+      groupName: ""
+    };
+    this.updateTimeCapsuleButton();
+    this.renderGrid();
+    new import_obsidian.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u7ED3\u675F\uFF01\u5171\u6536\u96C6\u4E86 ${collectedCount} \u4E2A\u9879\u76EE`);
+    console.log("\u65F6\u95F4\u80F6\u56CA\u5DF2\u505C\u6B62\uFF0C\u7F51\u683C\u89C6\u56FE\u5DF2\u5237\u65B0");
+  }
+  // 开始倒计时定时器
+  startTimeCapsuleTimer() {
+    this.timeCapsuleTimer = setTimeout(() => {
+      this.stopTimeCapsule();
+    }, this.timeCapsuleState.duration);
+    this.timeCapsuleUpdateInterval = setInterval(() => {
+      const elapsed = Date.now() - this.timeCapsuleState.startTime;
+      this.timeCapsuleState.remainingTime = Math.max(0, this.timeCapsuleState.duration - elapsed);
+      this.updateTimeCapsuleButton();
+      this.updateTimeCapsuleGroupDisplay();
+      if (this.timeCapsuleState.remainingTime <= 0) {
+        this.stopTimeCapsule();
+      }
+    }, 1e3);
+  }
+  // 创建时间胶囊分组
+  createTimeCapsuleGroup() {
+    if (!this.canvasData) {
+      console.warn("\u65E0\u6CD5\u521B\u5EFA\u65F6\u95F4\u80F6\u56CA\u5206\u7EC4\uFF1ACanvas\u6570\u636E\u4E0D\u5B58\u5728");
+      return;
+    }
+    const groupId = `time-capsule-${Date.now()}`;
+    const timeCapsuleSize = { width: 400, height: 300 };
+    const position = this.findSafePositionForTimeCapsule(timeCapsuleSize);
+    console.log(`\u{1F3AF} \u65F6\u95F4\u80F6\u56CA\u5206\u7EC4\u4F4D\u7F6E\u8BA1\u7B97\u5B8C\u6210: (${position.x}, ${position.y})`);
+    const groupNode = {
+      id: groupId,
+      type: "group",
+      x: position.x,
+      y: position.y,
+      width: timeCapsuleSize.width,
+      height: timeCapsuleSize.height,
+      color: "5",
+      // 青色 - 时间胶囊主题色
+      label: this.timeCapsuleState.groupName
+    };
+    this.canvasData.nodes.push(groupNode);
+    this.timeCapsuleState.groupId = groupId;
+    this.saveCanvasData();
+    console.log("\u65F6\u95F4\u80F6\u56CA\u5206\u7EC4\u5DF2\u521B\u5EFA:", groupId, "\u4F4D\u7F6E:", position);
+  }
+  // 为时间胶囊分组寻找安全位置，避免与现有分组重叠
+  findSafePositionForTimeCapsule(size) {
+    if (!this.canvasData) {
+      return { x: 100, y: 100 };
+    }
+    const existingGroups = this.canvasData.nodes.filter((node) => node.type === "group");
+    console.log(`\u{1F4CA} \u68C0\u6D4B\u5230 ${existingGroups.length} \u4E2A\u73B0\u6709\u5206\u7EC4`);
+    const candidatePositions = [
+      { x: 50, y: 50 },
+      // 左上角
+      { x: 500, y: 50 },
+      // 右上角
+      { x: 50, y: 400 },
+      // 左下角
+      { x: 500, y: 400 },
+      // 右下角
+      { x: 250, y: 50 },
+      // 顶部中央
+      { x: 50, y: 225 },
+      // 左侧中央
+      { x: 500, y: 225 },
+      // 右侧中央
+      { x: 250, y: 400 },
+      // 底部中央
+      { x: 800, y: 50 },
+      // 更右上角
+      { x: 800, y: 400 }
+      // 更右下角
+    ];
+    for (const candidate of candidatePositions) {
+      if (this.isPositionSafe(candidate, size, existingGroups)) {
+        console.log(`\u2705 \u627E\u5230\u5B89\u5168\u4F4D\u7F6E: (${candidate.x}, ${candidate.y})`);
+        return candidate;
+      }
+    }
+    const dynamicPosition = this.findDynamicSafePosition(size, existingGroups);
+    if (dynamicPosition) {
+      console.log(`\u{1F50D} \u52A8\u6001\u627E\u5230\u5B89\u5168\u4F4D\u7F6E: (${dynamicPosition.x}, ${dynamicPosition.y})`);
+      return dynamicPosition;
+    }
+    const fallbackPosition = { x: 1e3, y: 50 };
+    console.log(`\u26A0\uFE0F \u4F7F\u7528\u5907\u7528\u4F4D\u7F6E: (${fallbackPosition.x}, ${fallbackPosition.y})`);
+    return fallbackPosition;
+  }
+  // 检查指定位置是否安全（不与现有分组重叠）
+  isPositionSafe(position, size, existingGroups) {
+    const newGroupBounds = {
+      left: position.x,
+      top: position.y,
+      right: position.x + size.width,
+      bottom: position.y + size.height
+    };
+    for (const group of existingGroups) {
+      const groupBounds = {
+        left: group.x,
+        top: group.y,
+        right: group.x + (group.width || 200),
+        bottom: group.y + (group.height || 200)
+      };
+      const isOverlapping = !(newGroupBounds.right < groupBounds.left || newGroupBounds.left > groupBounds.right || newGroupBounds.bottom < groupBounds.top || newGroupBounds.top > groupBounds.bottom);
+      if (isOverlapping) {
+        console.log(`\u274C \u4F4D\u7F6E (${position.x}, ${position.y}) \u4E0E\u5206\u7EC4 ${group.id} \u91CD\u53E0`);
+        return false;
+      }
+    }
+    return true;
+  }
+  // 动态寻找安全位置
+  findDynamicSafePosition(size, existingGroups) {
+    const canvasBounds = this.calculateCanvasBounds(existingGroups);
+    const rightSideX = canvasBounds.maxX + 100;
+    const testPosition = { x: rightSideX, y: 50 };
+    if (this.isPositionSafe(testPosition, size, existingGroups)) {
+      return testPosition;
+    }
+    const bottomY = canvasBounds.maxY + 100;
+    const bottomPosition = { x: 50, y: bottomY };
+    if (this.isPositionSafe(bottomPosition, size, existingGroups)) {
+      return bottomPosition;
+    }
+    const gridStep = 50;
+    for (let x = 50; x <= 1200; x += gridStep) {
+      for (let y = 50; y <= 800; y += gridStep) {
+        const gridPosition = { x, y };
+        if (this.isPositionSafe(gridPosition, size, existingGroups)) {
+          return gridPosition;
+        }
+      }
+    }
+    return null;
+  }
+  // 计算Canvas的使用边界
+  calculateCanvasBounds(existingGroups) {
+    if (existingGroups.length === 0) {
+      return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    existingGroups.forEach((group) => {
+      const left = group.x;
+      const top = group.y;
+      const right = group.x + (group.width || 200);
+      const bottom = group.y + (group.height || 200);
+      minX = Math.min(minX, left);
+      minY = Math.min(minY, top);
+      maxX = Math.max(maxX, right);
+      maxY = Math.max(maxY, bottom);
+    });
+    console.log(`\u{1F4D0} Canvas\u4F7F\u7528\u8FB9\u754C: (${minX}, ${minY}) \u5230 (${maxX}, ${maxY})`);
+    return { minX, minY, maxX, maxY };
+  }
+  // 更新时间胶囊分组显示
+  updateTimeCapsuleGroupDisplay() {
+    if (!this.timeCapsuleState.isActive || !this.timeCapsuleState.groupId)
+      return;
+    const groupCard = this.gridContainer.querySelector(`[data-node-id="${this.timeCapsuleState.groupId}"]`);
+    if (!groupCard)
+      return;
+    const countDiv = groupCard.querySelector(".group-member-count");
+    if (countDiv) {
+      const minutes = Math.floor(this.timeCapsuleState.remainingTime / 6e4);
+      const seconds = Math.floor(this.timeCapsuleState.remainingTime % 6e4 / 1e3);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      const collectedCount = this.timeCapsuleState.collectedItems.length;
+      countDiv.innerHTML = `
+				<div class="time-capsule-status">
+					<span class="collecting-text">\u6536\u96C6\u4E2D</span>
+					<span class="countdown-text">${timeText}</span>
+				</div>
+				<div class="member-count">${collectedCount} \u4E2A\u9879\u76EE</div>
+			`;
+    }
+    if (this.timeCapsuleState.remainingTime < 6e4) {
+      groupCard.classList.add("time-capsule-urgent");
+    }
+  }
+  // 获取时间胶囊最大收集数量（基于时长）
+  getMaxCollectionCount() {
+    const durationMinutes = Math.floor(this.timeCapsuleState.duration / 6e4);
+    return Math.max(10, durationMinutes * 2);
+  }
+  // 显示时长选择菜单
+  showDurationMenu() {
+    const menu = document.createElement("div");
+    menu.className = "canvas-grid-duration-menu";
+    const durations = [
+      { label: "5\u5206\u949F", value: 5 * 60 * 1e3 },
+      { label: "15\u5206\u949F", value: 15 * 60 * 1e3 },
+      { label: "30\u5206\u949F", value: 30 * 60 * 1e3 },
+      { label: "1\u5C0F\u65F6", value: 60 * 60 * 1e3 }
+    ];
+    durations.forEach((duration) => {
+      const item = menu.createDiv("duration-menu-item");
+      item.textContent = duration.label;
+      item.onclick = () => {
+        this.timeCapsuleState.duration = duration.value;
+        menu.remove();
+        new import_obsidian.Notice(`\u65F6\u95F4\u80F6\u56CA\u65F6\u957F\u8BBE\u7F6E\u4E3A\uFF1A${duration.label}`);
+      };
+    });
+    const buttonRect = this.timeCapsuleButton.getBoundingClientRect();
+    menu.style.position = "fixed";
+    menu.style.top = `${buttonRect.bottom + 5}px`;
+    menu.style.left = `${buttonRect.left}px`;
+    menu.style.zIndex = "1000";
+    document.body.appendChild(menu);
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", closeMenu), 100);
+  }
+  // 检查时间胶囊是否激活
+  isTimeCapsuleActive() {
+    return this.timeCapsuleState.isActive;
+  }
+  // 收集内容到时间胶囊
+  collectToTimeCapsule(content, sourceInfo) {
+    if (!this.timeCapsuleState.isActive || !this.timeCapsuleState.groupId) {
+      console.warn("\u65F6\u95F4\u80F6\u56CA\u672A\u6FC0\u6D3B\u6216\u5206\u7EC4\u4E0D\u5B58\u5728");
+      return;
+    }
+    const nodeId = `collected-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const timestamp = (/* @__PURE__ */ new Date()).toLocaleTimeString();
+    let nodeText = content;
+    if (sourceInfo.sourcePath && sourceInfo.sourcePath !== "\u526A\u8D34\u677F") {
+      const fileName = sourceInfo.sourcePath.split("/").pop()?.replace(".md", "") || sourceInfo.sourcePath;
+      nodeText += `
+
+---
+\u{1F4CD} \u6765\u6E90: [[${fileName}]]`;
+      if (sourceInfo.sourcePosition) {
+        nodeText += ` (\u884C ${sourceInfo.sourcePosition.line + 1})`;
+      }
+    }
+    nodeText += `
+\u23F0 \u6536\u96C6\u65F6\u95F4: ${timestamp}`;
+    const groupNode = this.canvasData?.nodes.find((n) => n.id === this.timeCapsuleState.groupId);
+    if (!groupNode) {
+      console.warn("\u627E\u4E0D\u5230\u65F6\u95F4\u80F6\u56CA\u5206\u7EC4");
+      return;
+    }
+    const itemIndex = this.timeCapsuleState.collectedItems.length;
+    const nodeX = groupNode.x + 20 + itemIndex % 2 * 180;
+    const nodeY = groupNode.y + 50 + Math.floor(itemIndex / 2) * 120;
+    const newNode = {
+      id: nodeId,
+      type: "text",
+      x: nodeX,
+      y: nodeY,
+      width: 160,
+      height: 100,
+      color: "5",
+      // 青色标记为收集的内容
+      text: nodeText
+    };
+    if (this.canvasData) {
+      this.canvasData.nodes.push(newNode);
+      this.timeCapsuleState.collectedItems.push(nodeId);
+      this.saveCanvasData();
+      this.renderGrid();
+      this.updateTimeCapsuleGroupDisplay();
+      new import_obsidian.Notice(`\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA (${this.timeCapsuleState.collectedItems.length}/${this.getMaxCollectionCount()})`);
+      console.log("\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA:", nodeId);
+    }
+  }
+  // 公开切换时间胶囊方法
+  toggleTimeCapsule() {
+    if (this.timeCapsuleState.isActive) {
+      this.stopTimeCapsule();
+    } else {
+      this.startTimeCapsule();
+    }
+  }
   // 更新颜色筛选器（公共方法）
   updateColorFilter() {
     if (this.colorFilterContainer) {
@@ -1121,13 +1674,19 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     }
     const container = this.containerEl.children[1];
     if (!container) {
-      console.error("Canvas Grid View: Container element not found");
+      console.error("Canvasgrid Transit: Container element not found");
       return;
     }
-    const toolbar = container.querySelector(".canvas-grid-toolbar");
-    const gridContainer = container.querySelector(".canvas-grid-container");
-    if (toolbar && gridContainer) {
-      this.createColorFilter(container);
+    const colorRow = container.querySelector(".canvas-grid-toolbar-color-row");
+    if (colorRow) {
+      this.createColorFilter(colorRow);
+    } else {
+      console.warn("Canvasgrid Transit: Color row not found, recreating toolbar");
+      const toolbar = container.querySelector(".canvas-grid-toolbar");
+      if (toolbar) {
+        toolbar.remove();
+      }
+      this.createToolbar(container);
     }
   }
   // 视图选项方法已移除，功能已整合到主菜单
@@ -1136,15 +1695,17 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   performSearch() {
     if (!this.canvasData) {
       this.filteredNodes = [];
-      this.renderGrid();
+      this.applySortAndFilter();
       return;
     }
+    console.log(`\u{1F50D} Performing search with query: "${this.searchQuery}"`);
     const previousFilteredNodes = [...this.filteredNodes];
     let searchResults;
-    if (!this.searchQuery) {
+    if (!this.searchQuery || this.searchQuery.trim() === "") {
       searchResults = [...this.canvasData.nodes];
+      console.log("\u65E0\u641C\u7D22\u67E5\u8BE2\uFF0C\u4F7F\u7528\u6240\u6709\u8282\u70B9:", searchResults.length);
     } else {
-      const query = this.searchQuery.toLowerCase();
+      const query = this.searchQuery.toLowerCase().trim();
       searchResults = this.canvasData.nodes.filter((node) => {
         if (node.text && node.text.toLowerCase().includes(query)) {
           return true;
@@ -1157,24 +1718,21 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         }
         return false;
       });
+      console.log(`\u641C\u7D22 "${query}" \u627E\u5230 ${searchResults.length} \u4E2A\u7ED3\u679C`);
     }
     console.log("\u5E94\u7528\u989C\u8272\u7B5B\u9009\uFF0C\u5F53\u524D\u7B5B\u9009\u989C\u8272:", this.activeColorFilter);
-    console.log("\u641C\u7D22\u7ED3\u679C\u6570\u91CF:", searchResults.length);
-    if (this.activeColorFilter) {
+    if (this.activeColorFilter && this.activeColorFilter !== "all") {
       this.filteredNodes = searchResults.filter((node) => {
-        console.log("\u68C0\u67E5\u8282\u70B9\u989C\u8272:", node.id, "node.color:", node.color, "\u7B5B\u9009\u989C\u8272:", this.activeColorFilter);
         const matches = node.color === this.activeColorFilter;
-        console.log("\u989C\u8272\u5339\u914D\u7ED3\u679C:", matches);
         return matches;
       });
       console.log("\u989C\u8272\u7B5B\u9009\u540E\u8282\u70B9\u6570\u91CF:", this.filteredNodes.length);
     } else {
       this.filteredNodes = searchResults;
-      console.log("\u65E0\u989C\u8272\u7B5B\u9009\uFF0C\u4F7F\u7528\u6240\u6709\u641C\u7D22\u7ED3\u679C");
+      console.log("\u65E0\u989C\u8272\u7B5B\u9009\uFF0C\u4F7F\u7528\u6240\u6709\u641C\u7D22\u7ED3\u679C:", this.filteredNodes.length);
     }
-    if (!this.arraysEqual(previousFilteredNodes, this.filteredNodes)) {
-      this.applySortAndFilter();
-    }
+    console.log(`\u{1F4CA} Final filtered nodes: ${this.filteredNodes.length}, applying sort...`);
+    this.applySortAndFilter();
   }
   // 比较两个数组是否相等（基于节点ID）
   arraysEqual(arr1, arr2) {
@@ -1186,31 +1744,44 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 应用排序和筛选
   applySortAndFilter() {
-    if (!this.filteredNodes.length) {
+    if (!this.filteredNodes || this.filteredNodes.length === 0) {
       this.renderGrid();
       return;
     }
+    console.log(`\u{1F504} Applying sort: ${this.sortBy} (${this.sortOrder}) to ${this.filteredNodes.length} nodes`);
     this.filteredNodes.sort((a, b) => {
       let comparison = 0;
-      switch (this.sortBy) {
-        case "created":
-          const timeA = this.extractTimestamp(a.id);
-          const timeB = this.extractTimestamp(b.id);
-          comparison = timeA - timeB;
-          break;
-        case "modified":
-          const modA = a.modified || this.extractTimestamp(a.id);
-          const modB = b.modified || this.extractTimestamp(b.id);
-          comparison = modA - modB;
-          break;
-        case "title":
-          const titleA = this.getNodeTitle(a).toLowerCase();
-          const titleB = this.getNodeTitle(b).toLowerCase();
-          comparison = titleA.localeCompare(titleB);
-          break;
+      try {
+        switch (this.sortBy) {
+          case "created":
+            const timeA = this.extractTimestamp(a.id);
+            const timeB = this.extractTimestamp(b.id);
+            comparison = timeA - timeB;
+            break;
+          case "modified":
+            const modA = a.modified || this.extractTimestamp(a.id);
+            const modB = b.modified || this.extractTimestamp(b.id);
+            comparison = modA - modB;
+            break;
+          case "title":
+            const titleA = this.getNodeTitle(a).toLowerCase();
+            const titleB = this.getNodeTitle(b).toLowerCase();
+            comparison = titleA.localeCompare(titleB);
+            break;
+          default:
+            const defaultTimeA = this.extractTimestamp(a.id);
+            const defaultTimeB = this.extractTimestamp(b.id);
+            comparison = defaultTimeA - defaultTimeB;
+            break;
+        }
+      } catch (error) {
+        console.error("\u6392\u5E8F\u8FC7\u7A0B\u4E2D\u51FA\u9519:", error);
+        comparison = a.id.localeCompare(b.id);
       }
-      return this.sortOrder === "asc" ? comparison : -comparison;
+      const result = this.sortOrder === "asc" ? comparison : -comparison;
+      return result;
     });
+    console.log(`\u2705 Sort completed. First node: ${this.getNodeTitle(this.filteredNodes[0])}`);
     this.renderGrid();
   }
   // 提取时间戳
@@ -1230,6 +1801,15 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       return node.url;
     }
     return "Untitled";
+  }
+  // 强制刷新排序（用于数据更新后）
+  refreshSort() {
+    console.log("\u{1F504} Refreshing sort...");
+    if (!this.canvasData) {
+      return;
+    }
+    this.filteredNodes = [...this.canvasData.nodes];
+    this.performSearch();
   }
   // 应用类型筛选
   applyTypeFilter(filterType) {
@@ -1347,9 +1927,9 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 设置网格样式 - 使用CSS Grid自动布局
   setupGridStyles() {
-    this.gridContainer.style.setProperty("--grid-card-spacing", `${this.settings.cardSpacing}px`);
-    this.gridContainer.style.setProperty("--grid-card-min-width", `${this.settings.cardWidth}px`);
-    this.gridContainer.style.setProperty("--grid-card-height", `${this.settings.cardHeight}px`);
+    this.gridContainer.style.setProperty("--grid-card-spacing", `${CARD_CONSTANTS.spacing}px`);
+    this.gridContainer.style.setProperty("--grid-card-min-width", `${CARD_CONSTANTS.width}px`);
+    this.gridContainer.style.setProperty("--grid-card-height", `${CARD_CONSTANTS.height}px`);
     this.gridContainer.style.removeProperty("grid-template-columns");
   }
   // 设置事件委托，提升性能
@@ -1359,6 +1939,141 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     this.gridContainer.addEventListener("contextmenu", this.handleCardContextMenu);
     this.gridContainer.addEventListener("keydown", this.handleKeyDown);
     document.addEventListener("click", this.handleDocumentClick);
+    this.setupScrollListener();
+    this.setupGridCardDragEvents();
+  }
+  // 设置网格卡片拖拽事件 - 使用HTML5 Drag & Drop API
+  setupGridCardDragEvents() {
+    this.setupCardDragAttributes();
+    this.registerDomEvent(this.gridContainer, "dragstart", this.handleCardDragStart.bind(this));
+    this.registerDomEvent(this.gridContainer, "dragend", this.handleCardDragEnd.bind(this));
+  }
+  // 为卡片设置拖拽属性
+  setupCardDragAttributes() {
+    const cards = this.gridContainer.querySelectorAll(".canvas-grid-card");
+    cards.forEach((card) => {
+      card.draggable = false;
+      card.style.cursor = "grab";
+      this.setupCardLongPress(card);
+    });
+  }
+  // 设置卡片长按检测
+  setupCardLongPress(cardElement) {
+    let longPressTimer = null;
+    let longPressStartTime = 0;
+    const handleMouseDown = (e) => {
+      if (e.target.closest(".canvas-card-toolbar")) {
+        return;
+      }
+      longPressStartTime = Date.now();
+      longPressTimer = setTimeout(() => {
+        cardElement.draggable = true;
+        cardElement.style.cursor = "grabbing";
+        console.log("\u{1F525} Long press detected, drag enabled");
+        cardElement.classList.add("long-press-active");
+      }, 500);
+    };
+    const handleMouseUp = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      setTimeout(() => {
+        cardElement.draggable = false;
+        cardElement.style.cursor = "grab";
+        cardElement.classList.remove("long-press-active");
+      }, 100);
+    };
+    const handleMouseLeave = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+    cardElement.addEventListener("mousedown", handleMouseDown);
+    cardElement.addEventListener("mouseup", handleMouseUp);
+    cardElement.addEventListener("mouseleave", handleMouseLeave);
+  }
+  // 设置滚动监听，实现功能栏自动隐藏/显示
+  setupScrollListener() {
+    let lastScrollTop = 0;
+    let isToolbarHidden = false;
+    let scrollTimeout = null;
+    const getContainer = () => {
+      return this.containerEl.children[1];
+    };
+    const getToolbar = () => {
+      const container = getContainer();
+      return container?.querySelector(".canvas-grid-toolbar");
+    };
+    const showToolbar = () => {
+      const toolbar2 = getToolbar();
+      const container = getContainer();
+      if (toolbar2 && container && isToolbarHidden) {
+        toolbar2.style.position = "relative";
+        toolbar2.style.transform = "translateY(0)";
+        toolbar2.style.opacity = "1";
+        toolbar2.style.zIndex = "100";
+        this.gridContainer.classList.remove("toolbar-hidden");
+        const viewContent = this.containerEl.querySelector(".view-content");
+        if (viewContent) {
+          viewContent.classList.remove("toolbar-hidden-parent");
+        }
+        this.gridContainer.style.removeProperty("margin-top");
+        this.gridContainer.style.removeProperty("height");
+        isToolbarHidden = false;
+      }
+    };
+    const hideToolbar = () => {
+      const toolbar2 = getToolbar();
+      const container = getContainer();
+      if (toolbar2 && container && !isToolbarHidden) {
+        const toolbarHeight = toolbar2.offsetHeight;
+        toolbar2.style.position = "fixed";
+        toolbar2.style.top = "0";
+        toolbar2.style.left = "0";
+        toolbar2.style.right = "0";
+        toolbar2.style.transform = "translateY(-100%)";
+        toolbar2.style.opacity = "0";
+        toolbar2.style.zIndex = "100";
+        this.gridContainer.classList.add("toolbar-hidden");
+        const viewContent = this.containerEl.querySelector(".view-content");
+        if (viewContent) {
+          viewContent.classList.add("toolbar-hidden-parent");
+        }
+        this.gridContainer.style.marginTop = `-${toolbarHeight}px`;
+        isToolbarHidden = true;
+      }
+    };
+    const handleScroll = () => {
+      const currentScrollTop = this.gridContainer.scrollTop;
+      const scrollDelta = currentScrollTop - lastScrollTop;
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      if (Math.abs(scrollDelta) < 5) {
+        return;
+      }
+      if (currentScrollTop < 50) {
+        showToolbar();
+      } else {
+        if (scrollDelta > 0 && !isToolbarHidden) {
+          hideToolbar();
+        } else if (scrollDelta < 0 && isToolbarHidden) {
+          showToolbar();
+        }
+      }
+      scrollTimeout = setTimeout(() => {
+        showToolbar();
+      }, 2e3);
+      lastScrollTop = currentScrollTop;
+    };
+    this.gridContainer.addEventListener("scroll", handleScroll, { passive: true });
+    const toolbar = getToolbar();
+    if (toolbar) {
+      toolbar.style.transition = "transform 0.3s ease, opacity 0.3s ease";
+      toolbar.style.zIndex = "100";
+    }
   }
   // 加载当前活动的Canvas文件 - 优化版本
   async loadActiveCanvas() {
@@ -1380,10 +2095,11 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         throw new Error("Canvas\u6587\u4EF6\u7F3A\u5C11\u6709\u6548\u7684\u8282\u70B9\u6570\u636E");
       }
       this.canvasData = parsedData;
-      this.renderGrid();
+      this.initializeSearchAndSort();
+      console.log("\u2705 Canvas loaded and sort applied");
     } catch (error) {
       console.error("Canvas\u52A0\u8F7D\u9519\u8BEF:", error);
-      this.showErrorState(error.message);
+      this.showErrorState(error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF");
     }
   }
   // 渲染网格视图 - 优化版本（支持批量渲染和分组显示）
@@ -1415,9 +2131,9 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     const groupNodes = nodesToRender.filter((node) => node.type === "group");
     const regularNodes = nodesToRender.filter((node) => node.type !== "group");
     const itemsToRender = [];
-    groupNodes.forEach((groupNode) => {
-      const groupInfo = this.groupAnalysis.get(groupNode.id);
-      if (groupInfo) {
+    const sortedGroups = this.getGroupsForGridView();
+    sortedGroups.forEach((groupInfo) => {
+      if (groupNodes.some((node) => node.id === groupInfo.group.id)) {
         itemsToRender.push({ type: "group", data: groupInfo });
       }
     });
@@ -1426,6 +2142,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       itemsToRender.push({ type: "node", data: node });
     });
     this.renderGridItems(itemsToRender);
+    this.setupCardDragAttributes();
   }
   // 立即渲染（小量数据）
   renderGridImmediate(nodes) {
@@ -1507,7 +2224,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   createCardInternal(node) {
     const card = document.createElement("div");
     card.className = "canvas-grid-card";
-    card.style.minHeight = `${this.settings.cardHeight}px`;
+    card.style.minHeight = `${CARD_CONSTANTS.height}px`;
     card.dataset.nodeId = node.id;
     card.dataset.nodeType = node.type;
     if (node.color) {
@@ -1544,7 +2261,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       // 对于链接节点，包含URL
       url: node.url,
       // 设置相关
-      cardHeight: this.settings.cardHeight
+      cardHeight: CARD_CONSTANTS.height
     };
     return JSON.stringify(keyData);
   }
@@ -1713,7 +2430,8 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     colorPicker.style.zIndex = "10000";
     document.body.appendChild(colorPicker);
     const closeHandler = (e) => {
-      if (!colorPicker.contains(e.target)) {
+      const mouseEvent = e;
+      if (!colorPicker.contains(mouseEvent.target)) {
         colorPicker.remove();
         document.removeEventListener("click", closeHandler);
         const index = this.globalEventListeners.findIndex(
@@ -2092,9 +2810,44 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     };
     return nodeCenter.x >= groupBounds.minX && nodeCenter.x <= groupBounds.maxX && nodeCenter.y >= groupBounds.minY && nodeCenter.y <= groupBounds.maxY;
   }
-  // 获取所有分组信息
+  // 获取所有分组信息 - 支持时间胶囊分组置顶
   getGroupsForGridView() {
-    return Array.from(this.groupAnalysis.values());
+    const groups = Array.from(this.groupAnalysis.values());
+    const sortedGroups = groups.sort((a, b) => {
+      const aIsActive = this.isActiveTimeCapsuleGroup(a.group.id);
+      const bIsActive = this.isActiveTimeCapsuleGroup(b.group.id);
+      const aIsHistorical = this.isHistoricalTimeCapsuleGroup(a.group.id);
+      const bIsHistorical = this.isHistoricalTimeCapsuleGroup(b.group.id);
+      if (aIsActive && !bIsActive)
+        return -1;
+      if (!aIsActive && bIsActive)
+        return 1;
+      if (aIsHistorical && !bIsHistorical && !bIsActive)
+        return -1;
+      if (!aIsHistorical && bIsHistorical && !aIsActive)
+        return 1;
+      return b.group.id.localeCompare(a.group.id);
+    });
+    console.log("\u{1F504} Group sorting result:");
+    sortedGroups.forEach((group, index) => {
+      const isActive = this.isActiveTimeCapsuleGroup(group.group.id);
+      const isHistorical = this.isHistoricalTimeCapsuleGroup(group.group.id);
+      const type = isActive ? "ACTIVE" : isHistorical ? "HISTORICAL" : "NORMAL";
+      console.log(`  ${index + 1}. [${type}] ${group.group.id}`);
+    });
+    return sortedGroups;
+  }
+  // 判断是否为时间胶囊分组（包括历史时间胶囊）
+  isTimeCapsuleGroup(groupId) {
+    return groupId.startsWith("time-capsule-");
+  }
+  // 判断是否为当前激活的时间胶囊分组
+  isActiveTimeCapsuleGroup(groupId) {
+    return this.timeCapsuleState.isActive && groupId === this.timeCapsuleState.groupId;
+  }
+  // 判断是否为历史时间胶囊分组
+  isHistoricalTimeCapsuleGroup(groupId) {
+    return this.isTimeCapsuleGroup(groupId) && !this.isActiveTimeCapsuleGroup(groupId);
   }
   // 进入分组视图
   enterGroupView(groupId) {
@@ -2117,15 +2870,15 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 更新工具栏显示分组视图信息
   updateToolbarForGroupView(groupInfo) {
-    this.addGroupViewBackButtonToToolbar();
+    this.addGroupViewBackButtonToColorRow();
   }
-  // 在工具栏搜索框右侧添加返回按钮
-  addGroupViewBackButtonToToolbar() {
+  // 在颜色行中添加返回按钮
+  addGroupViewBackButtonToColorRow() {
     const toolbar = this.containerEl.querySelector(".canvas-grid-toolbar");
     if (!toolbar)
       return;
-    const searchContainer = toolbar.querySelector(".canvas-grid-search-container");
-    if (!searchContainer)
+    const colorRow = toolbar.querySelector(".canvas-grid-toolbar-color-row");
+    if (!colorRow)
       return;
     const existingBackButton = toolbar.querySelector(".group-back-button-toolbar");
     if (existingBackButton) {
@@ -2133,15 +2886,20 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     }
     const backButton = document.createElement("button");
     backButton.className = "group-back-button-toolbar";
-    backButton.title = "\u8FD4\u56DE\u4E3B\u89C6\u56FE";
-    backButton.setAttribute("aria-label", "\u8FD4\u56DE\u4E3B\u89C6\u56FE");
+    backButton.title = this.settings.language === "zh" ? "\u8FD4\u56DE\u4E3B\u89C6\u56FE" : "Back to main view";
+    backButton.setAttribute("aria-label", this.settings.language === "zh" ? "\u8FD4\u56DE\u4E3B\u89C6\u56FE" : "Back to main view");
     backButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<polyline points="15,18 9,12 15,6"/>
 			</svg>
 		`;
     backButton.onclick = () => this.exitGroupView();
-    searchContainer.parentElement?.insertBefore(backButton, searchContainer.nextSibling);
+    const colorFilter = colorRow.querySelector(".canvas-grid-color-filter");
+    if (colorFilter) {
+      colorRow.insertBefore(backButton, colorFilter);
+    } else {
+      colorRow.appendChild(backButton);
+    }
   }
   // 恢复主视图工具栏
   updateToolbarForMainView() {
@@ -2165,6 +2923,8 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     } else {
       this.renderGridImmediate(groupInfo.members);
     }
+    this.setupCardDragAttributes();
+    console.log(`\u2705 Group members rendered with drag support: ${groupInfo.members.length} cards`);
   }
   // 获取未分组的节点
   getUngroupedNodes(nodes) {
@@ -2203,10 +2963,19 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   // 创建分组卡片
   createGroupCard(groupInfo) {
     const card = document.createElement("div");
-    card.className = "canvas-grid-card group-card";
+    const isTimeCapsule = this.isTimeCapsuleGroup(groupInfo.group.id);
+    const isActiveTimeCapsule = this.isActiveTimeCapsuleGroup(groupInfo.group.id);
+    const isHistoricalTimeCapsule = this.isHistoricalTimeCapsuleGroup(groupInfo.group.id);
+    if (isActiveTimeCapsule) {
+      card.className = "canvas-grid-card group-card time-capsule-group time-capsule-collecting";
+    } else if (isHistoricalTimeCapsule) {
+      card.className = "canvas-grid-card group-card time-capsule-group time-capsule-historical";
+    } else {
+      card.className = "canvas-grid-card group-card";
+    }
     card.dataset.nodeId = groupInfo.group.id;
     card.dataset.nodeType = "group";
-    card.style.minHeight = `${this.settings.cardHeight}px`;
+    card.style.minHeight = `${CARD_CONSTANTS.height}px`;
     if (groupInfo.group.color) {
       const normalizedColor = this.normalizeColorValue(groupInfo.group.color);
       if (normalizedColor) {
@@ -2218,16 +2987,52 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     }
     const contentDiv = card.createDiv("group-card-content");
     const iconDiv = contentDiv.createDiv("group-icon");
-    iconDiv.innerHTML = `
-			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-				<path d="M9 9h6v6H9z"/>
-			</svg>
-		`;
+    if (isActiveTimeCapsule) {
+      iconDiv.innerHTML = `
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M6 2v6h.01L6 8.01 10 12l-4 4-.01.01V22h12v-5.99-.01L18 16l-4-4 4-3.99.01-.01V2H6z"/>
+				</svg>
+			`;
+      iconDiv.classList.add("time-capsule-icon", "time-capsule-active");
+    } else if (isHistoricalTimeCapsule) {
+      iconDiv.innerHTML = `
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M6 2v6h.01L6 8.01 10 12l-4 4-.01.01V22h12v-5.99-.01L18 16l-4-4 4-3.99.01-.01V2H6z"/>
+				</svg>
+			`;
+      iconDiv.classList.add("time-capsule-icon", "time-capsule-historical");
+    } else {
+      iconDiv.innerHTML = `
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+					<path d="M9 9h6v6H9z"/>
+				</svg>
+			`;
+    }
     const titleDiv = contentDiv.createDiv("group-title");
     titleDiv.textContent = groupInfo.group.label || "\u672A\u547D\u540D\u5206\u7EC4";
     const countDiv = contentDiv.createDiv("group-member-count");
-    countDiv.textContent = `${groupInfo.memberCount} \u4E2A\u9879\u76EE`;
+    if (isActiveTimeCapsule) {
+      const minutes = Math.floor(this.timeCapsuleState.remainingTime / 6e4);
+      const seconds = Math.floor(this.timeCapsuleState.remainingTime % 6e4 / 1e3);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      countDiv.innerHTML = `
+				<div class="time-capsule-status">
+					<span class="collecting-text">\u6536\u96C6\u4E2D</span>
+					<span class="countdown-text">${timeText}</span>
+				</div>
+				<div class="member-count">${groupInfo.memberCount} \u4E2A\u9879\u76EE</div>
+			`;
+    } else if (isHistoricalTimeCapsule) {
+      countDiv.innerHTML = `
+				<div class="time-capsule-status">
+					<span class="completed-text">\u5DF2\u5B8C\u6210</span>
+				</div>
+				<div class="member-count">${groupInfo.memberCount} \u4E2A\u9879\u76EE</div>
+			`;
+    } else {
+      countDiv.textContent = `${groupInfo.memberCount} \u4E2A\u9879\u76EE`;
+    }
     if (groupInfo.members.length > 0) {
       const previewDiv = contentDiv.createDiv("group-members-preview");
       const maxPreview = Math.min(4, groupInfo.members.length);
@@ -2488,6 +3293,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   // 渲染链接预览
   renderLinkPreview(contentDiv, preview) {
     contentDiv.addClass("link-bookmark-card");
+    contentDiv.dataset.nodeUrl = preview.url;
     const bookmarkContainer = contentDiv.createDiv("link-bookmark-container");
     const contentArea = bookmarkContainer.createDiv("link-bookmark-content");
     const titleEl = contentArea.createDiv("link-bookmark-title");
@@ -2615,71 +3421,183 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       return errorPreview;
     }
   }
-  // 提取链接元数据（带重试机制）
-  async extractLinkMetadata(url, retryCount = 0) {
-    const maxRetries = 2;
-    const retryDelay = 1e3;
+  // 提取链接元数据（优化版本 - 快速书签解析）
+  async extractLinkMetadata(url) {
     try {
-      new URL(url);
+      const urlObj = new URL(url);
+      const basicPreview = {
+        url,
+        title: this.extractTitleFromUrl(url),
+        siteName: this.extractDomainFromUrl(url),
+        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}`,
+        isBasic: true
+        // 标记为基础信息
+      };
+      this.fetchDetailedMetadata(url, basicPreview);
+      return basicPreview;
+    } catch (urlError) {
+      return {
+        url,
+        title: "\u65E0\u6548\u94FE\u63A5",
+        siteName: "\u672A\u77E5",
+        error: "URL\u683C\u5F0F\u65E0\u6548"
+      };
+    }
+  }
+  // 从URL提取智能标题
+  extractTitleFromUrl(url) {
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+      const path = urlObj.pathname;
+      if (path && path !== "/") {
+        const pathParts = path.split("/").filter((part) => part.length > 0);
+        if (pathParts.length > 0) {
+          const lastPart = pathParts[pathParts.length - 1];
+          const cleanTitle = lastPart.replace(/\.(html|htm|php|asp|jsp)$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+          if (cleanTitle.length > 3) {
+            return cleanTitle;
+          }
+        }
+      }
+      return this.extractDomainFromUrl(url);
+    } catch {
+      return this.extractDomainFromUrl(url);
+    }
+  }
+  // 异步获取详细元数据（不阻塞UI）
+  async fetchDetailedMetadata(url, basicPreview) {
+    try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1e4);
-      try {
-        const response = await fetch(
-          `https://api.microlink.io/?url=${encodeURIComponent(url)}`,
-          {
-            signal: controller.signal,
-            headers: {
-              "Accept": "application/json",
-              "User-Agent": "Obsidian Canvas Grid Plugin"
+      const timeoutId = setTimeout(() => controller.abort(), 3e3);
+      const apiServices = [
+        `https://api.microlink.io/?url=${encodeURIComponent(url)}&timeout=2000`,
+        `https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`
+      ];
+      let detailedData = null;
+      for (const apiUrl of apiServices) {
+        try {
+          const response = await Promise.race([
+            fetch(apiUrl, {
+              signal: controller.signal,
+              headers: {
+                "Accept": "application/json",
+                "User-Agent": "Obsidian Canvasgrid Transit Plugin"
+              }
+            }),
+            new Promise(
+              (_, reject) => setTimeout(() => reject(new Error("Service timeout")), 2e3)
+            )
+          ]);
+          if (response.ok) {
+            const data = await response.json();
+            if (this.isValidMetadata(data)) {
+              detailedData = data;
+              break;
             }
           }
-        );
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        } catch (serviceError) {
+          console.log(`API service failed: ${apiUrl}`, serviceError);
+          continue;
         }
-        const data = await response.json();
-        if (data.status === "success" && data.data) {
-          return {
-            url,
-            title: data.data.title || this.extractDomainFromUrl(url),
-            description: data.data.description || "",
-            image: data.data.image?.url || "",
-            siteName: data.data.publisher || this.extractDomainFromUrl(url),
-            favicon: data.data.logo?.url || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`
-          };
-        } else {
-          throw new Error(`API\u8FD4\u56DE\u9519\u8BEF\u72B6\u6001: ${data.status || "unknown"}`);
-        }
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        throw fetchError;
+      }
+      clearTimeout(timeoutId);
+      if (detailedData) {
+        const enhancedPreview = this.parseMetadataResponse(url, detailedData);
+        this.setCacheItem(url, enhancedPreview);
+        this.updateBookmarkCard(url, enhancedPreview);
       }
     } catch (error) {
-      console.warn(`\u94FE\u63A5\u9884\u89C8\u83B7\u53D6\u5931\u8D25 (\u5C1D\u8BD5 ${retryCount + 1}/${maxRetries + 1}):`, error);
-      if (retryCount < maxRetries) {
-        console.log(`\u7B49\u5F85 ${retryDelay}ms \u540E\u91CD\u8BD5...`);
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        return this.extractLinkMetadata(url, retryCount + 1);
-      }
+      console.log("\u8BE6\u7EC6\u5143\u6570\u636E\u83B7\u53D6\u5931\u8D25\uFF0C\u4F7F\u7528\u57FA\u7840\u4FE1\u606F:", error);
+    }
+  }
+  // 验证元数据响应是否有效
+  isValidMetadata(data) {
+    if (!data)
+      return false;
+    if (data.status === "success" && data.data) {
+      return true;
+    }
+    if (data.title || data.description) {
+      return true;
+    }
+    return false;
+  }
+  // 解析不同API服务的响应格式
+  parseMetadataResponse(url, data) {
+    let title = "";
+    let description = "";
+    let image = "";
+    let siteName = "";
+    let favicon = "";
+    if (data.status === "success" && data.data) {
+      title = data.data.title || "";
+      description = data.data.description || "";
+      image = data.data.image?.url || "";
+      siteName = data.data.publisher || "";
+      favicon = data.data.logo?.url || "";
+    } else if (data.title || data.description) {
+      title = data.title || "";
+      description = data.description || "";
+      image = data.image || "";
+      siteName = data.site_name || "";
+      favicon = data.favicon || "";
+    }
+    if (!favicon) {
       try {
         const urlObj = new URL(url);
-        return {
-          url,
-          title: this.extractDomainFromUrl(url),
-          siteName: this.extractDomainFromUrl(url),
-          favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}`,
-          error: error instanceof Error ? error.message : "\u83B7\u53D6\u9884\u89C8\u5931\u8D25"
-        };
-      } catch (urlError) {
-        return {
-          url,
-          title: "\u65E0\u6548\u94FE\u63A5",
-          siteName: "\u672A\u77E5",
-          error: "URL\u683C\u5F0F\u65E0\u6548"
-        };
+        favicon = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}`;
+      } catch {
+        favicon = "";
       }
     }
+    return {
+      url,
+      title: title || this.extractTitleFromUrl(url),
+      description: description || "",
+      image: image || "",
+      siteName: siteName || this.extractDomainFromUrl(url),
+      favicon
+    };
+  }
+  // 更新书签卡片显示（当获取到详细信息时）
+  updateBookmarkCard(url, enhancedPreview) {
+    const cards = this.gridContainer.querySelectorAll(`[data-node-url="${url}"]`);
+    cards.forEach((card) => {
+      const bookmarkContainer = card.querySelector(".link-bookmark-container");
+      if (bookmarkContainer) {
+        const titleEl = bookmarkContainer.querySelector(".link-bookmark-title");
+        if (titleEl && enhancedPreview.title) {
+          titleEl.textContent = enhancedPreview.title;
+        }
+        let descEl = bookmarkContainer.querySelector(".link-bookmark-description");
+        if (enhancedPreview.description) {
+          if (!descEl) {
+            const contentArea = bookmarkContainer.querySelector(".link-bookmark-content");
+            if (contentArea) {
+              descEl = contentArea.createDiv("link-bookmark-description");
+            }
+          }
+          if (descEl) {
+            descEl.textContent = enhancedPreview.description;
+          }
+        }
+        const imageArea = bookmarkContainer.querySelector(".link-bookmark-image");
+        if (imageArea && enhancedPreview.image) {
+          const img = imageArea.querySelector("img");
+          if (img) {
+            img.src = enhancedPreview.image;
+          }
+        }
+        const faviconEl = bookmarkContainer.querySelector(".link-bookmark-favicon");
+        if (faviconEl && enhancedPreview.favicon) {
+          const img = faviconEl.querySelector("img");
+          if (img) {
+            img.src = enhancedPreview.favicon;
+          }
+        }
+      }
+    });
   }
   // 从URL提取域名
   extractDomainFromUrl(url) {
@@ -2815,6 +3733,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       this.gridContainer.removeEventListener("keydown", this.handleKeyDown);
     }
     document.removeEventListener("click", this.handleDocumentClick);
+    this.removeGlobalMouseListeners();
     this.globalEventListeners.forEach(({ element, event, handler, options }) => {
       try {
         element.removeEventListener(event, handler, options);
@@ -2851,40 +3770,64 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     this.linkPreviewCache.clear();
     this.previewLoadingUrls.clear();
     this.clearRenderCache();
-    this.gridContainer = null;
     this.canvasData = null;
     this.searchInputEl = null;
     this.colorFilterContainer = null;
     this.dropIndicator = null;
     this.cleanupWidthControl();
     this.linkedCanvasFile = null;
-    if (this.linkedTabManager) {
-      this.linkedTabManager = null;
-    }
   }
   // 显示右键菜单
   showContextMenu(card, x, y) {
     this.hideContextMenu();
     const nodeId = card.dataset.nodeId;
+    const nodeType = card.dataset.nodeType;
     if (!nodeId)
       return;
     const menu = document.createElement("div");
     menu.className = "canvas-grid-context-menu";
-    const focusItem = this.createMenuItem("\u805A\u7126\u8282\u70B9", "lucide-target", () => {
-      this.focusNodeInCanvas(nodeId);
-      this.hideContextMenu();
-    });
-    const editItem = this.createMenuItem("\u7F16\u8F91", "lucide-edit", () => {
-      this.editCard(card);
-      this.hideContextMenu();
-    });
-    const deleteItem = this.createMenuItem("\u5220\u9664", "lucide-trash-2", () => {
-      this.deleteCard(card);
-      this.hideContextMenu();
-    });
-    menu.appendChild(focusItem);
-    menu.appendChild(editItem);
-    menu.appendChild(deleteItem);
+    if (nodeType === "group") {
+      const renameItem = this.createMenuItem("\u91CD\u547D\u540D\u5206\u7EC4", "lucide-edit-3", () => {
+        this.renameGroup(nodeId);
+        this.hideContextMenu();
+      });
+      const focusItem = this.createMenuItem("\u805A\u7126\u5206\u7EC4", "lucide-target", () => {
+        this.focusNodeInCanvas(nodeId);
+        this.hideContextMenu();
+      });
+      const deleteItem = this.createMenuItem("\u5220\u9664\u5206\u7EC4", "lucide-trash-2", () => {
+        this.deleteCard(card);
+        this.hideContextMenu();
+      });
+      menu.appendChild(renameItem);
+      menu.appendChild(focusItem);
+      menu.appendChild(deleteItem);
+    } else {
+      const focusItem = this.createMenuItem("\u805A\u7126\u8282\u70B9", "lucide-target", () => {
+        this.focusNodeInCanvas(nodeId);
+        this.hideContextMenu();
+      });
+      const editItem = this.createMenuItem("\u7F16\u8F91", "lucide-edit", () => {
+        this.editCard(card);
+        this.hideContextMenu();
+      });
+      const deleteItem = this.createMenuItem("\u5220\u9664", "lucide-trash-2", () => {
+        this.deleteCard(card);
+        this.hideContextMenu();
+      });
+      menu.appendChild(focusItem);
+      menu.appendChild(editItem);
+      const node = this.canvasData?.nodes.find((n) => n.id === nodeId);
+      if (node) {
+        const backlinkItem = this.createMenuItem("\u56DE\u94FE", "lucide-arrow-left", () => {
+          this.handleBacklinkNavigation(node);
+          this.hideContextMenu();
+        });
+        menu.appendChild(backlinkItem);
+        console.log("Added backlink menu item for node:", nodeId);
+      }
+      menu.appendChild(deleteItem);
+    }
     menu.style.left = `${x}px`;
     menu.style.top = `${y}px`;
     document.body.appendChild(menu);
@@ -2925,6 +3868,120 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     if (existingMenu) {
       existingMenu.remove();
     }
+  }
+  // 处理回链功能（旧版本，保留兼容性）
+  async handleBacklink(nodeId) {
+    try {
+      console.log("Handling backlink for node:", nodeId);
+      new import_obsidian.Notice(`\u56DE\u94FE\u529F\u80FD\u5DF2\u89E6\u53D1\uFF0C\u8282\u70B9ID: ${nodeId}`);
+    } catch (error) {
+      console.error("Failed to handle backlink:", error);
+      new import_obsidian.Notice("\u56DE\u94FE\u529F\u80FD\u6267\u884C\u5931\u8D25");
+    }
+  }
+  // 智能处理回链导航（新版本）
+  async handleBacklinkNavigation(node) {
+    try {
+      console.log("=== Backlink Navigation ===");
+      console.log("Node:", node);
+      if (this.hasBacklink(node)) {
+        console.log("\u2705 Found backlink in node, using navigateToBacklink");
+        await this.navigateToBacklink(node);
+      } else {
+        console.log("\u274C No backlink found, showing alternative options");
+        await this.showBacklinkAlternatives(node);
+      }
+    } catch (error) {
+      console.error("Failed to handle backlink navigation:", error);
+      new import_obsidian.Notice("\u56DE\u94FE\u5BFC\u822A\u5931\u8D25");
+    }
+  }
+  // 显示回链替代选项
+  async showBacklinkAlternatives(node) {
+    const modal = new import_obsidian.Modal(this.app);
+    modal.titleEl.setText("\u56DE\u94FE\u9009\u9879");
+    const content = modal.contentEl;
+    content.empty();
+    content.createEl("p", { text: "\u8BE5\u8282\u70B9\u6CA1\u6709\u68C0\u6D4B\u5230\u56DE\u94FE\u4FE1\u606F\uFF0C\u8BF7\u9009\u62E9\u64CD\u4F5C\uFF1A" });
+    const buttonContainer = content.createDiv("backlink-options-container");
+    buttonContainer.style.cssText = `
+			display: flex;
+			gap: 10px;
+			margin-top: 20px;
+			justify-content: center;
+		`;
+    const searchButton = buttonContainer.createEl("button", { text: "\u67E5\u627E\u6E90\u6587\u4EF6" });
+    searchButton.onclick = () => {
+      modal.close();
+      this.searchForSourceFile(node);
+    };
+    const infoButton = buttonContainer.createEl("button", { text: "\u8282\u70B9\u4FE1\u606F" });
+    infoButton.onclick = () => {
+      modal.close();
+      this.showNodeInfo(node);
+    };
+    const cancelButton = buttonContainer.createEl("button", { text: "\u53D6\u6D88" });
+    cancelButton.onclick = () => {
+      modal.close();
+    };
+    modal.open();
+  }
+  // 搜索可能的源文件
+  async searchForSourceFile(node) {
+    if (node.type !== "text" || !node.text) {
+      new import_obsidian.Notice("\u53EA\u80FD\u4E3A\u6587\u672C\u8282\u70B9\u641C\u7D22\u6E90\u6587\u4EF6");
+      return;
+    }
+    const searchText = node.text.split("\n")[0].substring(0, 50);
+    new import_obsidian.Notice(`\u6B63\u5728\u641C\u7D22\u5305\u542B "${searchText}" \u7684\u6587\u4EF6...`);
+    try {
+      this.app.internalPlugins?.getPluginById("global-search")?.instance?.openGlobalSearch?.(searchText);
+    } catch (error) {
+      console.log("Global search not available, showing manual search notice");
+      new import_obsidian.Notice(`\u8BF7\u624B\u52A8\u641C\u7D22: "${searchText}"`);
+    }
+  }
+  // 显示节点详细信息
+  showNodeInfo(node) {
+    const info = [
+      `\u8282\u70B9ID: ${node.id}`,
+      `\u8282\u70B9\u7C7B\u578B: ${node.type}`,
+      `\u4F4D\u7F6E: (${node.x}, ${node.y})`,
+      `\u5C3A\u5BF8: ${node.width} \xD7 ${node.height}`,
+      node.text ? `\u6587\u672C\u957F\u5EA6: ${node.text.length} \u5B57\u7B26` : "\u65E0\u6587\u672C\u5185\u5BB9"
+    ];
+    new import_obsidian.Notice(info.join("\n"), 5e3);
+    console.log("Node Info:", node);
+    return Promise.resolve();
+  }
+  // 重命名分组
+  async renameGroup(groupId) {
+    if (!this.canvasData)
+      return;
+    const groupNode = this.canvasData.nodes.find((n) => n.id === groupId && n.type === "group");
+    if (!groupNode) {
+      new import_obsidian.Notice("\u672A\u627E\u5230\u5206\u7EC4\u8282\u70B9");
+      return;
+    }
+    const currentName = groupNode.label || "\u672A\u547D\u540D\u5206\u7EC4";
+    const modal = new GroupRenameModal(this.app, currentName, async (newName) => {
+      try {
+        groupNode.label = newName;
+        await this.saveCanvasData();
+        const groupInfo = this.groupAnalysis.get(groupId);
+        if (groupInfo) {
+          groupInfo.group.label = newName;
+        }
+        this.renderGrid();
+        this.notifyCanvasViewRefresh();
+        new import_obsidian.Notice(`\u5206\u7EC4\u5DF2\u91CD\u547D\u540D\u4E3A: ${newName}`);
+        console.log(`Group ${groupId} renamed to: ${newName}`);
+      } catch (error) {
+        console.error("Failed to rename group:", error);
+        new import_obsidian.Notice("\u91CD\u547D\u540D\u5206\u7EC4\u5931\u8D25");
+      }
+    });
+    modal.open();
   }
   // 编辑卡片
   editCard(card) {
@@ -3013,13 +4070,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     if (!node || !node.id) {
       throw new Error("\u8282\u70B9\u6570\u636E\u65E0\u6548");
     }
-    const activeFile = this.app.workspace.getActiveFile();
-    if (!activeFile || activeFile.extension !== "canvas") {
-      throw new Error("\u5F53\u524D\u6CA1\u6709\u6253\u5F00Canvas\u6587\u4EF6");
+    const canvasFile = this.linkedCanvasFile;
+    if (!canvasFile) {
+      throw new Error("\u6CA1\u6709\u5173\u8054\u7684Canvas\u6587\u4EF6");
     }
     try {
       console.log("Saving node to canvas:", node.id);
-      const content = await this.app.vault.read(activeFile);
+      const content = await this.app.vault.read(canvasFile);
       let canvasData;
       try {
         canvasData = JSON.parse(content);
@@ -3039,7 +4096,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         throw new Error("\u66F4\u65B0\u540E\u7684\u8282\u70B9\u6570\u636E\u65E0\u6548");
       }
       const jsonContent = JSON.stringify(canvasData, null, 2);
-      await this.app.vault.modify(activeFile, jsonContent);
+      await this.app.vault.modify(canvasFile, jsonContent);
       console.log("Node saved successfully:", node.id);
     } catch (error) {
       console.error("\u4FDD\u5B58\u8282\u70B9\u5931\u8D25:", error);
@@ -3487,6 +4544,666 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     console.log("Setting up drag and drop handlers...");
     this.setupEditorDragSource();
     this.setupGridDropTarget();
+    this.setupCanvasDropTarget();
+  }
+  // ==================== 网格卡片拖拽到Canvas功能 (HTML5 Drag & Drop API) ====================
+  /*
+   * 旧的鼠标事件处理代码已被HTML5 Drag & Drop API替代
+   * 保留注释以防需要回退
+   */
+  // 处理卡片拖拽开始事件
+  handleCardDragStart(e) {
+    const cardElement = e.target.closest(".canvas-grid-card");
+    if (!cardElement || !cardElement.dataset.nodeId) {
+      e.preventDefault();
+      return;
+    }
+    if (e.target.closest(".canvas-card-toolbar")) {
+      e.preventDefault();
+      return;
+    }
+    const nodeId = cardElement.dataset.nodeId;
+    const node = this.canvasData?.nodes.find((n) => n.id === nodeId);
+    if (!node) {
+      e.preventDefault();
+      return;
+    }
+    console.log("\u{1F680} Starting card drag with HTML5 API:", node);
+    if (e.dataTransfer) {
+      e.dataTransfer.setData("text/plain", node.text || "");
+      e.dataTransfer.setData("application/json", JSON.stringify({
+        type: "canvas-node",
+        nodeData: node,
+        source: "canvas-grid-view",
+        isCtrlDrag: e.ctrlKey
+        // 记录是否按住Ctrl键
+      }));
+      e.dataTransfer.effectAllowed = e.ctrlKey ? "copy" : "move";
+      this.setCardDragPreview(e, cardElement);
+    }
+    cardElement.classList.add("dragging-from-grid");
+    cardElement.style.cursor = "grabbing";
+    this.isDragFromGrid = true;
+    this.currentDragCard = cardElement;
+    console.log("\u2705 Card drag started successfully");
+  }
+  // 处理卡片拖拽结束事件
+  handleCardDragEnd(e) {
+    console.log("\u{1F3C1} Card drag ended");
+    if (this.currentDragCard) {
+      this.currentDragCard.classList.remove("dragging-from-grid");
+      this.currentDragCard.style.cursor = "grab";
+    }
+    this.isDragFromGrid = false;
+    this.currentDragCard = null;
+    console.log("\u2705 Card drag cleanup completed");
+  }
+  // 设置卡片拖拽预览
+  setCardDragPreview(e, cardElement) {
+    try {
+      const preview = cardElement.cloneNode(true);
+      preview.style.cssText = `
+				position: absolute;
+				top: -1000px;
+				left: -1000px;
+				width: ${cardElement.offsetWidth}px;
+				height: ${cardElement.offsetHeight}px;
+				opacity: 0.8;
+				transform: rotate(3deg);
+				box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+				pointer-events: none;
+				z-index: 10000;
+			`;
+      document.body.appendChild(preview);
+      if (e.dataTransfer) {
+        e.dataTransfer.setDragImage(preview, cardElement.offsetWidth / 2, cardElement.offsetHeight / 2);
+      }
+      setTimeout(() => {
+        if (document.body.contains(preview)) {
+          document.body.removeChild(preview);
+        }
+      }, 0);
+    } catch (error) {
+      console.error("Failed to set card drag preview:", error);
+    }
+  }
+  // 设置Canvas拖拽目标
+  setupCanvasDropTarget() {
+    console.log("Setting up Canvas drop target for grid cards...");
+    this.registerDomEvent(document, "dragover", (e) => {
+      if (this.isDragFromGrid && e.dataTransfer?.types.includes("application/json")) {
+        const canvasElement = this.findCanvasElementUnderCursor(e);
+        if (canvasElement) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
+        }
+      }
+    });
+    this.registerDomEvent(document, "drop", (e) => {
+      if (this.isDragFromGrid && e.dataTransfer?.types.includes("application/json")) {
+        const canvasView = this.findCanvasViewUnderCursor(e);
+        if (canvasView) {
+          e.preventDefault();
+          this.handleCanvasDropFromGrid(e, canvasView);
+        }
+      }
+    });
+  }
+  // 查找鼠标下的Canvas元素
+  findCanvasElementUnderCursor(e) {
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+    if (!element)
+      return null;
+    const canvasContainer = element.closest('.workspace-leaf-content[data-type="canvas"]');
+    return canvasContainer;
+  }
+  // 处理Canvas接收网格卡片的拖拽
+  async handleCanvasDropFromGrid(e, canvasView) {
+    try {
+      console.log("\u{1F3AF} Handling Canvas drop from grid...");
+      const dragDataStr = e.dataTransfer?.getData("application/json");
+      if (!dragDataStr) {
+        console.error("No drag data found");
+        return;
+      }
+      const dragData = JSON.parse(dragDataStr);
+      if (dragData.type !== "canvas-node" || dragData.source !== "canvas-grid-view") {
+        console.log("Not a grid card drag, ignoring");
+        return;
+      }
+      const node = dragData.nodeData;
+      const isCtrlDrag = dragData.isCtrlDrag || e.ctrlKey;
+      console.log("Processing grid card drop:", node, "Ctrl pressed:", isCtrlDrag);
+      const canvasCoords = this.getCanvasCoordinatesFromDrop(e, canvasView);
+      console.log("Canvas coordinates:", canvasCoords);
+      const newNode = this.createCanvasNodeFromGridCard(node, canvasCoords);
+      await this.addNodeToCanvas(newNode, canvasView);
+      if (isCtrlDrag) {
+        new import_obsidian.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
+        console.log("\u2705 Card copied to Canvas (Ctrl+drag)");
+      } else {
+        await this.removeNodeFromGrid(node.id);
+        new import_obsidian.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
+        console.log("\u2705 Card moved to Canvas (normal drag)");
+      }
+      console.log("\u2705 Canvas drop completed successfully");
+    } catch (error) {
+      console.error("Failed to handle Canvas drop:", error);
+      new import_obsidian.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
+    }
+  }
+  // 从拖拽事件获取Canvas坐标 - 使用Obsidian内置方法
+  getCanvasCoordinatesFromDrop(e, canvasView) {
+    console.log("\u{1F3AF} Getting Canvas coordinates from drop event...");
+    try {
+      if (canvasView.canvas && typeof canvasView.canvas.posFromEvt === "function") {
+        const pos = canvasView.canvas.posFromEvt(e);
+        console.log("\u2705 Using Canvas.posFromEvt:", pos);
+        return { x: pos.x, y: pos.y };
+      }
+      console.log("\u26A0\uFE0F Canvas.posFromEvt not available, using manual calculation");
+      return this.getCanvasCoordinatesManual(e, canvasView);
+    } catch (error) {
+      console.error("Error getting Canvas coordinates:", error);
+      return { x: e.clientX, y: e.clientY };
+    }
+  }
+  // 手动计算Canvas坐标（备用方法）
+  getCanvasCoordinatesManual(e, canvasView) {
+    const canvasContainer = canvasView.containerEl.querySelector(".canvas-wrapper") || canvasView.containerEl.querySelector(".canvas-container") || canvasView.containerEl;
+    if (!canvasContainer) {
+      console.warn("Canvas container not found, using event coordinates");
+      return { x: e.clientX, y: e.clientY };
+    }
+    const rect = canvasContainer.getBoundingClientRect();
+    const relativeX = e.clientX - rect.left;
+    const relativeY = e.clientY - rect.top;
+    const canvas = canvasView.canvas;
+    if (canvas && canvas.tx !== void 0 && canvas.ty !== void 0 && canvas.tZoom !== void 0) {
+      return {
+        x: (relativeX - canvas.tx) / canvas.tZoom,
+        y: (relativeY - canvas.ty) / canvas.tZoom
+      };
+    }
+    return { x: relativeX, y: relativeY };
+  }
+  // 处理卡片鼠标按下事件 (已废弃 - 使用HTML5 Drag & Drop API)
+  handleCardMouseDown_DEPRECATED(e) {
+    const cardElement = e.target.closest(".canvas-grid-card");
+    if (!cardElement || !cardElement.dataset.nodeId)
+      return;
+    if (e.target.closest(".canvas-card-toolbar"))
+      return;
+    this.longPressStartTime = Date.now();
+    this.dragStartPosition = { x: e.clientX, y: e.clientY };
+    this.currentDragCard = cardElement;
+    this.addGlobalMouseListeners();
+    this.longPressTimer = setTimeout(() => {
+      this.startCardDrag(cardElement, e);
+    }, this.longPressThreshold);
+    e.preventDefault();
+  }
+  // 处理卡片鼠标移动事件 (已废弃 - 使用HTML5 Drag & Drop API)
+  handleCardMouseMove_DEPRECATED(e) {
+    if (!this.isDragFromGrid && this.longPressTimer) {
+      const deltaX = Math.abs(e.clientX - this.dragStartPosition.x);
+      const deltaY = Math.abs(e.clientY - this.dragStartPosition.y);
+      const moveDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      if (moveDistance > 10) {
+        this.clearLongPressTimer();
+      }
+    }
+    if (this.isDragFromGrid && this.dragPreviewElement) {
+      this.dragPreviewElement.style.top = `${e.clientY - 20}px`;
+      this.dragPreviewElement.style.left = `${e.clientX - 20}px`;
+    }
+  }
+  // 处理卡片鼠标抬起事件 (已废弃 - 使用HTML5 Drag & Drop API)
+  handleCardMouseUp_DEPRECATED(e) {
+    this.clearLongPressTimer();
+    if (this.isDragFromGrid) {
+      this.endCardDrag(e);
+    } else {
+      this.resetCardDragState();
+    }
+  }
+  // 处理鼠标离开网格容器事件
+  handleCardMouseLeave(e) {
+    this.clearLongPressTimer();
+    if (!this.isDragFromGrid) {
+      this.resetCardDragState();
+    }
+  }
+  // 清理长按定时器
+  clearLongPressTimer() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+  // 重置卡片拖拽状态
+  resetCardDragState() {
+    console.log("Resetting card drag state...");
+    this.forceCleanupDragPreview();
+    this.hideDragHint();
+    if (this.currentDragCard) {
+      this.currentDragCard.classList.remove("dragging-from-grid");
+    }
+    this.currentDragCard = null;
+    this.isDragFromGrid = false;
+    this.longPressStartTime = 0;
+    this.dragStartPosition = { x: 0, y: 0 };
+    this.removeGlobalMouseListeners();
+    console.log("Card drag state reset complete");
+  }
+  // 添加全局鼠标事件监听器
+  addGlobalMouseListeners() {
+    this.removeGlobalMouseListeners();
+    console.log("Adding global mouse listeners...");
+    this.globalMouseMoveHandler = (e) => {
+      this.handleCardMouseMove_DEPRECATED(e);
+    };
+    this.globalMouseUpHandler = (e) => {
+      this.handleCardMouseUp_DEPRECATED(e);
+    };
+    document.addEventListener("mousemove", this.globalMouseMoveHandler, { passive: true });
+    document.addEventListener("mouseup", this.globalMouseUpHandler);
+    document.addEventListener("keydown", this.handleDragEscape);
+    setTimeout(() => {
+      if (this.isDragFromGrid) {
+        window.addEventListener("blur", this.handleWindowBlur);
+      }
+    }, 200);
+    console.log("Global mouse listeners added");
+  }
+  // 取消拖拽操作
+  cancelDrag() {
+    console.log("Canceling drag operation...");
+    this.resetCardDragState();
+  }
+  // 移除全局鼠标事件监听器
+  removeGlobalMouseListeners() {
+    console.log("Removing global mouse listeners...");
+    if (this.globalMouseMoveHandler) {
+      document.removeEventListener("mousemove", this.globalMouseMoveHandler);
+      this.globalMouseMoveHandler = null;
+    }
+    if (this.globalMouseUpHandler) {
+      document.removeEventListener("mouseup", this.globalMouseUpHandler);
+      this.globalMouseUpHandler = null;
+    }
+    window.removeEventListener("blur", this.handleWindowBlur);
+    document.removeEventListener("keydown", this.handleDragEscape);
+    console.log("Global mouse listeners removed");
+  }
+  // 开始卡片拖拽
+  startCardDrag(cardElement, e) {
+    const nodeId = cardElement.dataset.nodeId;
+    if (!nodeId || !this.canvasData)
+      return;
+    const node = this.canvasData.nodes.find((n) => n.id === nodeId);
+    if (!node)
+      return;
+    console.log("Starting card drag from grid:", node);
+    this.isDragFromGrid = true;
+    this.createDragPreview(cardElement, e);
+    cardElement.classList.add("dragging-from-grid");
+    this.showDragHint(e.ctrlKey);
+  }
+  // 结束卡片拖拽
+  endCardDrag(e) {
+    console.log("\u{1F3C1} Ending card drag at:", e.clientX, e.clientY);
+    if (!this.currentDragCard || !this.isDragFromGrid) {
+      console.log("\u274C Invalid drag state - currentDragCard:", !!this.currentDragCard, "isDragFromGrid:", this.isDragFromGrid);
+      return;
+    }
+    const nodeId = this.currentDragCard.dataset.nodeId;
+    if (!nodeId || !this.canvasData) {
+      console.log("\u274C Missing nodeId or canvasData - nodeId:", nodeId, "canvasData:", !!this.canvasData);
+      return;
+    }
+    const node = this.canvasData.nodes.find((n) => n.id === nodeId);
+    if (!node) {
+      console.log("\u274C Node not found for nodeId:", nodeId);
+      return;
+    }
+    console.log("\u2705 Found node for drag:", node);
+    const canvasView = this.findCanvasViewUnderCursor(e);
+    if (canvasView) {
+      console.log("\u{1F3AF} Canvas view found, handling drop...");
+      this.handleDropToCanvas(node, e, canvasView);
+    } else {
+      console.log("\u274C No Canvas view found under cursor");
+      new import_obsidian.Notice("\u8BF7\u62D6\u62FD\u5230Canvas\u533A\u57DF");
+    }
+    console.log("\u{1F9F9} Cleaning up drag state...");
+    this.resetCardDragState();
+  }
+  // 创建拖拽预览
+  createDragPreview(cardElement, e) {
+    this.forceCleanupDragPreview();
+    console.log("Creating drag preview...");
+    this.dragPreviewElement = cardElement.cloneNode(true);
+    this.dragPreviewElement.classList.add("drag-preview");
+    this.dragPreviewElement.style.cssText = `
+			position: fixed !important;
+			top: ${e.clientY - 20}px !important;
+			left: ${e.clientX - 20}px !important;
+			width: ${cardElement.offsetWidth}px !important;
+			height: ${cardElement.offsetHeight}px !important;
+			opacity: 0.8 !important;
+			pointer-events: none !important;
+			z-index: 10000 !important;
+			transform: rotate(5deg) !important;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
+		`;
+    document.body.appendChild(this.dragPreviewElement);
+    console.log("Drag preview created and attached");
+  }
+  // 强制清理拖拽预览
+  forceCleanupDragPreview() {
+    console.log("Force cleaning up drag preview...");
+    if (this.dragPreviewElement) {
+      try {
+        if (this.dragPreviewElement.parentNode) {
+          this.dragPreviewElement.parentNode.removeChild(this.dragPreviewElement);
+        }
+      } catch (error) {
+        console.warn("Error removing drag preview element:", error);
+      }
+      this.dragPreviewElement = null;
+    }
+    this.cleanupDragPreview = () => {
+    };
+    console.log("Drag preview cleanup complete");
+  }
+  // 显示拖拽提示
+  showDragHint(isCtrlPressed) {
+    const hint = document.createElement("div");
+    hint.className = "drag-hint";
+    hint.textContent = isCtrlPressed ? "\u79FB\u52A8\u5230Canvas\uFF08\u5220\u9664\u539F\u5361\u7247\uFF09" : "\u590D\u5236\u5230Canvas\uFF08\u4FDD\u6301\u539F\u5361\u7247\uFF09";
+    hint.style.cssText = `
+			position: fixed;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: var(--background-primary);
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 6px;
+			padding: 8px 16px;
+			font-size: 12px;
+			color: var(--text-normal);
+			z-index: 10001;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+		`;
+    document.body.appendChild(hint);
+    this.dragHintElement = hint;
+  }
+  // 隐藏拖拽提示
+  hideDragHint() {
+    if (this.dragHintElement) {
+      this.dragHintElement.remove();
+      this.dragHintElement = null;
+    }
+  }
+  // 查找鼠标位置下的Canvas视图
+  findCanvasViewUnderCursor(e) {
+    console.log("\u{1F50D} Finding Canvas view under cursor at:", e.clientX, e.clientY);
+    const originalDisplay = this.dragPreviewElement?.style.display;
+    if (this.dragPreviewElement) {
+      this.dragPreviewElement.style.display = "none";
+    }
+    const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+    console.log("\u{1F3AF} Element under cursor:", elementUnderCursor);
+    if (this.dragPreviewElement && originalDisplay !== void 0) {
+      this.dragPreviewElement.style.display = originalDisplay;
+    }
+    if (!elementUnderCursor) {
+      console.log("\u274C No element found under cursor");
+      return null;
+    }
+    const canvasSelectors = [
+      '.workspace-leaf-content[data-type="canvas"]',
+      '[data-type="canvas"]',
+      ".canvas-wrapper",
+      ".canvas-container",
+      '.view-content[data-type="canvas"]'
+    ];
+    let canvasContainer = null;
+    for (const selector of canvasSelectors) {
+      canvasContainer = elementUnderCursor.closest(selector);
+      if (canvasContainer) {
+        console.log("\u2705 Found Canvas container with selector:", selector, canvasContainer);
+        break;
+      }
+    }
+    if (!canvasContainer) {
+      console.log("\u274C No Canvas container found. Element classes:", elementUnderCursor.className);
+      console.log("\u274C Element parents:", this.getElementPath(elementUnderCursor));
+      return null;
+    }
+    const canvasLeaves = this.app.workspace.getLeavesOfType("canvas");
+    console.log("\u{1F4CB} Available Canvas leaves:", canvasLeaves.length);
+    const leaf = canvasLeaves.find((leaf2) => {
+      const containerEl = leaf2.view?.containerEl;
+      if (containerEl && containerEl.contains(canvasContainer)) {
+        console.log("\u2705 Found matching Canvas leaf:", leaf2);
+        return true;
+      }
+      return false;
+    });
+    if (!leaf) {
+      console.log("\u274C No matching Canvas leaf found");
+      return null;
+    }
+    console.log("\u{1F389} Successfully found Canvas view:", leaf.view);
+    return leaf.view;
+  }
+  // 获取元素路径用于调试
+  getElementPath(element) {
+    const path = [];
+    let current = element;
+    for (let i = 0; i < 5 && current; i++) {
+      const tag = current.tagName.toLowerCase();
+      const className = current.className ? `.${current.className.split(" ").join(".")}` : "";
+      const id = current.id ? `#${current.id}` : "";
+      path.push(`${tag}${id}${className}`);
+      current = current.parentElement;
+    }
+    return path.join(" > ");
+  }
+  // 处理拖拽到Canvas的操作
+  async handleDropToCanvas(node, e, canvasView) {
+    try {
+      console.log("Dropping card to Canvas:", node);
+      const rawCoords = this.getCanvasCoordinates(e, canvasView);
+      const canvasCoords = this.calibrateCanvasCoordinates(rawCoords, canvasView);
+      this.showCoordinateDebugInfo(e, canvasView, canvasCoords);
+      const newNode = this.createCanvasNodeFromGridCard(node, canvasCoords);
+      await this.addNodeToCanvas(newNode, canvasView);
+      if (e.ctrlKey) {
+        await this.removeNodeFromGrid(node.id);
+        new import_obsidian.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
+      } else {
+        new import_obsidian.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
+      }
+    } catch (error) {
+      console.error("Failed to drop card to Canvas:", error);
+      new import_obsidian.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
+    }
+  }
+  // 获取Canvas坐标 - 改进版本，支持多种坐标转换方法
+  getCanvasCoordinates(e, canvasView) {
+    console.log("\u{1F3AF} Converting mouse coordinates to Canvas coordinates...");
+    console.log("Mouse position:", { x: e.clientX, y: e.clientY });
+    const containerSelectors = [
+      ".canvas-wrapper",
+      ".canvas-container",
+      ".canvas-viewport",
+      ".view-content"
+    ];
+    let canvasContainer = null;
+    for (const selector of containerSelectors) {
+      canvasContainer = canvasView.containerEl.querySelector(selector);
+      if (canvasContainer) {
+        console.log("\u2705 Found Canvas container with selector:", selector);
+        break;
+      }
+    }
+    if (!canvasContainer) {
+      console.log("\u274C No Canvas container found, using containerEl directly");
+      canvasContainer = canvasView.containerEl;
+    }
+    const rect = canvasContainer.getBoundingClientRect();
+    console.log("Canvas container rect:", {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height
+    });
+    const relativeX = e.clientX - rect.left;
+    const relativeY = e.clientY - rect.top;
+    console.log("Relative coordinates:", { x: relativeX, y: relativeY });
+    const canvas = canvasView.canvas;
+    console.log("Canvas transform info:", {
+      tx: canvas?.tx,
+      ty: canvas?.ty,
+      tZoom: canvas?.tZoom
+    });
+    if (canvas && canvas.tx !== void 0 && canvas.ty !== void 0 && canvas.tZoom !== void 0) {
+      const canvasX = (relativeX - canvas.tx) / canvas.tZoom;
+      const canvasY = (relativeY - canvas.ty) / canvas.tZoom;
+      console.log("\u2705 Canvas coordinates calculated:", { x: canvasX, y: canvasY });
+      const adjustedX = canvasX - 10;
+      const adjustedY = canvasY - 10;
+      console.log("\u{1F527} Adjusted coordinates:", { x: adjustedX, y: adjustedY });
+      return { x: adjustedX, y: adjustedY };
+    }
+    console.log("\u26A0\uFE0F No transform info, trying alternative method...");
+    const canvasElement = canvasContainer.querySelector("canvas");
+    if (canvasElement) {
+      const canvasRect = canvasElement.getBoundingClientRect();
+      const canvasRelativeX = e.clientX - canvasRect.left;
+      const canvasRelativeY = e.clientY - canvasRect.top;
+      console.log("Canvas element coordinates:", { x: canvasRelativeX, y: canvasRelativeY });
+      return { x: canvasRelativeX, y: canvasRelativeY };
+    }
+    console.log("\u{1F4CD} Using relative coordinates as final fallback:", { x: relativeX, y: relativeY });
+    return { x: relativeX, y: relativeY };
+  }
+  // 坐标校准方法 - 根据Canvas状态进行精确校准
+  calibrateCanvasCoordinates(coords, canvasView) {
+    const canvas = canvasView.canvas;
+    let offsetX = 0;
+    let offsetY = 0;
+    if (canvas?.tZoom) {
+      if (canvas.tZoom < 0.5) {
+        offsetX = -20;
+        offsetY = -20;
+      } else if (canvas.tZoom > 1.5) {
+        offsetX = -5;
+        offsetY = -5;
+      } else {
+        offsetX = -10;
+        offsetY = -10;
+      }
+    }
+    const toolbarElement = canvasView.containerEl.querySelector(".canvas-controls");
+    const toolbarHeight = toolbarElement ? toolbarElement.offsetHeight : 0;
+    const sidebarWidth = 0;
+    const calibratedX = coords.x + offsetX - sidebarWidth;
+    const calibratedY = coords.y + offsetY - toolbarHeight;
+    console.log("\u{1F3AF} Coordinate calibration:", {
+      original: coords,
+      offset: { x: offsetX, y: offsetY },
+      toolbar: toolbarHeight,
+      calibrated: { x: calibratedX, y: calibratedY }
+    });
+    return { x: calibratedX, y: calibratedY };
+  }
+  // 实时坐标测试 - 在Canvas上显示坐标信息（调试用）
+  showCoordinateDebugInfo(e, canvasView, coords) {
+    let debugElement = document.getElementById("canvas-coord-debug");
+    if (!debugElement) {
+      debugElement = document.createElement("div");
+      debugElement.id = "canvas-coord-debug";
+      debugElement.style.cssText = `
+				position: fixed;
+				top: 10px;
+				right: 10px;
+				background: rgba(0, 0, 0, 0.8);
+				color: white;
+				padding: 10px;
+				border-radius: 5px;
+				font-family: monospace;
+				font-size: 12px;
+				z-index: 10001;
+				pointer-events: none;
+			`;
+      document.body.appendChild(debugElement);
+    }
+    const canvas = canvasView.canvas;
+    debugElement.innerHTML = `
+			<div><strong>\u5750\u6807\u8C03\u8BD5\u4FE1\u606F</strong></div>
+			<div>\u9F20\u6807\u4F4D\u7F6E: ${e.clientX}, ${e.clientY}</div>
+			<div>Canvas\u5750\u6807: ${coords.x.toFixed(1)}, ${coords.y.toFixed(1)}</div>
+			<div>\u7F29\u653E: ${canvas?.tZoom?.toFixed(2) || "N/A"}</div>
+			<div>\u5E73\u79FB: ${canvas?.tx?.toFixed(1) || "N/A"}, ${canvas?.ty?.toFixed(1) || "N/A"}</div>
+		`;
+    setTimeout(() => {
+      if (debugElement && debugElement.parentNode) {
+        debugElement.parentNode.removeChild(debugElement);
+      }
+    }, 3e3);
+  }
+  // 从网格卡片创建Canvas节点
+  createCanvasNodeFromGridCard(gridNode, coords) {
+    const timestamp = Date.now();
+    return {
+      ...gridNode,
+      id: `node-${timestamp}-from-grid`,
+      x: coords.x,
+      y: coords.y,
+      // 保持原有的宽高，或使用默认值
+      width: gridNode.width || 250,
+      height: gridNode.height || 100
+    };
+  }
+  // 添加节点到Canvas
+  async addNodeToCanvas(node, canvasView) {
+    if (!canvasView.canvas || !canvasView.file) {
+      throw new Error("Canvas view not available");
+    }
+    const content = await this.app.vault.read(canvasView.file);
+    const canvasData = JSON.parse(content);
+    canvasData.nodes.push(node);
+    await this.app.vault.modify(canvasView.file, JSON.stringify(canvasData, null, 2));
+    if (canvasView.canvas.requestSave) {
+      canvasView.canvas.requestSave();
+    }
+  }
+  // 从网格中移除节点
+  async removeNodeFromGrid(nodeId) {
+    if (!this.canvasData || !this.linkedCanvasFile)
+      return;
+    console.log(`\u{1F5D1}\uFE0F Removing node from grid: ${nodeId}`);
+    this.canvasData.nodes = this.canvasData.nodes.filter((node) => node.id !== nodeId);
+    await this.saveCanvasData();
+    if (this.currentGroupView) {
+      this.analyzeGroups();
+      const groupInfo = this.groupAnalysis.get(this.currentGroupView);
+      if (!groupInfo || groupInfo.members.length === 0) {
+        console.log("\u{1F4E4} Group is empty, returning to main view");
+        this.exitGroupView();
+        new import_obsidian.Notice("\u5206\u7EC4\u5DF2\u7A7A\uFF0C\u5DF2\u8FD4\u56DE\u4E3B\u89C6\u56FE");
+        return;
+      } else {
+        this.filteredNodes = groupInfo.members;
+        console.log(`\u{1F4CA} Group view updated, ${groupInfo.members.length} members remaining`);
+      }
+    }
+    this.renderGrid();
+    console.log("\u2705 Node removed and view refreshed");
   }
   // 设置编辑器拖拽源
   setupEditorDragSource() {
@@ -3505,7 +5222,15 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 检查是否在编辑器中
   isInEditor(element) {
-    return element.closest(".cm-editor") !== null || element.closest(".markdown-source-view") !== null || element.closest(".markdown-preview-view") !== null;
+    if (!element || typeof element.closest !== "function") {
+      return false;
+    }
+    try {
+      return element.closest(".cm-editor") !== null || element.closest(".markdown-source-view") !== null || element.closest(".markdown-preview-view") !== null;
+    } catch (error) {
+      console.error("Error checking if element is in editor:", error);
+      return false;
+    }
   }
   // 获取选中文本（使用Obsidian API）
   getSelectedText() {
@@ -3521,11 +5246,44 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       return null;
     }
   }
+  // 获取源文件信息（用于创建回链）
+  getSourceFileInfo() {
+    try {
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+      if (!activeView) {
+        return { file: null, path: "", position: null, context: "" };
+      }
+      const file = activeView.file;
+      const editor = activeView.editor;
+      const selections = editor.listSelections();
+      const cursor = editor.getCursor();
+      const currentLine = editor.getLine(cursor.line);
+      let position = {
+        line: cursor.line,
+        ch: cursor.ch,
+        selection: selections.length > 0 ? selections[0] : null
+      };
+      if (selections.length > 0 && selections[0]) {
+        position.line = selections[0].anchor.line;
+        position.ch = selections[0].anchor.ch;
+      }
+      return {
+        file,
+        path: file ? file.path : "",
+        position,
+        context: currentLine
+      };
+    } catch (error) {
+      console.error("Failed to get source file info:", error);
+      return { file: null, path: "", position: null, context: "" };
+    }
+  }
   // 处理编辑器拖拽开始
   handleEditorDragStart(e, selectedText) {
     if (!e.dataTransfer)
       return;
     console.log("Drag started from editor:", selectedText);
+    const sourceInfo = this.getSourceFileInfo();
     e.dataTransfer.setData("text/plain", selectedText);
     e.dataTransfer.setData("application/obsidian-text", selectedText);
     e.dataTransfer.effectAllowed = "copy";
@@ -3533,8 +5291,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     this.dragData = {
       text: selectedText,
       source: "editor",
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      sourceFile: sourceInfo.file,
+      sourcePath: sourceInfo.path,
+      sourcePosition: sourceInfo.position,
+      sourceContext: sourceInfo.context
     };
+    console.log("Drag data with backlink info:", this.dragData);
     this.setDragPreview(e, selectedText);
   }
   // 设置拖拽预览
@@ -3613,13 +5376,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
     const rect = this.gridContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const cols = Math.floor(this.gridContainer.clientWidth / (this.settings.cardWidth + this.settings.cardSpacing));
-    const col = Math.floor(x / (this.settings.cardWidth + this.settings.cardSpacing));
-    const row = Math.floor(y / (this.settings.cardHeight + this.settings.cardSpacing));
-    this.dropIndicator.style.left = `${col * (this.settings.cardWidth + this.settings.cardSpacing)}px`;
-    this.dropIndicator.style.top = `${row * (this.settings.cardHeight + this.settings.cardSpacing)}px`;
-    this.dropIndicator.style.width = `${this.settings.cardWidth}px`;
-    this.dropIndicator.style.height = `${this.settings.cardHeight}px`;
+    const cols = Math.floor(this.gridContainer.clientWidth / (CARD_CONSTANTS.width + CARD_CONSTANTS.spacing));
+    const col = Math.floor(x / (CARD_CONSTANTS.width + CARD_CONSTANTS.spacing));
+    const row = Math.floor(y / (CARD_CONSTANTS.height + CARD_CONSTANTS.spacing));
+    this.dropIndicator.style.left = `${col * (CARD_CONSTANTS.width + CARD_CONSTANTS.spacing)}px`;
+    this.dropIndicator.style.top = `${row * (CARD_CONSTANTS.height + CARD_CONSTANTS.spacing)}px`;
+    this.dropIndicator.style.width = `${CARD_CONSTANTS.width}px`;
+    this.dropIndicator.style.height = `${CARD_CONSTANTS.height}px`;
     this.dropIndicator.style.display = "block";
   }
   // 隐藏拖拽指示器
@@ -3657,9 +5420,6 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       const newNode = await this.createNodeFromText(droppedText, e);
       if (newNode) {
         await this.saveCanvasDataToLinkedFile();
-        if (this.canvasData) {
-          this.canvasData.nodes.push(newNode);
-        }
         this.renderGrid();
         this.notifyCanvasViewRefresh();
         this.scrollToNewCard(newNode.id);
@@ -3668,34 +5428,33 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       this.safeSetTimeout(() => {
         this.enableFileWatcher();
       }, 1e3);
+      this.resetDragState();
     } catch (error) {
       console.error("\u62D6\u62FD\u521B\u5EFA\u5361\u7247\u5931\u8D25:", error);
       new import_obsidian.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
       this.enableFileWatcher();
-    } finally {
       this.resetDragState();
     }
   }
   // 从文本创建Canvas节点
   async createNodeFromText(text, dropEvent) {
     try {
-      const contentType = this.analyzeTextContent(text);
-      const position = this.calculateDropPosition(dropEvent);
-      const nodeId = this.generateNodeId();
-      const newNode = {
-        id: nodeId,
-        type: contentType.type,
-        x: position.x,
-        y: position.y,
-        width: contentType.width,
-        height: contentType.height,
-        ...contentType.content
-      };
-      console.log("Creating new node:", newNode);
-      if (!this.canvasData) {
-        this.canvasData = { nodes: [], edges: [] };
+      const contentType = await this.analyzeTextContent(text);
+      const dropTarget = this.analyzeDropTarget(dropEvent);
+      let newNode;
+      if (dropTarget.type === "existing-group") {
+        newNode = await this.addToExistingGroup(dropTarget.groupId, contentType, dropTarget.position);
+        console.log("Added to existing group:", dropTarget.groupId);
+      } else {
+        const { groupNode, contentNode } = this.createGroupedNodes(text, contentType, dropTarget.position);
+        if (!this.canvasData) {
+          this.canvasData = { nodes: [], edges: [] };
+        }
+        this.canvasData.nodes.push(groupNode);
+        this.canvasData.nodes.push(contentNode);
+        newNode = contentNode;
+        console.log("Created new group with content");
       }
-      this.canvasData.nodes.push(newNode);
       await this.saveCanvasData();
       return newNode;
     } catch (error) {
@@ -3703,8 +5462,8 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       return null;
     }
   }
-  // 分析文本内容类型
-  analyzeTextContent(text) {
+  // 分析文本内容类型（异步版本）
+  async analyzeTextContent(text) {
     const trimmedText = text.trim();
     if (this.isURL(trimmedText)) {
       return {
@@ -3722,12 +5481,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         height: 200
       };
     }
-    const lines = trimmedText.split("\n").length;
-    const estimatedWidth = Math.min(400, Math.max(200, trimmedText.length * 8));
+    const textWithBacklink = await this.addBacklinkToText(trimmedText);
+    const lines = textWithBacklink.split("\n").length;
+    const estimatedWidth = Math.min(400, Math.max(200, textWithBacklink.length * 8));
     const estimatedHeight = Math.min(300, Math.max(100, lines * 25 + 40));
     return {
       type: "text",
-      content: { text: trimmedText },
+      content: { text: textWithBacklink },
       width: estimatedWidth,
       height: estimatedHeight
     };
@@ -3745,29 +5505,533 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   isFileLink(text) {
     return /^\[\[.*\]\]$/.test(text) || text.includes(".md") || text.includes(".pdf");
   }
-  // 计算拖拽放置位置
-  calculateDropPosition(dropEvent) {
+  // 分析拖拽目标
+  analyzeDropTarget(dropEvent) {
+    if (this.currentGroupView) {
+      console.log("Drop in group view:", this.currentGroupView);
+      return {
+        type: "existing-group",
+        groupId: this.currentGroupView,
+        position: this.calculatePositionInGroup(this.currentGroupView, dropEvent)
+      };
+    }
+    const targetGroupId = this.findGroupUnderCursor(dropEvent);
+    if (targetGroupId) {
+      console.log("Drop on group card:", targetGroupId);
+      return {
+        type: "existing-group",
+        groupId: targetGroupId,
+        position: this.calculatePositionInGroup(targetGroupId, dropEvent)
+      };
+    }
+    console.log("Drop in empty area, creating new group");
+    return {
+      type: "new-group",
+      position: this.calculateDropPosition(dropEvent)
+    };
+  }
+  // 查找鼠标下的分组
+  findGroupUnderCursor(dropEvent) {
     const rect = this.gridContainer.getBoundingClientRect();
     const x = dropEvent.clientX - rect.left;
     const y = dropEvent.clientY - rect.top;
-    const cols = Math.floor(this.gridContainer.clientWidth / (this.settings.cardWidth + this.settings.cardSpacing));
-    const col = Math.floor(x / (this.settings.cardWidth + this.settings.cardSpacing));
-    const row = Math.floor(y / (this.settings.cardHeight + this.settings.cardSpacing));
-    const canvasX = col * (this.settings.cardWidth + this.settings.cardSpacing);
-    const canvasY = row * (this.settings.cardHeight + this.settings.cardSpacing);
+    const elementUnderCursor = document.elementFromPoint(dropEvent.clientX, dropEvent.clientY);
+    if (elementUnderCursor) {
+      const groupCard = elementUnderCursor.closest('[data-node-type="group"]');
+      if (groupCard) {
+        return groupCard.dataset.nodeId || null;
+      }
+    }
+    return null;
+  }
+  // 计算在分组内的位置
+  calculatePositionInGroup(groupId, dropEvent) {
+    if (!this.canvasData) {
+      return { x: 100, y: 100 };
+    }
+    const groupNode = this.canvasData.nodes.find((n) => n.id === groupId && n.type === "group");
+    if (!groupNode) {
+      return { x: 100, y: 100 };
+    }
+    const groupMembers = this.canvasData.nodes.filter(
+      (n) => n.type !== "group" && n.x >= groupNode.x && n.y >= groupNode.y && n.x + n.width <= groupNode.x + groupNode.width && n.y + n.height <= groupNode.y + groupNode.height
+    );
+    const padding = 20;
+    if (groupMembers.length === 0) {
+      return {
+        x: groupNode.x + padding,
+        y: groupNode.y + padding + 30
+        // 为分组标题留空间
+      };
+    }
+    const maxX = Math.max(...groupMembers.map((n) => n.x + n.width));
+    const maxY = Math.max(...groupMembers.map((n) => n.y + n.height));
+    const newX = maxX + padding;
+    if (newX + 300 <= groupNode.x + groupNode.width - padding) {
+      return { x: newX, y: groupMembers[0].y };
+    }
+    return {
+      x: groupNode.x + padding,
+      y: maxY + padding
+    };
+  }
+  // 添加到现有分组
+  async addToExistingGroup(groupId, contentType, position) {
+    const timestamp = Date.now();
+    const contentId = `node-${timestamp}-content`;
+    const contentNode = {
+      id: contentId,
+      type: contentType.type,
+      x: position.x,
+      y: position.y,
+      width: contentType.width,
+      height: contentType.height,
+      ...contentType.content
+    };
+    if (!this.canvasData) {
+      this.canvasData = { nodes: [], edges: [] };
+    }
+    this.canvasData.nodes.push(contentNode);
+    this.expandGroupIfNeeded(groupId, contentNode);
+    this.updateGroupAnalysisAfterAdd(groupId, contentNode);
+    if (this.currentGroupView === groupId) {
+      this.refreshGroupView(groupId);
+    }
+    return contentNode;
+  }
+  // 扩展分组大小以容纳新内容
+  expandGroupIfNeeded(groupId, newNode) {
+    if (!this.canvasData)
+      return;
+    const groupNode = this.canvasData.nodes.find((n) => n.id === groupId && n.type === "group");
+    if (!groupNode)
+      return;
+    const padding = 20;
+    const requiredWidth = newNode.x + newNode.width - groupNode.x + padding;
+    const requiredHeight = newNode.y + newNode.height - groupNode.y + padding;
+    if (requiredWidth > groupNode.width) {
+      groupNode.width = requiredWidth;
+    }
+    if (requiredHeight > groupNode.height) {
+      groupNode.height = requiredHeight;
+    }
+  }
+  // 更新分组分析数据（添加新节点后）
+  updateGroupAnalysisAfterAdd(groupId, newNode) {
+    const groupInfo = this.groupAnalysis.get(groupId);
+    if (groupInfo) {
+      groupInfo.members.push(newNode);
+      groupInfo.memberCount = groupInfo.members.length;
+      this.updateGroupBounds(groupInfo);
+      console.log(`Updated group ${groupId} analysis, new member count: ${groupInfo.memberCount}`);
+    } else {
+      console.log(`Group ${groupId} not found in analysis, re-analyzing all groups`);
+      this.analyzeGroups();
+    }
+  }
+  // 更新分组边界
+  updateGroupBounds(groupInfo) {
+    if (groupInfo.members.length === 0)
+      return;
+    const allNodes = [groupInfo.group, ...groupInfo.members];
+    const minX = Math.min(...allNodes.map((n) => n.x));
+    const minY = Math.min(...allNodes.map((n) => n.y));
+    const maxX = Math.max(...allNodes.map((n) => n.x + n.width));
+    const maxY = Math.max(...allNodes.map((n) => n.y + n.height));
+    groupInfo.bounds = { minX, minY, maxX, maxY };
+  }
+  // 刷新分组视图
+  refreshGroupView(groupId) {
+    console.log(`Refreshing group view for: ${groupId}`);
+    this.analyzeGroups();
+    const groupInfo = this.groupAnalysis.get(groupId);
+    if (!groupInfo) {
+      console.error(`Group ${groupId} not found after analysis`);
+      return;
+    }
+    this.filteredNodes = [...groupInfo.members];
+    this.renderGroupMembers();
+    console.log(`Group view refreshed, showing ${groupInfo.members.length} members`);
+  }
+  // 创建分组和内容节点
+  createGroupedNodes(text, contentType, position) {
+    const timestamp = Date.now();
+    const groupId = `group-${timestamp}`;
+    const contentId = `node-${timestamp}-content`;
+    const groupPadding = 40;
+    const groupWidth = contentType.width + groupPadding * 2;
+    const groupHeight = contentType.height + groupPadding * 2 + 60;
+    const groupNode = {
+      id: groupId,
+      type: "group",
+      x: position.x,
+      y: position.y,
+      width: groupWidth,
+      height: groupHeight,
+      label: "\u6536\u96C6",
+      // 分组标题
+      color: "1"
+      // 使用红色作为默认分组颜色
+    };
+    const contentNode = {
+      id: contentId,
+      type: contentType.type,
+      x: position.x + groupPadding,
+      y: position.y + groupPadding + 30,
+      // 为分组标题留出空间
+      width: contentType.width,
+      height: contentType.height,
+      ...contentType.content
+    };
+    return { groupNode, contentNode };
+  }
+  // 计算拖拽放置位置
+  calculateDropPosition(dropEvent) {
     if (this.canvasData && this.canvasData.nodes.length > 0) {
       const maxX = Math.max(...this.canvasData.nodes.map((n) => n.x + n.width));
       const maxY = Math.max(...this.canvasData.nodes.map((n) => n.y + n.height));
-      return {
-        x: Math.max(canvasX, maxX + this.settings.cardSpacing),
-        y: Math.max(canvasY, maxY + this.settings.cardSpacing)
-      };
+      const groupSpacing = 50;
+      const newX = maxX + groupSpacing;
+      const newY = 100;
+      const estimatedCanvasWidth = 1200;
+      const groupWidth = CARD_CONSTANTS.width + 80;
+      if (newX + groupWidth > estimatedCanvasWidth) {
+        return {
+          x: 100,
+          // 从左边开始
+          y: maxY + groupSpacing
+        };
+      }
+      return { x: newX, y: newY };
     }
-    return { x: canvasX, y: canvasY };
+    return { x: 100, y: 100 };
   }
   // 生成唯一节点ID
   generateNodeId() {
     return "node-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+  }
+  // 生成唯一的块引用ID
+  generateBlockId() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 6);
+    return `canvas-${timestamp}-${random}`;
+  }
+  // 🔧 修复：创建 dragData 的安全快照，避免竞态条件
+  createDragDataSnapshot() {
+    try {
+      if (!this.dragData) {
+        console.log("No dragData to snapshot");
+        return null;
+      }
+      if (!this.dragData.sourceFile) {
+        console.log("No sourceFile in dragData");
+        return null;
+      }
+      if (!this.dragData.sourcePosition) {
+        console.log("No sourcePosition in dragData");
+        return null;
+      }
+      const snapshot = {
+        sourceFile: this.dragData.sourceFile,
+        sourcePosition: {
+          line: this.dragData.sourcePosition.line,
+          ch: this.dragData.sourcePosition.ch
+        },
+        sourcePath: this.dragData.sourcePath || "",
+        sourceContext: this.dragData.sourceContext || ""
+      };
+      console.log("\u2705 Created dragData snapshot:", snapshot);
+      return snapshot;
+    } catch (error) {
+      console.error("Failed to create dragData snapshot:", error);
+      return null;
+    }
+  }
+  // 在源文件中插入块引用（修复版本：添加文件锁保护）
+  async insertBlockReference(file, position, blockId) {
+    const filePath = file.path;
+    try {
+      console.log("=== Inserting Block Reference (Protected) ===");
+      console.log("File:", filePath);
+      console.log("Position:", position);
+      console.log("Block ID:", blockId);
+      if (this.fileModificationLocks.has(filePath)) {
+        console.log("\u274C File is currently being modified, skipping");
+        new import_obsidian.Notice("\u6E90\u6587\u4EF6\u6B63\u5728\u88AB\u4FEE\u6539\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+        return false;
+      }
+      this.fileModificationLocks.add(filePath);
+      if (!file || !position || typeof position.line !== "number") {
+        console.error("Invalid input parameters");
+        return false;
+      }
+      const content = await this.app.vault.read(file);
+      const lines = content.split("\n");
+      if (position.line < 0 || position.line >= lines.length) {
+        console.error("Line number out of range:", position.line, "max:", lines.length - 1);
+        return false;
+      }
+      const targetLine = lines[position.line];
+      if (this.hasExistingBlockReference(targetLine)) {
+        console.log("Line already has block reference, skipping");
+        return false;
+      }
+      lines[position.line] = `${targetLine} ^${blockId}`;
+      const newContent = lines.join("\n");
+      await this.app.vault.modify(file, newContent);
+      console.log("\u2705 Block reference inserted successfully");
+      new import_obsidian.Notice("\u5DF2\u5728\u6E90\u6587\u4EF6\u4E2D\u6DFB\u52A0\u5757\u5F15\u7528");
+      return true;
+    } catch (error) {
+      console.error("Failed to insert block reference:", error);
+      const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
+      new import_obsidian.Notice("\u63D2\u5165\u5757\u5F15\u7528\u5931\u8D25\uFF1A" + errorMessage);
+      return false;
+    } finally {
+      this.fileModificationLocks.delete(filePath);
+      console.log("Released file lock for:", filePath);
+    }
+  }
+  // 🔧 修复：改进的块引用检测方法
+  hasExistingBlockReference(line) {
+    if (!line || typeof line !== "string") {
+      return false;
+    }
+    const blockRefPattern = /\s\^[a-zA-Z0-9\-_]+$/;
+    return blockRefPattern.test(line);
+  }
+  // 🔧 修复：用户确认机制
+  async confirmBlockReferenceInsertion(file) {
+    return new Promise((resolve) => {
+      const modal = new import_obsidian.Modal(this.app);
+      modal.titleEl.setText("\u786E\u8BA4\u4FEE\u6539\u6E90\u6587\u4EF6");
+      const content = modal.contentEl;
+      content.empty();
+      content.createEl("p", {
+        text: "\u4E3A\u4E86\u521B\u5EFA\u7CBE\u786E\u7684\u56DE\u94FE\uFF0C\u9700\u8981\u5728\u6E90\u6587\u4EF6\u4E2D\u6DFB\u52A0\u5757\u5F15\u7528\u6807\u8BB0\u3002"
+      });
+      content.createEl("p", {
+        text: `\u6587\u4EF6\uFF1A${file.basename}`,
+        cls: "canvas-grid-file-info"
+      });
+      content.createEl("p", {
+        text: "\u8FD9\u5C06\u5728\u62D6\u62FD\u7684\u6587\u672C\u884C\u672B\u5C3E\u6DFB\u52A0\u4E00\u4E2A\u5757\u5F15\u7528ID\uFF08\u5982\uFF1A^canvas-123456\uFF09",
+        cls: "canvas-grid-detail-info"
+      });
+      const buttonContainer = content.createDiv("canvas-grid-confirm-buttons");
+      buttonContainer.style.cssText = `
+				display: flex;
+				gap: 10px;
+				margin-top: 20px;
+				justify-content: center;
+			`;
+      const confirmButton = buttonContainer.createEl("button", { text: "\u786E\u8BA4\u4FEE\u6539" });
+      confirmButton.style.cssText = `
+				background-color: var(--interactive-accent);
+				color: var(--text-on-accent);
+				border: none;
+				padding: 8px 16px;
+				border-radius: 4px;
+				cursor: pointer;
+			`;
+      confirmButton.onclick = () => {
+        modal.close();
+        resolve(true);
+      };
+      const cancelButton = buttonContainer.createEl("button", { text: "\u53D6\u6D88\uFF08\u4F7F\u7528\u884C\u53F7\uFF09" });
+      cancelButton.style.cssText = `
+				background-color: var(--background-modifier-border);
+				color: var(--text-normal);
+				border: none;
+				padding: 8px 16px;
+				border-radius: 4px;
+				cursor: pointer;
+			`;
+      cancelButton.onclick = () => {
+        modal.close();
+        resolve(false);
+      };
+      confirmButton.focus();
+      modal.open();
+    });
+  }
+  // 在文本中添加回链（修复版本：解决竞态条件）
+  async addBacklinkToText(originalText) {
+    console.log("=== addBacklinkToText called (Fixed Version) ===");
+    console.log("Original text:", originalText);
+    console.log("Drag data:", this.dragData);
+    const dragDataSnapshot = this.createDragDataSnapshot();
+    if (!dragDataSnapshot) {
+      console.log("\u274C No valid dragData snapshot available");
+      return originalText;
+    }
+    try {
+      const blockId = this.generateBlockId();
+      console.log("Generated block ID:", blockId);
+      const userConfirmed = await this.confirmBlockReferenceInsertion(dragDataSnapshot.sourceFile);
+      if (!userConfirmed) {
+        console.log("User declined block reference insertion, using fallback");
+        const sourceFileName2 = dragDataSnapshot.sourceFile.basename;
+        const lineNumber = dragDataSnapshot.sourcePosition.line + 1;
+        const backlink2 = `[[${sourceFileName2}#^L${lineNumber}]]`;
+        return `${originalText}
+
+---
+\u6765\u6E90\uFF1A${backlink2}`;
+      }
+      const insertSuccess = await this.insertBlockReference(
+        dragDataSnapshot.sourceFile,
+        dragDataSnapshot.sourcePosition,
+        blockId
+      );
+      if (!insertSuccess) {
+        console.log("\u274C Failed to insert block reference, using fallback");
+        const sourceFileName2 = dragDataSnapshot.sourceFile.basename;
+        const lineNumber = dragDataSnapshot.sourcePosition.line + 1;
+        const backlink2 = `[[${sourceFileName2}#^L${lineNumber}]]`;
+        return `${originalText}
+
+---
+\u6765\u6E90\uFF1A${backlink2}`;
+      }
+      const sourceFileName = dragDataSnapshot.sourceFile.basename;
+      const backlink = `[[${sourceFileName}#^${blockId}]]`;
+      const textWithBacklink = `${originalText}
+
+---
+\u6765\u6E90\uFF1A${backlink}`;
+      console.log("\u2705 Successfully added block reference backlink:", backlink);
+      console.log("Final text with backlink:", textWithBacklink);
+      return textWithBacklink;
+    } catch (error) {
+      console.error("Error in addBacklinkToText:", error);
+      new import_obsidian.Notice("\u521B\u5EFA\u56DE\u94FE\u65F6\u53D1\u751F\u9519\u8BEF\uFF0C\u5DF2\u4F7F\u7528\u539F\u59CB\u6587\u672C");
+      return originalText;
+    }
+  }
+  // 检查节点是否包含回链（支持块引用和行号格式）
+  hasBacklink(node) {
+    if (node.type !== "text" || !node.text) {
+      return false;
+    }
+    return /---\n来源：\[\[.*#\^(canvas-\d+-\w+|L\d+)\]\]/.test(node.text);
+  }
+  // 从节点回链跳转到源位置（支持块引用）
+  async navigateToBacklink(node) {
+    if (node.type !== "text" || !node.text) {
+      new import_obsidian.Notice("\u8282\u70B9\u4E0D\u5305\u542B\u6587\u672C\u5185\u5BB9");
+      return;
+    }
+    try {
+      console.log("=== Navigating to Backlink ===");
+      console.log("Node text:", node.text);
+      const backlinkMatch = node.text.match(/来源：\[\[(.*)#\^(canvas-\d+-\w+|L\d+)\]\]/);
+      if (!backlinkMatch) {
+        new import_obsidian.Notice("\u672A\u627E\u5230\u6709\u6548\u7684\u56DE\u94FE\u4FE1\u606F");
+        return;
+      }
+      const fileName = backlinkMatch[1];
+      const reference = backlinkMatch[2];
+      console.log("Parsed backlink:", fileName, "reference:", reference);
+      const files = this.app.vault.getMarkdownFiles();
+      const sourceFile = files.find((f) => f.basename === fileName);
+      if (!sourceFile) {
+        new import_obsidian.Notice(`\u6E90\u6587\u4EF6\u4E0D\u5B58\u5728: ${fileName}`);
+        return;
+      }
+      if (reference.startsWith("canvas-")) {
+        await this.openFileAndNavigateToBlock(sourceFile, reference);
+      } else if (reference.startsWith("L")) {
+        const lineNumber = parseInt(reference.substring(1)) - 1;
+        await this.openFileAndNavigate(sourceFile, lineNumber);
+      } else {
+        new import_obsidian.Notice("\u4E0D\u652F\u6301\u7684\u56DE\u94FE\u683C\u5F0F");
+      }
+    } catch (error) {
+      console.error("Failed to navigate to backlink:", error);
+      new import_obsidian.Notice("\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6\u5931\u8D25");
+    }
+  }
+  // 打开文件并导航到指定位置
+  async openFileAndNavigate(file, lineNumber) {
+    try {
+      const leaf = this.app.workspace.getUnpinnedLeaf();
+      await leaf.openFile(file);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+      if (activeView && activeView.editor) {
+        const editor = activeView.editor;
+        const targetPos = { line: lineNumber, ch: 0 };
+        editor.setCursor(targetPos);
+        editor.scrollIntoView({ from: targetPos, to: targetPos }, true);
+        const lineText = editor.getLine(lineNumber);
+        const lineEnd = { line: lineNumber, ch: lineText.length };
+        editor.setSelection(targetPos, lineEnd);
+        setTimeout(() => {
+          try {
+            const cursor = editor.getCursor();
+            editor.setCursor(cursor);
+          } catch (e) {
+          }
+        }, 3e3);
+        new import_obsidian.Notice(`\u5DF2\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6: ${file.basename} (\u7B2C${lineNumber + 1}\u884C)`);
+        console.log("Successfully navigated to backlink position");
+      } else {
+        new import_obsidian.Notice("\u65E0\u6CD5\u83B7\u53D6\u7F16\u8F91\u5668\u89C6\u56FE");
+      }
+    } catch (error) {
+      console.error("Failed to open file and navigate:", error);
+      new import_obsidian.Notice("\u6253\u5F00\u6587\u4EF6\u5931\u8D25");
+    }
+  }
+  // 打开文件并导航到指定的块引用
+  async openFileAndNavigateToBlock(file, blockId) {
+    try {
+      console.log("=== Opening file and navigating to block ===");
+      console.log("File:", file.path);
+      console.log("Block ID:", blockId);
+      const leaf = this.app.workspace.getUnpinnedLeaf();
+      await leaf.openFile(file);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+      if (activeView && activeView.editor) {
+        const editor = activeView.editor;
+        const content = editor.getValue();
+        const lines = content.split("\n");
+        let targetLine = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(`^${blockId}`)) {
+            targetLine = i;
+            break;
+          }
+        }
+        if (targetLine >= 0) {
+          const targetPos = { line: targetLine, ch: 0 };
+          editor.setCursor(targetPos);
+          editor.scrollIntoView({ from: targetPos, to: targetPos }, true);
+          const lineText = lines[targetLine];
+          const lineEnd = { line: targetLine, ch: lineText.length };
+          editor.setSelection(targetPos, lineEnd);
+          setTimeout(() => {
+            try {
+              const cursor = editor.getCursor();
+              editor.setCursor(cursor);
+            } catch (e) {
+            }
+          }, 3e3);
+          new import_obsidian.Notice(`\u5DF2\u8DF3\u8F6C\u5230\u5757\u5F15\u7528: ${file.basename}`);
+          console.log("Successfully navigated to block reference");
+        } else {
+          new import_obsidian.Notice(`\u672A\u627E\u5230\u5757\u5F15\u7528: ^${blockId}`);
+          console.log("Block reference not found:", blockId);
+        }
+      } else {
+        new import_obsidian.Notice("\u65E0\u6CD5\u83B7\u53D6\u7F16\u8F91\u5668\u89C6\u56FE");
+      }
+    } catch (error) {
+      console.error("Failed to open file and navigate to block:", error);
+      new import_obsidian.Notice("\u8DF3\u8F6C\u5230\u5757\u5F15\u7528\u5931\u8D25");
+    }
   }
   // 保存Canvas数据
   async saveCanvasData() {
@@ -3812,16 +6076,21 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   // 设置关联Canvas文件
   async setLinkedCanvas(canvasFile) {
     try {
+      console.log("Setting linked canvas file:", canvasFile.path);
       this.linkedCanvasFile = canvasFile;
       this.linkedTabManager.linkCanvasFile(canvasFile, this);
+      this.showLoadingState();
       await this.loadCanvasDataFromFile(canvasFile);
+      this.initializeSearchAndSort();
       this.updateLinkedCanvasDisplay(canvasFile);
       this.updateActionButtonsVisibility();
+      this.renderGrid();
       new import_obsidian.Notice(`\u5DF2\u5173\u8054Canvas\u6587\u4EF6: ${canvasFile.basename}`, 3e3);
-      console.log("Canvas file linked:", canvasFile.path);
+      console.log("Canvas file linked and data loaded:", canvasFile.path);
     } catch (error) {
       console.error("Failed to link canvas file:", error);
       new import_obsidian.Notice("\u5173\u8054Canvas\u6587\u4EF6\u5931\u8D25");
+      this.showErrorState(error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF");
     }
   }
   // 获取关联的Canvas文件
@@ -3855,7 +6124,11 @@ var CanvasGridView = class extends import_obsidian.ItemView {
       console.log("Loading canvas data from file:", file.path);
       const content = await this.app.vault.read(file);
       if (!content || content.trim() === "") {
-        throw new Error("\u6587\u4EF6\u5185\u5BB9\u4E3A\u7A7A");
+        console.log("Canvas file is empty, creating empty data structure");
+        this.canvasData = { nodes: [], edges: [] };
+        this.clearRenderCache();
+        this.renderGrid();
+        return;
       }
       let parsedData;
       try {
@@ -3873,6 +6146,13 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         parsedData.edges = [];
       }
       this.canvasData = parsedData;
+      this.clearRenderCache();
+      this.filteredNodes = [...parsedData.nodes];
+      this.searchQuery = "";
+      if (this.searchInputEl) {
+        this.searchInputEl.value = "";
+      }
+      this.activeColorFilter = null;
       console.log("Canvas\u6570\u636E\u52A0\u8F7D\u6210\u529F\uFF0C\u8282\u70B9\u6570\u91CF:", parsedData.nodes.length);
       parsedData.nodes.forEach((node) => {
         if (node.color) {
@@ -3880,7 +6160,7 @@ var CanvasGridView = class extends import_obsidian.ItemView {
         }
       });
       this.renderGrid();
-      console.log("Canvas data loaded successfully from file:", file.path);
+      console.log("Canvas data loaded and rendered successfully from file:", file.path);
     } catch (error) {
       console.error("Failed to load canvas data from file:", error);
       const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
@@ -3971,11 +6251,18 @@ var CanvasGridView = class extends import_obsidian.ItemView {
   }
   // 刷新Canvas数据
   async refreshCanvasData() {
-    if (this.linkedCanvasFile) {
-      await this.loadCanvasDataFromFile(this.linkedCanvasFile);
-      new import_obsidian.Notice("Canvas\u6570\u636E\u5DF2\u5237\u65B0", 2e3);
-    } else {
-      await this.loadActiveCanvas();
+    try {
+      if (this.linkedCanvasFile) {
+        await this.loadCanvasDataFromFile(this.linkedCanvasFile);
+        new import_obsidian.Notice("Canvas\u6570\u636E\u5DF2\u5237\u65B0", 2e3);
+      } else {
+        await this.loadActiveCanvas();
+      }
+      this.initializeSearchAndSort();
+      console.log("\u2705 Canvas data refreshed and sort reapplied");
+    } catch (error) {
+      console.error("Failed to refresh canvas data:", error);
+      new import_obsidian.Notice("\u5237\u65B0\u6570\u636E\u5931\u8D25", 2e3);
     }
   }
   // 自动关联当前Canvas文件
@@ -4124,7 +6411,7 @@ var CanvasGridPlugin = class extends import_obsidian.Plugin {
     i18n.setLanguage(this.settings.language);
     this.registerView(
       CANVAS_GRID_VIEW_TYPE,
-      (leaf) => new CanvasGridView(leaf, this.settings)
+      (leaf) => new CanvasGridView(leaf, this)
     );
     let ribbonIconEl;
     try {
@@ -4163,6 +6450,22 @@ var CanvasGridPlugin = class extends import_obsidian.Plugin {
         this.activateView();
       }
     });
+    this.addCommand({
+      id: "time-capsule-collect",
+      name: "\u65F6\u95F4\u80F6\u56CA\u6536\u96C6\u5185\u5BB9",
+      hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "c" }],
+      callback: () => {
+        this.collectToTimeCapsule();
+      }
+    });
+    this.addCommand({
+      id: "toggle-time-capsule",
+      name: "\u5207\u6362\u65F6\u95F4\u80F6\u56CA\u72B6\u6001",
+      hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "t" }],
+      callback: () => {
+        this.toggleTimeCapsule();
+      }
+    });
     this.addSettingTab(new CanvasGridSettingTab(this.app, this));
     this.registerEvent(
       this.app.workspace.on("layout-change", () => {
@@ -4175,7 +6478,7 @@ var CanvasGridPlugin = class extends import_obsidian.Plugin {
       })
     );
     this.addCanvasViewButtons();
-    console.log("\u{1F3A8} Canvas Grid View Plugin loaded - \u70ED\u91CD\u8F7D\u6D4B\u8BD5\u6210\u529F!");
+    console.log("\u{1F3A8} Canvasgrid Transit Plugin loaded - \u70ED\u91CD\u8F7D\u6D4B\u8BD5\u6210\u529F!");
   }
   onunload() {
     this.removeAllCanvasViewButtons();
@@ -4451,6 +6754,61 @@ var CanvasGridPlugin = class extends import_obsidian.Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
   }
+  // ==================== 时间胶囊功能方法 ====================
+  // 收集内容到时间胶囊
+  collectToTimeCapsule() {
+    const gridView = this.getActiveGridView();
+    if (!gridView) {
+      new import_obsidian.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
+      return;
+    }
+    if (!gridView.isTimeCapsuleActive()) {
+      new import_obsidian.Notice("\u65F6\u95F4\u80F6\u56CA\u672A\u6FC0\u6D3B\uFF0C\u8BF7\u5148\u542F\u52A8\u65F6\u95F4\u80F6\u56CA");
+      return;
+    }
+    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+    if (activeView) {
+      const editor = activeView.editor;
+      const selectedText = editor.getSelection();
+      if (selectedText) {
+        gridView.collectToTimeCapsule(selectedText, {
+          sourceFile: activeView.file,
+          sourcePath: activeView.file?.path || "",
+          sourcePosition: {
+            line: editor.getCursor("from").line,
+            ch: editor.getCursor("from").ch
+          }
+        });
+        new import_obsidian.Notice("\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
+      } else {
+        new import_obsidian.Notice("\u8BF7\u5148\u9009\u62E9\u8981\u6536\u96C6\u7684\u5185\u5BB9");
+      }
+    } else {
+      navigator.clipboard.readText().then((text) => {
+        if (text && text.trim()) {
+          gridView.collectToTimeCapsule(text.trim(), {
+            sourceFile: null,
+            sourcePath: "\u526A\u8D34\u677F",
+            sourcePosition: null
+          });
+          new import_obsidian.Notice("\u526A\u8D34\u677F\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
+        } else {
+          new import_obsidian.Notice("\u526A\u8D34\u677F\u4E3A\u7A7A\u6216\u65E0\u53EF\u6536\u96C6\u5185\u5BB9");
+        }
+      }).catch(() => {
+        new import_obsidian.Notice("\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F");
+      });
+    }
+  }
+  // 切换时间胶囊状态
+  toggleTimeCapsule() {
+    const gridView = this.getActiveGridView();
+    if (!gridView) {
+      new import_obsidian.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
+      return;
+    }
+    gridView.toggleTimeCapsule();
+  }
   async activateView() {
     const { workspace } = this.app;
     const activeFile = workspace.getActiveFile();
@@ -4534,24 +6892,9 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
     i18n.setLanguage(this.plugin.settings.language);
     containerEl.createEl("h3", { text: i18n.t("gridLayoutSettings") });
     containerEl.createEl("p", {
-      text: this.plugin.settings.language === "zh" ? "\u7F51\u683C\u5217\u6570\u73B0\u5728\u4F1A\u6839\u636E\u5C4F\u5E55\u5BBD\u5EA6\u548C\u5361\u7247\u6700\u5C0F\u5BBD\u5EA6\u81EA\u52A8\u8C03\u6574\uFF0C\u65E0\u9700\u624B\u52A8\u8BBE\u7F6E\u3002" : "Grid columns are now automatically adjusted based on screen width and card minimum width, no manual setting required.",
+      text: this.plugin.settings.language === "zh" ? "\u7F51\u683C\u5E03\u5C40\u4F7F\u7528\u56FA\u5B9A\u7684\u5361\u7247\u5C3A\u5BF8\u548C\u95F4\u8DDD\uFF0C\u81EA\u52A8\u9002\u5E94\u5C4F\u5E55\u5BBD\u5EA6\u3002" : "Grid layout uses fixed card dimensions and spacing, automatically adapting to screen width.",
       cls: "setting-item-description"
     });
-    new import_obsidian.Setting(containerEl).setName(i18n.t("cardMinWidth")).setDesc(this.plugin.settings.language === "zh" ? "\u8BBE\u7F6E\u5361\u7247\u7684\u6700\u5C0F\u5BBD\u5EA6\uFF08\u50CF\u7D20\uFF09\uFF0C\u5F71\u54CD\u81EA\u52A8\u5217\u6570\u8BA1\u7B97" : "Set the minimum width of cards (pixels), affects automatic column calculation").addSlider((slider) => slider.setLimits(200, 500, 10).setValue(this.plugin.settings.cardWidth).setDynamicTooltip().onChange(async (value) => {
-      this.plugin.settings.cardWidth = value;
-      await this.plugin.saveSettings();
-      this.updateAllGridViews();
-    }));
-    new import_obsidian.Setting(containerEl).setName(i18n.t("cardMinHeight")).setDesc(this.plugin.settings.language === "zh" ? "\u8BBE\u7F6E\u5361\u7247\u7684\u6700\u5C0F\u9AD8\u5EA6\uFF08\u50CF\u7D20\uFF09" : "Set the minimum height of cards (pixels)").addSlider((slider) => slider.setLimits(150, 400, 10).setValue(this.plugin.settings.cardHeight).setDynamicTooltip().onChange(async (value) => {
-      this.plugin.settings.cardHeight = value;
-      await this.plugin.saveSettings();
-      this.updateAllGridViews();
-    }));
-    new import_obsidian.Setting(containerEl).setName(i18n.t("cardSpacing")).setDesc(this.plugin.settings.language === "zh" ? "\u8BBE\u7F6E\u5361\u7247\u4E4B\u95F4\u7684\u95F4\u8DDD\uFF08\u50CF\u7D20\uFF09" : "Set the spacing between cards (pixels)").addSlider((slider) => slider.setLimits(5, 50, 5).setValue(this.plugin.settings.cardSpacing).setDynamicTooltip().onChange(async (value) => {
-      this.plugin.settings.cardSpacing = value;
-      await this.plugin.saveSettings();
-      this.updateAllGridViews();
-    }));
     new import_obsidian.Setting(containerEl).setName(i18n.t("enableAutoLayout")).setDesc(this.plugin.settings.language === "zh" ? "\u81EA\u52A8\u8C03\u6574\u5361\u7247\u5E03\u5C40\u4EE5\u9002\u5E94\u5C4F\u5E55\uFF08\u63A8\u8350\u5F00\u542F\uFF09" : "Automatically adjust card layout to fit screen (recommended)").addToggle((toggle) => toggle.setValue(this.plugin.settings.enableAutoLayout).onChange(async (value) => {
       this.plugin.settings.enableAutoLayout = value;
       await this.plugin.saveSettings();
@@ -4563,13 +6906,15 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
       this.display();
       this.updateAllGridViews();
     }));
-    this.createColorFilterSection(containerEl);
+    this.createUnifiedColorSection(containerEl);
     this.createAboutSection(containerEl);
   }
-  // 创建颜色筛选器设置部分
-  createColorFilterSection(containerEl) {
-    containerEl.createEl("h3", { text: "\u{1F3A8} " + i18n.t("colorFilterSettings") });
-    const descContainer = containerEl.createDiv("color-filter-desc");
+  // 创建统一的颜色管理设置部分
+  createUnifiedColorSection(containerEl) {
+    containerEl.createEl("h3", {
+      text: "\u{1F3A8} " + (this.plugin.settings.language === "zh" ? "\u989C\u8272\u7BA1\u7406" : "Color Management")
+    });
+    const descContainer = containerEl.createDiv("unified-color-desc");
     descContainer.style.cssText = `
 			background: var(--background-secondary);
 			border-radius: 6px;
@@ -4578,7 +6923,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			border-left: 3px solid var(--interactive-accent);
 		`;
     const descText = descContainer.createEl("p", {
-      text: this.plugin.settings.language === "zh" ? "\u9009\u62E9\u8981\u5728\u989C\u8272\u7B5B\u9009\u5668\u4E2D\u663E\u793A\u7684\u989C\u8272\uFF08\u6700\u591A5\u4E2A\uFF09\u3002\u8FD9\u4E9B\u989C\u8272\u5C06\u663E\u793A\u4E3A\u641C\u7D22\u6846\u4E0B\u65B9\u7684\u7B5B\u9009\u5706\u70B9\u3002" : "Select colors to display in the color filter (up to 5). These colors will appear as filter dots below the search box.",
+      text: this.plugin.settings.language === "zh" ? "\u9009\u62E9\u8981\u5728\u989C\u8272\u7B5B\u9009\u5668\u4E2D\u663E\u793A\u7684\u989C\u8272\uFF08\u6700\u591A5\u4E2A\uFF09\u3002\u8FD9\u4E9B\u989C\u8272\u5C06\u663E\u793A\u4E3A\u641C\u7D22\u6846\u4E0B\u65B9\u7684\u7B5B\u9009\u5706\u70B9\u3002\u5728\u4E0B\u65B9\u9884\u89C8\u533A\u57DF\u53EF\u4EE5\u62D6\u62FD\u8C03\u6574\u989C\u8272\u663E\u793A\u987A\u5E8F\u3002" : "Select colors to display in the color filter (up to 5). These colors will appear as filter dots below the search box. Drag colors in the preview area to reorder them.",
       cls: "setting-item-description"
     });
     descText.style.cssText = `
@@ -4587,7 +6932,315 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-size: 13px;
 			line-height: 1.4;
 		`;
-    const colorGridContainer = containerEl.createDiv("color-filter-grid-container");
+    this.createSelectableColorGrid(containerEl);
+    this.createSelectedColorsPreview(containerEl);
+  }
+  // 创建可选颜色网格
+  createSelectableColorGrid(containerEl) {
+    const gridContainer = containerEl.createDiv("selectable-color-grid-container");
+    gridContainer.style.cssText = `
+			background: var(--background-primary);
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 8px;
+			padding: 20px;
+			margin-bottom: 20px;
+		`;
+    const gridTitle = gridContainer.createEl("h4", {
+      text: this.plugin.settings.language === "zh" ? "\u53EF\u9009\u989C\u8272" : "Available Colors",
+      cls: "color-grid-title"
+    });
+    gridTitle.style.cssText = `
+			margin: 0 0 16px 0;
+			color: var(--text-normal);
+			font-size: 14px;
+			font-weight: 600;
+		`;
+    const colorGrid = gridContainer.createDiv("selectable-color-grid");
+    colorGrid.style.cssText = `
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 16px;
+		`;
+    const availableColors = [
+      { value: "1", color: "#ff6b6b" },
+      { value: "2", color: "#ffa726" },
+      { value: "3", color: "#ffeb3b" },
+      { value: "4", color: "#66bb6a" },
+      { value: "5", color: "#26c6da" },
+      { value: "6", color: "#42a5f5" },
+      { value: "7", color: "#ab47bc" }
+    ];
+    availableColors.forEach((colorOption) => {
+      this.createSelectableColorCard(colorGrid, colorOption);
+    });
+  }
+  // 创建可选择的颜色卡片
+  createSelectableColorCard(container, colorOption) {
+    const isSelected = this.plugin.settings.colorFilterColors.includes(colorOption.value);
+    const category = this.plugin.settings.colorCategories.find((cat) => cat.color === colorOption.value);
+    const colorCard = container.createDiv("selectable-color-card");
+    colorCard.style.cssText = `
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 20px 16px;
+			border: 2px solid ${isSelected ? colorOption.color : "var(--background-modifier-border)"};
+			border-radius: 8px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			background: var(--background-secondary);
+			position: relative;
+			min-height: 140px;
+		`;
+    if (isSelected) {
+      const checkmark = colorCard.createDiv("color-card-checkmark");
+      checkmark.innerHTML = "\u2713";
+      checkmark.style.cssText = `
+				position: absolute;
+				top: 8px;
+				right: 8px;
+				width: 20px;
+				height: 20px;
+				background: ${colorOption.color};
+				color: white;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 12px;
+				font-weight: bold;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+			`;
+    }
+    const colorDot = colorCard.createDiv("color-dot");
+    colorDot.style.cssText = `
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: ${colorOption.color};
+			margin-bottom: 16px;
+			box-shadow: 0 2px 8px ${colorOption.color}40;
+			border: 3px solid white;
+		`;
+    const nameContainer = colorCard.createDiv("color-name-container");
+    nameContainer.style.cssText = `
+			width: 100%;
+			text-align: center;
+			margin-bottom: 8px;
+		`;
+    const nameDisplay = nameContainer.createEl("div", {
+      text: category ? category.name : this.getDefaultColorName(colorOption.value),
+      cls: "color-name-display"
+    });
+    nameDisplay.style.cssText = `
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--text-normal);
+			cursor: text;
+			padding: 4px 8px;
+			border-radius: 4px;
+			transition: background 0.2s ease;
+		`;
+    const descContainer = colorCard.createDiv("color-desc-container");
+    descContainer.style.cssText = `
+			width: 100%;
+			text-align: center;
+		`;
+    const descDisplay = descContainer.createEl("div", {
+      text: category ? category.description : "",
+      cls: "color-desc-display"
+    });
+    descDisplay.style.cssText = `
+			font-size: 11px;
+			color: var(--text-muted);
+			cursor: text;
+			padding: 4px 8px;
+			border-radius: 4px;
+			transition: background 0.2s ease;
+			min-height: 16px;
+			line-height: 1.3;
+		`;
+    this.addInlineEditingToColorCard(nameDisplay, descDisplay, colorOption.value);
+    colorCard.addEventListener("click", (e) => {
+      if (e.target.classList.contains("color-name-display") || e.target.classList.contains("color-desc-display")) {
+        return;
+      }
+      this.toggleColorSelection(colorOption.value);
+    });
+    colorCard.addEventListener("mouseenter", () => {
+      if (!isSelected) {
+        colorCard.style.borderColor = colorOption.color;
+        colorCard.style.transform = "translateY(-2px)";
+      }
+    });
+    colorCard.addEventListener("mouseleave", () => {
+      if (!isSelected) {
+        colorCard.style.borderColor = "var(--background-modifier-border)";
+        colorCard.style.transform = "translateY(0)";
+      }
+    });
+  }
+  // 添加内联编辑功能到颜色卡片
+  addInlineEditingToColorCard(nameDisplay, descDisplay, colorValue) {
+    nameDisplay.addEventListener("dblclick", () => {
+      this.startInlineEdit(nameDisplay, colorValue, "name");
+    });
+    descDisplay.addEventListener("dblclick", () => {
+      this.startInlineEdit(descDisplay, colorValue, "description");
+    });
+    nameDisplay.addEventListener("mouseenter", () => {
+      nameDisplay.style.background = "var(--background-modifier-hover)";
+      nameDisplay.title = this.plugin.settings.language === "zh" ? "\u53CC\u51FB\u7F16\u8F91\u540D\u79F0" : "Double-click to edit name";
+    });
+    nameDisplay.addEventListener("mouseleave", () => {
+      nameDisplay.style.background = "transparent";
+    });
+    descDisplay.addEventListener("mouseenter", () => {
+      descDisplay.style.background = "var(--background-modifier-hover)";
+      descDisplay.title = this.plugin.settings.language === "zh" ? "\u53CC\u51FB\u7F16\u8F91\u63CF\u8FF0" : "Double-click to edit description";
+    });
+    descDisplay.addEventListener("mouseleave", () => {
+      descDisplay.style.background = "transparent";
+    });
+  }
+  // 开始内联编辑
+  startInlineEdit(element, colorValue, field) {
+    const currentText = element.textContent || "";
+    const input = document.createElement(field === "description" ? "textarea" : "input");
+    input.value = currentText;
+    input.style.cssText = `
+			width: 100%;
+			background: var(--background-primary);
+			border: 1px solid var(--interactive-accent);
+			border-radius: 4px;
+			padding: 4px 8px;
+			font-size: ${field === "name" ? "14px" : "11px"};
+			font-weight: ${field === "name" ? "600" : "normal"};
+			color: var(--text-normal);
+			text-align: center;
+			resize: none;
+			${field === "description" ? "min-height: 32px; line-height: 1.3;" : ""}
+		`;
+    element.style.display = "none";
+    element.parentElement?.insertBefore(input, element);
+    input.focus();
+    input.select();
+    const saveEdit = async () => {
+      const newValue = input.value.trim();
+      element.textContent = newValue;
+      element.style.display = "block";
+      input.remove();
+      await this.updateColorCategory(colorValue, field, newValue);
+    };
+    const cancelEdit = () => {
+      element.style.display = "block";
+      input.remove();
+    };
+    input.addEventListener("blur", saveEdit);
+    input.addEventListener("keydown", (e) => {
+      const keyEvent = e;
+      if (keyEvent.key === "Enter" && !keyEvent.shiftKey) {
+        e.preventDefault();
+        saveEdit();
+      } else if (keyEvent.key === "Escape") {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+  }
+  // 更新颜色分类
+  async updateColorCategory(colorValue, field, newValue) {
+    let category = this.plugin.settings.colorCategories.find((cat) => cat.color === colorValue);
+    if (!category) {
+      const defaultName = this.getDefaultColorName(colorValue);
+      category = {
+        id: `color-${colorValue}`,
+        name: field === "name" ? newValue : defaultName,
+        description: field === "description" ? newValue : "",
+        color: colorValue
+      };
+      this.plugin.settings.colorCategories.push(category);
+    } else {
+      if (field === "name") {
+        category.name = newValue;
+      } else {
+        category.description = newValue;
+      }
+    }
+    await this.plugin.saveSettings();
+    this.updateAllGridViews();
+  }
+  // 切换颜色选择状态
+  async toggleColorSelection(colorValue) {
+    const currentColors = [...this.plugin.settings.colorFilterColors];
+    const isCurrentlySelected = currentColors.includes(colorValue);
+    if (isCurrentlySelected) {
+      const index = currentColors.indexOf(colorValue);
+      if (index > -1) {
+        currentColors.splice(index, 1);
+      }
+    } else {
+      if (currentColors.length < 5) {
+        currentColors.push(colorValue);
+      } else {
+        new import_obsidian.Notice(this.plugin.settings.language === "zh" ? "\u6700\u591A\u53EA\u80FD\u9009\u62E95\u4E2A\u989C\u8272" : "Maximum 5 colors can be selected");
+        return;
+      }
+    }
+    this.plugin.settings.colorFilterColors = currentColors;
+    await this.plugin.saveSettings();
+    this.updateAllGridViews();
+    this.display();
+  }
+  // 创建已选择颜色预览
+  createSelectedColorsPreview(containerEl) {
+    const previewContainer = containerEl.createDiv("selected-colors-preview");
+    previewContainer.style.cssText = `
+			background: var(--background-secondary);
+			border-radius: 6px;
+			padding: 16px;
+			margin-bottom: 20px;
+		`;
+    const previewHeader = previewContainer.createDiv("preview-header");
+    previewHeader.style.cssText = `
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 12px;
+		`;
+    const statusText = previewHeader.createEl("span", {
+      text: this.plugin.settings.language === "zh" ? `\u5DF2\u9009\u62E9 ${this.plugin.settings.colorFilterColors.length}/5 \u4E2A\u989C\u8272` : `Selected ${this.plugin.settings.colorFilterColors.length}/5 colors`,
+      cls: "selected-colors-status"
+    });
+    statusText.style.cssText = `
+			color: var(--text-muted);
+			font-size: 13px;
+		`;
+    const sortHint = previewHeader.createEl("span", {
+      text: this.plugin.settings.language === "zh" ? "\u62D6\u62FD\u8C03\u6574\u987A\u5E8F" : "Drag to reorder",
+      cls: "sort-hint"
+    });
+    sortHint.style.cssText = `
+			color: var(--text-muted);
+			font-size: 11px;
+			font-style: italic;
+		`;
+    const sortableContainer = previewContainer.createDiv("sortable-preview-container");
+    sortableContainer.style.cssText = `
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+			min-height: 40px;
+			padding: 8px;
+			border: 1px dashed var(--background-modifier-border);
+			border-radius: 4px;
+			background: var(--background-primary);
+		`;
+    this.renderSortableColorDots(sortableContainer);
+  }
+  // 创建颜色选择网格
+  createColorSelectionGrid(container) {
+    const colorGridContainer = container.createDiv("color-filter-grid-container");
     colorGridContainer.style.cssText = `
 			background: var(--background-primary);
 			border: 1px solid var(--background-modifier-border);
@@ -4608,70 +7261,89 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
     const colorGrid = colorGridContainer.createDiv("color-filter-grid");
     colorGrid.style.cssText = `
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 			gap: 12px;
 		`;
     const availableColors = [
-      { value: "1", name: this.plugin.settings.language === "zh" ? "\u7EA2\u8272" : "Red", color: "#ff6b6b", emoji: "\u{1F534}" },
-      { value: "2", name: this.plugin.settings.language === "zh" ? "\u6A59\u8272" : "Orange", color: "#ffa726", emoji: "\u{1F7E0}" },
-      { value: "3", name: this.plugin.settings.language === "zh" ? "\u9EC4\u8272" : "Yellow", color: "#ffeb3b", emoji: "\u{1F7E1}" },
-      { value: "4", name: this.plugin.settings.language === "zh" ? "\u7EFF\u8272" : "Green", color: "#66bb6a", emoji: "\u{1F7E2}" },
-      { value: "5", name: this.plugin.settings.language === "zh" ? "\u9752\u8272" : "Cyan", color: "#26c6da", emoji: "\u{1F535}" },
-      { value: "6", name: this.plugin.settings.language === "zh" ? "\u84DD\u8272" : "Blue", color: "#42a5f5", emoji: "\u{1F535}" },
-      { value: "7", name: this.plugin.settings.language === "zh" ? "\u7D2B\u8272" : "Purple", color: "#ab47bc", emoji: "\u{1F7E3}" }
+      { value: "1", color: "#ff6b6b", emoji: "\u{1F534}" },
+      { value: "2", color: "#ffa726", emoji: "\u{1F7E0}" },
+      { value: "3", color: "#ffeb3b", emoji: "\u{1F7E1}" },
+      { value: "4", color: "#66bb6a", emoji: "\u{1F7E2}" },
+      { value: "5", color: "#26c6da", emoji: "\u{1F535}" },
+      { value: "6", color: "#42a5f5", emoji: "\u{1F535}" },
+      { value: "7", color: "#ab47bc", emoji: "\u{1F7E3}" }
     ];
     availableColors.forEach((colorOption) => {
       const colorCard = colorGrid.createDiv("color-filter-card");
       const isSelected = this.plugin.settings.colorFilterColors.includes(colorOption.value);
+      const category = this.plugin.settings.colorCategories.find((cat) => cat.color === colorOption.value);
+      const displayName = category ? category.name : this.getDefaultColorName(colorOption.value);
+      const description = category ? category.description : "";
       colorCard.style.cssText = `
 				display: flex;
 				flex-direction: column;
 				align-items: center;
-				padding: 12px;
+				padding: 16px 12px;
 				border: 2px solid ${isSelected ? colorOption.color : "var(--background-modifier-border)"};
 				border-radius: 8px;
 				cursor: pointer;
 				transition: all 0.2s ease;
 				background: ${isSelected ? colorOption.color + "10" : "var(--background-secondary)"};
 				position: relative;
+				min-height: 120px;
 			`;
       const colorPreview = colorCard.createDiv("color-preview-large");
       colorPreview.style.cssText = `
-				width: 32px;
-				height: 32px;
+				width: 36px;
+				height: 36px;
 				border-radius: 50%;
 				background: ${colorOption.color};
-				margin-bottom: 8px;
+				margin-bottom: 12px;
 				box-shadow: 0 2px 8px ${colorOption.color}40;
 				border: 2px solid white;
 			`;
-      const colorName = colorCard.createEl("span", {
-        text: colorOption.name,
+      const colorName = colorCard.createEl("div", {
+        text: displayName,
         cls: "color-card-name"
       });
       colorName.style.cssText = `
-				font-size: 12px;
-				font-weight: 500;
+				font-size: 13px;
+				font-weight: 600;
 				color: var(--text-normal);
 				text-align: center;
+				margin-bottom: 4px;
 			`;
+      if (description) {
+        const colorDesc = colorCard.createEl("div", {
+          text: description,
+          cls: "color-card-desc"
+        });
+        colorDesc.style.cssText = `
+					font-size: 11px;
+					color: var(--text-muted);
+					text-align: center;
+					line-height: 1.3;
+					margin-bottom: 8px;
+				`;
+      }
       if (isSelected) {
         const checkmark = colorCard.createDiv("color-card-checkmark");
         checkmark.innerHTML = "\u2713";
         checkmark.style.cssText = `
 					position: absolute;
-					top: 4px;
-					right: 4px;
-					width: 16px;
-					height: 16px;
+					top: 6px;
+					right: 6px;
+					width: 18px;
+					height: 18px;
 					background: ${colorOption.color};
 					color: white;
 					border-radius: 50%;
 					display: flex;
 					align-items: center;
 					justify-content: center;
-					font-size: 10px;
+					font-size: 11px;
 					font-weight: bold;
+					box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 				`;
       }
       colorCard.addEventListener("click", async () => {
@@ -4699,26 +7371,35 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
         if (!isSelected) {
           colorCard.style.borderColor = colorOption.color;
           colorCard.style.background = colorOption.color + "08";
+          colorCard.style.transform = "translateY(-2px)";
         }
       });
       colorCard.addEventListener("mouseleave", () => {
         if (!isSelected) {
           colorCard.style.borderColor = "var(--background-modifier-border)";
           colorCard.style.background = "var(--background-secondary)";
+          colorCard.style.transform = "translateY(0)";
         }
       });
     });
-    const statusContainer = containerEl.createDiv("color-filter-status");
+  }
+  // 创建可排序的颜色预览
+  createSortableColorPreview(container) {
+    const statusContainer = container.createDiv("color-filter-status");
     statusContainer.style.cssText = `
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			padding: 12px 16px;
 			background: var(--background-secondary);
 			border-radius: 6px;
 			margin-bottom: 20px;
+			padding: 16px;
 		`;
-    const statusText = statusContainer.createEl("span", {
+    const statusHeader = statusContainer.createDiv("status-header");
+    statusHeader.style.cssText = `
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 12px;
+		`;
+    const statusText = statusHeader.createEl("span", {
       text: this.plugin.settings.language === "zh" ? `\u5DF2\u9009\u62E9 ${this.plugin.settings.colorFilterColors.length}/5 \u4E2A\u989C\u8272` : `Selected ${this.plugin.settings.colorFilterColors.length}/5 colors`,
       cls: "color-filter-status-text"
     });
@@ -4726,30 +7407,235 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			color: var(--text-muted);
 			font-size: 13px;
 		`;
-    const previewContainer = statusContainer.createDiv("color-filter-preview");
-    previewContainer.style.cssText = `
-			display: flex;
-			gap: 4px;
+    const sortHint = statusHeader.createEl("span", {
+      text: this.plugin.settings.language === "zh" ? "\u62D6\u62FD\u8C03\u6574\u987A\u5E8F" : "Drag to reorder",
+      cls: "sort-hint"
+    });
+    sortHint.style.cssText = `
+			color: var(--text-muted);
+			font-size: 11px;
+			font-style: italic;
 		`;
-    this.plugin.settings.colorFilterColors.forEach((colorValue) => {
-      const colorMap = {
-        "1": "#ff6b6b",
-        "2": "#ffa726",
-        "3": "#ffeb3b",
-        "4": "#66bb6a",
-        "5": "#26c6da",
-        "6": "#42a5f5",
-        "7": "#ab47bc"
-      };
-      const previewDot = previewContainer.createDiv("color-preview-dot");
-      previewDot.style.cssText = `
-				width: 16px;
-				height: 16px;
+    const sortableContainer = statusContainer.createDiv("sortable-color-container");
+    sortableContainer.style.cssText = `
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+			min-height: 40px;
+			padding: 8px;
+			border: 1px dashed var(--background-modifier-border);
+			border-radius: 4px;
+			background: var(--background-primary);
+		`;
+    this.renderSortableColorDots(sortableContainer);
+  }
+  // 获取默认颜色名称
+  getDefaultColorName(colorValue) {
+    const colorNames = {
+      "1": this.plugin.settings.language === "zh" ? "\u7EA2\u8272" : "Red",
+      "2": this.plugin.settings.language === "zh" ? "\u6A59\u8272" : "Orange",
+      "3": this.plugin.settings.language === "zh" ? "\u9EC4\u8272" : "Yellow",
+      "4": this.plugin.settings.language === "zh" ? "\u7EFF\u8272" : "Green",
+      "5": this.plugin.settings.language === "zh" ? "\u9752\u8272" : "Cyan",
+      "6": this.plugin.settings.language === "zh" ? "\u84DD\u8272" : "Blue",
+      "7": this.plugin.settings.language === "zh" ? "\u7D2B\u8272" : "Purple"
+    };
+    return colorNames[colorValue] || colorValue;
+  }
+  // 创建颜色分类列表
+  createColorCategoryList(containerEl) {
+    const categoryContainer = containerEl.createDiv("color-category-list");
+    categoryContainer.style.cssText = `
+			background: var(--background-primary);
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 8px;
+			padding: 20px;
+			margin-bottom: 16px;
+		`;
+    const listTitle = categoryContainer.createEl("h4", {
+      text: this.plugin.settings.language === "zh" ? "\u989C\u8272\u5206\u7C7B\u914D\u7F6E" : "Color Category Configuration",
+      cls: "color-category-title"
+    });
+    listTitle.style.cssText = `
+			margin: 0 0 16px 0;
+			color: var(--text-normal);
+			font-size: 14px;
+			font-weight: 600;
+		`;
+    this.plugin.settings.colorCategories.forEach((category, index) => {
+      this.createColorCategoryItem(categoryContainer, category, index);
+    });
+  }
+  // 创建单个颜色分类项
+  createColorCategoryItem(container, category, index) {
+    const itemContainer = container.createDiv("color-category-item");
+    itemContainer.style.cssText = `
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px;
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 6px;
+			margin-bottom: 8px;
+			background: var(--background-secondary);
+		`;
+    const colorDot = itemContainer.createDiv("color-category-dot");
+    colorDot.style.cssText = `
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			background: ${this.getColorValue(category.color)};
+			border: 2px solid var(--background-modifier-border);
+			flex-shrink: 0;
+		`;
+    const infoContainer = itemContainer.createDiv("color-category-info");
+    infoContainer.style.cssText = `
+			flex: 1;
+			min-width: 0;
+		`;
+    const nameEl = infoContainer.createEl("div", {
+      text: category.name,
+      cls: "color-category-name"
+    });
+    nameEl.style.cssText = `
+			font-weight: 600;
+			color: var(--text-normal);
+			margin-bottom: 4px;
+		`;
+    const descEl = infoContainer.createEl("div", {
+      text: category.description,
+      cls: "color-category-desc"
+    });
+    descEl.style.cssText = `
+			font-size: 12px;
+			color: var(--text-muted);
+			line-height: 1.3;
+		`;
+    const editBtn = itemContainer.createEl("button", {
+      text: this.plugin.settings.language === "zh" ? "\u7F16\u8F91" : "Edit",
+      cls: "mod-cta"
+    });
+    editBtn.style.cssText = `
+			padding: 4px 12px;
+			font-size: 12px;
+		`;
+    editBtn.onclick = () => {
+      this.openColorCategoryEditor(category, index);
+    };
+  }
+  // 获取颜色值
+  getColorValue(colorId) {
+    const colorMap = {
+      "1": "#ff6b6b",
+      // 红色
+      "2": "#ffa726",
+      // 橙色
+      "3": "#ffeb3b",
+      // 黄色
+      "4": "#66bb6a",
+      // 绿色
+      "5": "#26c6da",
+      // 青色
+      "6": "#42a5f5",
+      // 蓝色
+      "7": "#ab47bc"
+      // 紫色
+    };
+    return colorMap[colorId] || "#999999";
+  }
+  // 打开颜色分类编辑器
+  openColorCategoryEditor(category, index) {
+    new ColorCategoryEditModal(this.app, this.plugin, category, index, () => {
+      this.display();
+    }).open();
+  }
+  // 渲染可排序的颜色圆点
+  renderSortableColorDots(container) {
+    container.empty();
+    const colorMap = {
+      "1": "#ff6b6b",
+      "2": "#ffa726",
+      "3": "#ffeb3b",
+      "4": "#66bb6a",
+      "5": "#26c6da",
+      "6": "#42a5f5",
+      "7": "#ab47bc"
+    };
+    const colorNames = {
+      "1": this.plugin.settings.language === "zh" ? "\u7EA2\u8272" : "Red",
+      "2": this.plugin.settings.language === "zh" ? "\u6A59\u8272" : "Orange",
+      "3": this.plugin.settings.language === "zh" ? "\u9EC4\u8272" : "Yellow",
+      "4": this.plugin.settings.language === "zh" ? "\u7EFF\u8272" : "Green",
+      "5": this.plugin.settings.language === "zh" ? "\u9752\u8272" : "Cyan",
+      "6": this.plugin.settings.language === "zh" ? "\u84DD\u8272" : "Blue",
+      "7": this.plugin.settings.language === "zh" ? "\u7D2B\u8272" : "Purple"
+    };
+    this.plugin.settings.colorFilterColors.forEach((colorValue, index) => {
+      const colorDot = container.createDiv("sortable-color-dot");
+      colorDot.draggable = true;
+      colorDot.dataset.colorValue = colorValue;
+      colorDot.dataset.index = index.toString();
+      colorDot.style.cssText = `
+				width: 32px;
+				height: 32px;
 				border-radius: 50%;
 				background: ${colorMap[colorValue]};
-				border: 1px solid var(--background-modifier-border);
+				border: 2px solid white;
+				box-shadow: 0 2px 8px ${colorMap[colorValue]}40;
+				cursor: grab;
+				transition: all 0.2s ease;
+				position: relative;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			`;
+      colorDot.title = colorNames[colorValue] || colorValue;
+      colorDot.addEventListener("dragstart", (e) => {
+        colorDot.style.cursor = "grabbing";
+        colorDot.style.opacity = "0.5";
+        e.dataTransfer.setData("text/plain", index.toString());
+        e.dataTransfer.effectAllowed = "move";
+      });
+      colorDot.addEventListener("dragend", () => {
+        colorDot.style.cursor = "grab";
+        colorDot.style.opacity = "1";
+      });
+      colorDot.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      });
+      colorDot.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        const draggedIndex = parseInt(e.dataTransfer.getData("text/plain"));
+        const targetIndex = index;
+        if (draggedIndex !== targetIndex) {
+          const newColors = [...this.plugin.settings.colorFilterColors];
+          const draggedColor = newColors.splice(draggedIndex, 1)[0];
+          newColors.splice(targetIndex, 0, draggedColor);
+          this.plugin.settings.colorFilterColors = newColors;
+          await this.plugin.saveSettings();
+          this.updateAllGridViews();
+          this.renderSortableColorDots(container);
+        }
+      });
+      colorDot.addEventListener("mouseenter", () => {
+        colorDot.style.transform = "scale(1.1)";
+      });
+      colorDot.addEventListener("mouseleave", () => {
+        colorDot.style.transform = "scale(1)";
+      });
     });
+    if (this.plugin.settings.colorFilterColors.length === 0) {
+      const emptyHint = container.createDiv("empty-hint");
+      emptyHint.textContent = this.plugin.settings.language === "zh" ? "\u8BF7\u5728\u4E0A\u65B9\u9009\u62E9\u989C\u8272" : "Please select colors above";
+      emptyHint.style.cssText = `
+				color: var(--text-muted);
+				font-size: 12px;
+				font-style: italic;
+				text-align: center;
+				padding: 8px;
+			`;
+    }
   }
   // 创建关于插件部分
   createAboutSection(containerEl) {
@@ -4760,7 +7646,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			margin: 32px 0 24px 0;
 		`;
     const titleEl = containerEl.createEl("h2", {
-      text: this.plugin.settings.language === "zh" ? "\u{1F3A8} \u5173\u4E8E Canvas Grid View" : "\u{1F3A8} About Canvas Grid View",
+      text: this.plugin.settings.language === "zh" ? "\u{1F3A8} \u5173\u4E8E Canvasgrid Transit" : "\u{1F3A8} About Canvasgrid Transit",
       cls: "plugin-intro-title"
     });
     titleEl.style.cssText = `
@@ -4770,7 +7656,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-weight: 600;
 		`;
     const versionEl = containerEl.createEl("div", {
-      text: "v1.3.1",
+      text: "v0.5.1",
       cls: "plugin-intro-version"
     });
     versionEl.style.cssText = `
@@ -4780,7 +7666,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-weight: 500;
 		`;
     const descEl = containerEl.createEl("p", {
-      text: this.plugin.settings.language === "zh" ? "\u5C06Obsidian Canvas\u8F6C\u6362\u4E3A\u7F8E\u89C2\u7684\u7F51\u683C\u5361\u7247\u89C6\u56FE\uFF0C\u652F\u6301\u641C\u7D22\u3001\u7B5B\u9009\u3001\u5206\u7EC4\u548C\u7F16\u8F91\u529F\u80FD\u3002" : "Transform Obsidian Canvas into beautiful grid card views with search, filter, grouping and editing features.",
+      text: this.plugin.settings.language === "zh" ? "\u4E3A Obsidian Canvas \u63D0\u4F9B\u5F3A\u5927\u7684\u7F51\u683C\u5361\u7247\u89C6\u56FE\uFF0C\u96C6\u6210\u667A\u80FD\u641C\u7D22\u3001\u989C\u8272\u7B5B\u9009\u3001\u5206\u7EC4\u7BA1\u7406\u3001\u65F6\u95F4\u80F6\u56CA\u6536\u96C6\u3001\u5FEB\u901F\u4E66\u7B7E\u89E3\u6790\u7B49\u521B\u65B0\u529F\u80FD\uFF0C\u8BA9\u60A8\u7684\u77E5\u8BC6\u7BA1\u7406\u66F4\u52A0\u9AD8\u6548\u4FBF\u6377\u3002" : "Powerful grid card view for Obsidian Canvas with intelligent search, color filtering, group management, time capsule collection, fast bookmark parsing and other innovative features for efficient knowledge management.",
       cls: "plugin-intro-desc"
     });
     descEl.style.cssText = `
@@ -4808,21 +7694,27 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-weight: 600;
 		`;
     const featuresList = this.plugin.settings.language === "zh" ? [
-      "\u{1F50D} \u667A\u80FD\u641C\u7D22\u548C\u989C\u8272\u7B5B\u9009",
-      "\u{1F4F1} \u54CD\u5E94\u5F0F\u7F51\u683C\u5E03\u5C40",
-      "\u{1F3A8} \u652F\u6301Canvas\u5206\u7EC4\u663E\u793A",
-      "\u270F\uFE0F \u76F4\u63A5\u7F16\u8F91\u5361\u7247\u5185\u5BB9",
-      "\u{1F517} \u7F51\u7EDC\u94FE\u63A5\u4E66\u7B7E\u9884\u89C8",
-      "\u{1F3AF} \u4E00\u952E\u805A\u7126Canvas\u8282\u70B9",
-      "\u26A1 \u5B9E\u65F6\u540C\u6B65Canvas\u6570\u636E"
+      "\u{1F50D} \u667A\u80FD\u641C\u7D22 - \u652F\u6301\u5185\u5BB9\u3001\u6587\u4EF6\u540D\u3001URL\u5168\u6587\u641C\u7D22",
+      "\u{1F3A8} \u989C\u8272\u7B5B\u9009 - \u53EF\u914D\u7F6E\u989C\u8272\u5206\u7C7B\u548C\u4E00\u952E\u7B5B\u9009",
+      "\u{1F4F1} \u54CD\u5E94\u5F0F\u5E03\u5C40 - \u81EA\u9002\u5E94\u5C4F\u5E55\u5BBD\u5EA6\u7684\u7F51\u683C\u5E03\u5C40",
+      "\u{1F5C2}\uFE0F \u5206\u7EC4\u7BA1\u7406 - Canvas\u5206\u7EC4\u7684\u5361\u7247\u5316\u663E\u793A\u548C\u7F16\u8F91",
+      "\u23F0 \u65F6\u95F4\u80F6\u56CA - \u521B\u65B0\u7684\u5185\u5BB9\u6536\u96C6\u548C\u65F6\u95F4\u7BA1\u7406\u529F\u80FD",
+      "\u{1F517} \u5FEB\u901F\u4E66\u7B7E - \u7F51\u9875\u94FE\u63A5\u7684\u77AC\u95F4\u89E3\u6790\u548C\u7F8E\u89C2\u5C55\u793A",
+      "\u270F\uFE0F \u5B9E\u65F6\u7F16\u8F91 - \u76F4\u63A5\u5728\u7F51\u683C\u89C6\u56FE\u4E2D\u7F16\u8F91\u5361\u7247\u5185\u5BB9",
+      "\u{1F3AF} \u7CBE\u51C6\u5B9A\u4F4D - \u4E00\u952E\u805A\u7126\u5230Canvas\u4E2D\u7684\u5177\u4F53\u8282\u70B9",
+      "\u{1F504} \u53CC\u5411\u540C\u6B65 - \u4E0ECanvas\u767D\u677F\u7684\u5B9E\u65F6\u6570\u636E\u540C\u6B65",
+      "\u{1F310} \u591A\u8BED\u8A00 - \u652F\u6301\u4E2D\u6587\u548C\u82F1\u6587\u754C\u9762\u5207\u6362"
     ] : [
-      "\u{1F50D} Smart search and color filtering",
-      "\u{1F4F1} Responsive grid layout",
-      "\u{1F3A8} Canvas grouping support",
-      "\u270F\uFE0F Direct card content editing",
-      "\u{1F517} Web link bookmark preview",
-      "\u{1F3AF} One-click Canvas node focus",
-      "\u26A1 Real-time Canvas data sync"
+      "\u{1F50D} Smart Search - Full-text search for content, filenames, and URLs",
+      "\u{1F3A8} Color Filtering - Configurable color categories and one-click filtering",
+      "\u{1F4F1} Responsive Layout - Grid layout that adapts to screen width",
+      "\u{1F5C2}\uFE0F Group Management - Card-based display and editing of Canvas groups",
+      "\u23F0 Time Capsule - Innovative content collection and time management",
+      "\u{1F517} Fast Bookmarks - Instant parsing and beautiful display of web links",
+      "\u270F\uFE0F Real-time Editing - Direct card content editing in grid view",
+      "\u{1F3AF} Precise Navigation - One-click focus to specific Canvas nodes",
+      "\u{1F504} Bidirectional Sync - Real-time data sync with Canvas whiteboard",
+      "\u{1F310} Multi-language - Support for Chinese and English interface"
     ];
     featuresList.forEach((feature) => {
       const featureItem = featuresContainer.createEl("div", {
@@ -4830,47 +7722,6 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
         cls: "plugin-intro-feature-item"
       });
       featureItem.style.cssText = `
-				color: var(--text-muted);
-				font-size: 13px;
-				margin-bottom: 6px;
-				padding-left: 8px;
-			`;
-    });
-    const guideContainer = containerEl.createDiv("plugin-intro-guide");
-    guideContainer.style.cssText = `
-			background: var(--background-primary);
-			border-radius: 8px;
-			padding: 16px;
-			margin-bottom: 24px;
-			border-left: 4px solid var(--interactive-accent);
-		`;
-    const guideTitle = guideContainer.createEl("h4", {
-      text: "\u{1F680} " + i18n.t("quickStart"),
-      cls: "plugin-intro-guide-title"
-    });
-    guideTitle.style.cssText = `
-			color: var(--text-normal);
-			margin-bottom: 12px;
-			font-size: 14px;
-			font-weight: 600;
-		`;
-    const guideSteps = this.plugin.settings.language === "zh" ? [
-      "1. \u6253\u5F00\u4EFB\u610FCanvas\u6587\u4EF6",
-      "2. \u70B9\u51FBCanvas\u5DE5\u5177\u680F\u4E2D\u7684\u7F51\u683C\u89C6\u56FE\u6309\u94AE",
-      "3. \u6216\u4F7F\u7528\u4FA7\u8FB9\u680F\u7684\u7F51\u683C\u56FE\u6807\u542F\u52A8\u63D2\u4EF6",
-      "4. \u5728\u7F51\u683C\u89C6\u56FE\u4E2D\u641C\u7D22\u3001\u7B5B\u9009\u548C\u7F16\u8F91\u5361\u7247"
-    ] : [
-      "1. Open any Canvas file",
-      "2. Click the grid view button in Canvas toolbar",
-      "3. Or use the grid icon in the sidebar to launch plugin",
-      "4. Search, filter and edit cards in grid view"
-    ];
-    guideSteps.forEach((step) => {
-      const stepItem = guideContainer.createEl("div", {
-        text: step,
-        cls: "plugin-intro-guide-step"
-      });
-      stepItem.style.cssText = `
 				color: var(--text-muted);
 				font-size: 13px;
 				margin-bottom: 6px;
@@ -4900,9 +7751,39 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-weight: 600;
 		`;
     const thanksText = thanksContainer.createEl("p", {
-      text: this.plugin.settings.language === "zh" ? "\u611F\u8C22\u60A8\u4F7F\u7528 Canvas Grid View \u63D2\u4EF6\uFF01\u60A8\u7684\u652F\u6301\u662F\u6211\u4EEC\u6301\u7EED\u6539\u8FDB\u7684\u52A8\u529B\u3002" : "Thank you for using Canvas Grid View plugin! Your support is our motivation for continuous improvement.",
+      text: this.plugin.settings.language === "zh" ? "\u611F\u8C22\u60A8\u9009\u62E9 Canvasgrid Transit\uFF01\u8FD9\u4E2A\u63D2\u4EF6\u878D\u5408\u4E86\u521B\u65B0\u7684\u65F6\u95F4\u80F6\u56CA\u3001\u667A\u80FD\u4E66\u7B7E\u89E3\u6790\u3001\u5206\u7EC4\u7BA1\u7406\u7B49\u529F\u80FD\uFF0C\u81F4\u529B\u4E8E\u63D0\u5347\u60A8\u7684\u77E5\u8BC6\u7BA1\u7406\u4F53\u9A8C\u3002\u60A8\u7684\u6BCF\u4E00\u4E2A\u53CD\u9988\u90FD\u662F\u6211\u4EEC\u524D\u8FDB\u7684\u52A8\u529B\uFF01" : "Thank you for choosing Canvasgrid Transit! This plugin integrates innovative features like time capsule, intelligent bookmark parsing, and group management to enhance your knowledge management experience. Every feedback from you is our driving force!",
       cls: "plugin-thanks-text"
     });
+    const specialThanks = thanksContainer.createEl("div", {
+      cls: "plugin-special-thanks"
+    });
+    specialThanks.style.cssText = `
+			margin-top: 16px;
+			padding: 12px;
+			background: var(--background-secondary);
+			border-radius: 6px;
+			border-left: 3px solid var(--interactive-accent);
+		`;
+    const obsidianThanks = specialThanks.createEl("p", {
+      text: this.plugin.settings.language === "zh" ? "\u{1F64F} \u7279\u522B\u611F\u8C22 Obsidian \u56E2\u961F\u521B\u9020\u4E86\u5982\u6B64\u4F18\u79C0\u7684\u77E5\u8BC6\u7BA1\u7406\u5E73\u53F0\uFF0C\u4E3A\u6211\u4EEC\u7684\u521B\u65B0\u63D0\u4F9B\u4E86\u65E0\u9650\u53EF\u80FD\u3002" : "\u{1F64F} Special thanks to the Obsidian team for creating such an excellent knowledge management platform, providing infinite possibilities for our innovation.",
+      cls: "plugin-obsidian-thanks"
+    });
+    obsidianThanks.style.cssText = `
+			color: var(--text-muted);
+			font-size: 12px;
+			margin-bottom: 8px;
+			font-style: italic;
+		`;
+    const designInspiration = specialThanks.createEl("p", {
+      text: this.plugin.settings.language === "zh" ? "\u23F0 \u65F6\u95F4\u80F6\u56CA\u529F\u80FD\u7684\u8BBE\u8BA1\u7075\u611F\u6765\u6E90\u4E8E\u9524\u5B50\u79D1\u6280 Smartisan \u7684\u65F6\u95F4\u80F6\u56CA\uFF0C\u81F4\u656C\u7ECF\u5178\u7684\u521B\u65B0\u8BBE\u8BA1\u7406\u5FF5\u3002" : "\u23F0 The time capsule feature design is inspired by Smartisan's time capsule from Hammer Technology, paying tribute to classic innovative design concepts.",
+      cls: "plugin-design-inspiration"
+    });
+    designInspiration.style.cssText = `
+			color: var(--text-muted);
+			font-size: 12px;
+			margin: 0;
+			font-style: italic;
+		`;
     thanksText.style.cssText = `
 			color: var(--text-normal);
 			font-size: 14px;
@@ -4939,7 +7820,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
       feedbackBtn.style.transform = "translateY(0)";
     };
     feedbackBtn.onclick = () => {
-      window.open("https://github.com/canvas-grid-plugin/feedback", "_blank");
+      window.open("https://github.com/zhuzhige123/Canvasgrid-Transit", "_blank");
     };
     const contactBtn = supportButtons.createEl("button", {
       text: "\u{1F4E7} " + i18n.t("contact"),
@@ -4965,7 +7846,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
       contactBtn.style.transform = "translateY(0)";
     };
     contactBtn.onclick = () => {
-      window.open("mailto:canvas-grid@example.com", "_blank");
+      window.open("mailto:tutaoyuan8@outlook.com", "_blank");
     };
     const coffeeBtn = supportButtons.createEl("button", {
       text: "\u2615 " + i18n.t("buyCoffee"),
@@ -4993,6 +7874,58 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
     coffeeBtn.onclick = () => {
       window.open("https://buymeacoffee.com/canvasgrid", "_blank");
     };
+    const alipayBtn = supportButtons.createEl("button", {
+      text: "\u{1F499} " + i18n.t("alipaySupport"),
+      cls: "plugin-support-btn"
+    });
+    alipayBtn.style.cssText = `
+			background: linear-gradient(135deg, #1677ff, #00a6fb);
+			color: white;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 6px;
+			font-size: 13px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			font-weight: 500;
+		`;
+    alipayBtn.onmouseover = () => {
+      alipayBtn.style.transform = "translateY(-1px) scale(1.05)";
+      alipayBtn.style.boxShadow = "0 4px 12px rgba(22, 119, 255, 0.3)";
+    };
+    alipayBtn.onmouseout = () => {
+      alipayBtn.style.transform = "translateY(0) scale(1)";
+      alipayBtn.style.boxShadow = "none";
+    };
+    alipayBtn.onclick = () => {
+      window.open("https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/SUPPORT.md#-\u652F\u4ED8\u5B9D", "_blank");
+    };
+    const sponsorBtn = supportButtons.createEl("button", {
+      text: "\u2B50 " + i18n.t("githubSponsor"),
+      cls: "plugin-support-btn"
+    });
+    sponsorBtn.style.cssText = `
+			background: linear-gradient(135deg, #6366f1, #8b5cf6);
+			color: white;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 6px;
+			font-size: 13px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			font-weight: 500;
+		`;
+    sponsorBtn.onmouseover = () => {
+      sponsorBtn.style.transform = "translateY(-1px) scale(1.05)";
+      sponsorBtn.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.3)";
+    };
+    sponsorBtn.onmouseout = () => {
+      sponsorBtn.style.transform = "translateY(0) scale(1)";
+      sponsorBtn.style.boxShadow = "none";
+    };
+    sponsorBtn.onclick = () => {
+      window.open("https://github.com/zhuzhige123/Canvasgrid-Transit", "_blank");
+    };
     const projectInfo = containerEl.createDiv("plugin-project-info");
     projectInfo.style.cssText = `
 			background: var(--background-secondary);
@@ -5012,15 +7945,15 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
 			font-weight: 600;
 		`;
     const projectLinks = this.plugin.settings.language === "zh" ? [
-      { text: "\u{1F4DA} \u4F7F\u7528\u6587\u6863", url: "https://github.com/canvas-grid-plugin/docs" },
-      { text: "\u{1F41B} \u95EE\u9898\u62A5\u544A", url: "https://github.com/canvas-grid-plugin/issues" },
-      { text: "\u2B50 GitHub \u4ED3\u5E93", url: "https://github.com/canvas-grid-plugin" },
-      { text: "\u{1F3A8} \u66F4\u65B0\u65E5\u5FD7", url: "https://github.com/canvas-grid-plugin/releases" }
+      { text: "\u{1F4DA} \u4F7F\u7528\u6587\u6863", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/README.md" },
+      { text: "\u{1F41B} \u95EE\u9898\u62A5\u544A", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/issues" },
+      { text: "\u2B50 GitHub \u4ED3\u5E93", url: "https://github.com/zhuzhige123/Canvasgrid-Transit" },
+      { text: "\u{1F3A8} \u66F4\u65B0\u65E5\u5FD7", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/releases" }
     ] : [
-      { text: "\u{1F4DA} Documentation", url: "https://github.com/canvas-grid-plugin/docs" },
-      { text: "\u{1F41B} Bug Reports", url: "https://github.com/canvas-grid-plugin/issues" },
-      { text: "\u2B50 GitHub Repository", url: "https://github.com/canvas-grid-plugin" },
-      { text: "\u{1F3A8} Changelog", url: "https://github.com/canvas-grid-plugin/releases" }
+      { text: "\u{1F4DA} Documentation", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/README.md" },
+      { text: "\u{1F41B} Bug Reports", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/issues" },
+      { text: "\u2B50 GitHub Repository", url: "https://github.com/zhuzhige123/Canvasgrid-Transit" },
+      { text: "\u{1F3A8} Changelog", url: "https://github.com/zhuzhige123/Canvasgrid-Transit/releases" }
     ];
     projectLinks.forEach((link) => {
       const linkItem = projectInfo.createEl("div", {
@@ -5047,7 +7980,7 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
       };
     });
     const copyrightEl = containerEl.createEl("div", {
-      text: this.plugin.settings.language === "zh" ? "\xA9 2025 Canvas Grid View Plugin. \u7528 \u2764\uFE0F \u4E3A Obsidian \u793E\u533A\u5236\u4F5C\u3002" : "\xA9 2025 Canvas Grid View Plugin. Made with \u2764\uFE0F for Obsidian community.",
+      text: this.plugin.settings.language === "zh" ? "\xA9 2025 Canvasgrid Transit v0.5.1 - \u7528 \u2764\uFE0F \u4E3A Obsidian \u77E5\u8BC6\u7BA1\u7406\u793E\u533A\u7CBE\u5FC3\u6253\u9020" : "\xA9 2025 Canvasgrid Transit v0.5.1 - Crafted with \u2764\uFE0F for Obsidian knowledge management community",
       cls: "plugin-copyright"
     });
     copyrightEl.style.cssText = `
@@ -5071,5 +8004,184 @@ var CanvasGridSettingTab = class extends import_obsidian.PluginSettingTab {
         view.updateColorFilter();
       }
     });
+  }
+};
+var ColorCategoryEditModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, category, index, onSave) {
+    super(app);
+    this.plugin = plugin;
+    this.category = category;
+    this.index = index;
+    this.onSave = onSave;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", {
+      text: this.plugin.settings.language === "zh" ? "\u7F16\u8F91\u989C\u8272\u5206\u7C7B" : "Edit Color Category",
+      cls: "modal-title"
+    });
+    const formContainer = contentEl.createDiv("color-category-form");
+    formContainer.style.cssText = `
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+			margin: 20px 0;
+		`;
+    const colorPreview = formContainer.createDiv("color-preview-container");
+    colorPreview.style.cssText = `
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px;
+			background: var(--background-secondary);
+			border-radius: 6px;
+		`;
+    const colorDot = colorPreview.createDiv("color-preview-dot");
+    colorDot.style.cssText = `
+			width: 32px;
+			height: 32px;
+			border-radius: 50%;
+			background: ${this.getColorValue(this.category.color)};
+			border: 2px solid var(--background-modifier-border);
+			flex-shrink: 0;
+		`;
+    const colorInfo = colorPreview.createDiv("color-info");
+    colorInfo.innerHTML = `
+			<div style="font-weight: 600; color: var(--text-normal);">
+				${this.plugin.settings.language === "zh" ? "\u989C\u8272" : "Color"}: ${this.getColorName(this.category.color)}
+			</div>
+			<div style="font-size: 12px; color: var(--text-muted);">
+				${this.plugin.settings.language === "zh" ? "\u989C\u8272ID" : "Color ID"}: ${this.category.color}
+			</div>
+		`;
+    const nameContainer = formContainer.createDiv("input-container");
+    const nameLabel = nameContainer.createEl("label", {
+      text: this.plugin.settings.language === "zh" ? "\u5206\u7C7B\u540D\u79F0:" : "Category Name:",
+      cls: "setting-item-name"
+    });
+    nameLabel.style.cssText = `
+			display: block;
+			margin-bottom: 6px;
+			font-weight: 600;
+			color: var(--text-normal);
+		`;
+    this.nameInput = nameContainer.createEl("input", {
+      type: "text",
+      value: this.category.name,
+      cls: "color-category-name-input"
+    });
+    this.nameInput.style.cssText = `
+			width: 100%;
+			padding: 8px 12px;
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 4px;
+			background: var(--background-primary);
+			color: var(--text-normal);
+			font-size: 14px;
+		`;
+    const descContainer = formContainer.createDiv("input-container");
+    const descLabel = descContainer.createEl("label", {
+      text: this.plugin.settings.language === "zh" ? "\u5206\u7C7B\u63CF\u8FF0:" : "Category Description:",
+      cls: "setting-item-name"
+    });
+    descLabel.style.cssText = `
+			display: block;
+			margin-bottom: 6px;
+			font-weight: 600;
+			color: var(--text-normal);
+		`;
+    this.descInput = descContainer.createEl("textarea", {
+      value: this.category.description,
+      cls: "color-category-desc-input"
+    });
+    this.descInput.style.cssText = `
+			width: 100%;
+			min-height: 80px;
+			padding: 8px 12px;
+			border: 1px solid var(--background-modifier-border);
+			border-radius: 4px;
+			background: var(--background-primary);
+			color: var(--text-normal);
+			font-size: 14px;
+			resize: vertical;
+			font-family: inherit;
+		`;
+    const buttonContainer = contentEl.createDiv("modal-button-container");
+    buttonContainer.style.cssText = `
+			display: flex;
+			justify-content: flex-end;
+			gap: 12px;
+			margin-top: 20px;
+			padding-top: 16px;
+			border-top: 1px solid var(--background-modifier-border);
+		`;
+    const cancelBtn = buttonContainer.createEl("button", {
+      text: this.plugin.settings.language === "zh" ? "\u53D6\u6D88" : "Cancel",
+      cls: "mod-cancel"
+    });
+    cancelBtn.onclick = () => this.close();
+    const saveBtn = buttonContainer.createEl("button", {
+      text: this.plugin.settings.language === "zh" ? "\u4FDD\u5B58" : "Save",
+      cls: "mod-cta"
+    });
+    saveBtn.onclick = () => this.saveChanges();
+    setTimeout(() => {
+      this.nameInput.focus();
+      this.nameInput.select();
+    }, 100);
+  }
+  getColorValue(colorId) {
+    const colorMap = {
+      "1": "#ff6b6b",
+      // 红色
+      "2": "#ffa726",
+      // 橙色
+      "3": "#ffeb3b",
+      // 黄色
+      "4": "#66bb6a",
+      // 绿色
+      "5": "#26c6da",
+      // 青色
+      "6": "#42a5f5",
+      // 蓝色
+      "7": "#ab47bc"
+      // 紫色
+    };
+    return colorMap[colorId] || "#999999";
+  }
+  getColorName(colorId) {
+    const colorNames = {
+      "1": this.plugin.settings.language === "zh" ? "\u7EA2\u8272" : "Red",
+      "2": this.plugin.settings.language === "zh" ? "\u6A59\u8272" : "Orange",
+      "3": this.plugin.settings.language === "zh" ? "\u9EC4\u8272" : "Yellow",
+      "4": this.plugin.settings.language === "zh" ? "\u7EFF\u8272" : "Green",
+      "5": this.plugin.settings.language === "zh" ? "\u9752\u8272" : "Cyan",
+      "6": this.plugin.settings.language === "zh" ? "\u84DD\u8272" : "Blue",
+      "7": this.plugin.settings.language === "zh" ? "\u7D2B\u8272" : "Purple"
+    };
+    return colorNames[colorId] || colorId;
+  }
+  saveChanges() {
+    const newName = this.nameInput.value.trim();
+    const newDesc = this.descInput.value.trim();
+    if (!newName) {
+      new import_obsidian.Notice(this.plugin.settings.language === "zh" ? "\u5206\u7C7B\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A" : "Category name cannot be empty");
+      this.nameInput.focus();
+      return;
+    }
+    this.plugin.settings.colorCategories[this.index] = {
+      ...this.category,
+      name: newName,
+      description: newDesc
+    };
+    this.plugin.saveSettings();
+    new import_obsidian.Notice(this.plugin.settings.language === "zh" ? "\u989C\u8272\u5206\u7C7B\u5DF2\u66F4\u65B0" : "Color category updated");
+    this.close();
+    this.onSave();
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 };

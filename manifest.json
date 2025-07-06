@@ -1,11 +1,11 @@
 {
 	"id": "canvas-grid-view",
-	"name": "Canvas Grid View",
-	"version": "1.3.1",
+	"name": "Canvasgrid Transit",
+	"version": "0.5.1",
 	"minAppVersion": "0.15.0",
-	"description": "Adds a grid card view to Obsidian Canvas with enhanced editing capabilities",
-	"author": "Canvas Grid Plugin Developer",
-	"authorUrl": "",
-	"fundingUrl": "",
+	"description": "Canvasgrid Transit - Powerful grid card view for Obsidian Canvas with time capsule, smart bookmarks and enhanced editing capabilities",
+	"author": "Canvasgrid Transit Developer",
+	"authorUrl": "https://github.com/zhuzhige123/Canvasgrid-Transit",
+	"fundingUrl": "https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/SUPPORT.md",
 	"isDesktopOnly": false
 }

@@ -5,10 +5,12 @@
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"dev-watch": "node dev-simple.js",
-		"dev-deploy": "powershell -ExecutionPolicy Bypass -File dev-deploy.ps1",
+		"dev-watch": "node dev-watch-sync.js",
+		"dev-sync": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"build-only": "node esbuild.config.mjs production",
+		"build-sync": "npm run build-only && powershell -ExecutionPolicy Bypass -File sync-to-obsidian.ps1",
+		"sync": "powershell -ExecutionPolicy Bypass -File sync-to-obsidian.ps1",
 		"type-check": "tsc -noEmit -skipLibCheck",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},

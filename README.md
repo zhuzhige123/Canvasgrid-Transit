@@ -1,11 +1,11 @@
-# canvas-grid-view
-# Canvas Grid View
+# Canvasgrid Transit
 
-🎨 Transform your Obsidian Canvas into beautiful grid card views with advanced search, filtering, and editing capabilities.
+🎨 Powerful grid card view for Obsidian Canvas with innovative time capsule, smart bookmarks, and enhanced editing capabilities.
 
-![Plugin Version](https://img.shields.io/badge/version-1.3.1-blue)
+![Plugin Version](https://img.shields.io/badge/version-0.5.1-blue)
 ![Obsidian Downloads](https://img.shields.io/badge/downloads-1k+-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+![GitHub Stars](https://img.shields.io/github/stars/zhuzhige123/Canvasgrid-Transit?style=social)
 
 [English](#english) | [中文](#中文)
 
@@ -15,33 +15,37 @@
 
 ### 🌟 Features
 
-- **🔍 Smart Search & Filtering**: Powerful search with color-based filtering
-- **📱 Responsive Grid Layout**: Auto-adjusting card layout for any screen size
-- **🎨 Canvas Group Support**: Display Canvas groups as expandable cards
-- **✏️ Direct Card Editing**: Edit card content directly in grid view
-- **🔗 Web Bookmark Preview**: Automatic link parsing with title, description, and favicon
-- **🎯 One-Click Node Focus**: Jump directly to nodes in Canvas view
-- **⚡ Real-time Sync**: Instant synchronization with Canvas data
-- **🌐 Multi-language**: Support for English and Chinese interfaces
+- **🔍 Smart Search**: Full-text search for content, filenames, and URLs
+- **🎨 Color Filtering**: Configurable color categories with one-click filtering
+- **📱 Responsive Layout**: Grid layout that adapts to screen width
+- **🗂️ Group Management**: Card-based display and editing of Canvas groups
+- **⏰ Time Capsule**: Innovative content collection and time management feature
+- **🔗 Fast Bookmarks**: Instant parsing and beautiful display of web links
+- **✏️ Real-time Editing**: Direct card content editing in grid view
+- **🎯 Precise Navigation**: One-click focus to specific Canvas nodes
+- **🔄 Bidirectional Sync**: Real-time data sync with Canvas whiteboard
+- **🌐 Multi-language**: Support for Chinese and English interface switching
 
 ### 📦 Installation
 
 #### Method 1: Manual Installation
-1. Download the latest release from [Releases](https://github.com/zhuzhige123/canvas-grid-view/releases)
-2. Extract the files to your Obsidian plugins folder: `VaultFolder/.obsidian/plugins/canvas-grid-view/`
+1. Download the latest release from [Releases](https://github.com/zhuzhige123/Canvasgrid-Transit/releases)
+2. Extract the files to your Obsidian plugins folder: `VaultFolder/.obsidian/plugins/canvasgrid-transit/`
 3. Reload Obsidian and enable the plugin in Settings > Community Plugins
 
 #### Method 2: BRAT Plugin (Beta)
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat)
-2. Add this repository: `zhuzhige123/canvas-grid-view`
+2. Add this repository: `zhuzhige123/Canvasgrid-Transit`
 3. Enable the plugin in Settings > Community Plugins
 
 ### 🚀 Quick Start
 
-1. **Open any Canvas file** in Obsidian
-2. **Click the grid view button** in the Canvas toolbar
-3. **Or use the sidebar icon** to launch the plugin
-4. **Search, filter, and edit** cards in the beautiful grid view
+1. **Open any Canvas file** or create a new Canvas in Obsidian
+2. **Click the grid view button** in the Canvas toolbar to switch
+3. **Use the top search box** to quickly find specific content
+4. **Filter cards** through color dots for different categories
+5. **Try the time capsule feature** to collect and manage content
+6. **Double-click cards** to edit directly, right-click for more options
 
 ### 🎯 Usage Guide
 
@@ -57,18 +61,47 @@
 - **Navigate**: Use the return button to go back to the main view
 
 #### Advanced Features
-- **Web Bookmarks**: URLs automatically display as bookmark cards with previews
+- **Time Capsule**: Click the hourglass button to start a countdown timer and collect content during the specified time
+- **Fast Bookmarks**: URLs instantly display as bookmark cards with smart title extraction and previews
+- **Smart Positioning**: Time capsule groups automatically avoid overlapping with existing groups
 - **Node Focus**: Right-click cards and select "Focus in Canvas" to jump to the original node
 - **Real-time Sync**: Changes sync automatically between grid view and Canvas
 
 ### ⚙️ Settings
 
-Access plugin settings through Settings > Canvas Grid View:
+Access plugin settings through Settings > Canvasgrid Transit:
 
-- **Grid Layout**: Adjust card width, height, and spacing
-- **Color Filters**: Choose which colors to display in the filter toolbar
+- **Color Categories**: Configure color coding (red=important, yellow=todo, blue=notes, etc.)
+- **Time Capsule**: Set default duration and collection behavior
 - **Interface Language**: Switch between English and Chinese
-- **Auto Layout**: Enable responsive grid adjustment
+- **Grid Display**: Responsive layout with automatic adjustment
+- **Search & Filter**: Customize search behavior and filter options
+
+## ⭐ Highlight Features
+
+### ⏰ Time Capsule
+Innovative content collection feature inspired by Smartisan's time capsule design:
+- Set countdown timer (5-60 minutes)
+- Automatically creates a collection group
+- Collect content using hotkeys during countdown
+- Smart positioning to avoid group overlaps
+- Visual countdown and collection status
+
+### 🔗 Fast Bookmarks
+Lightning-fast web link parsing:
+- Instant basic bookmark display (<100ms)
+- Smart title extraction from URLs
+- Asynchronous detailed metadata enhancement
+- Google favicon service integration
+- Fallback mechanisms for reliability
+
+### 🎨 Smart Group Management
+Enhanced Canvas group experience:
+- Groups display as cards in grid view
+- Click to enter detailed group interface
+- Drag-and-drop content management
+- Right-click group name editing
+- Automatic top positioning for active time capsules
 
 ### 🎨 Screenshots
 
@@ -78,10 +111,11 @@ Access plugin settings through Settings > Canvas Grid View:
 
 We welcome contributions! Please feel free to:
 
-- 🐛 [Report bugs](https://github.com/zhuzhige123/canvas-grid-view/issues)
-- 💡 [Suggest features](https://github.com/zhuzhige123/canvas-grid-view/issues)
+- 🐛 [Report bugs](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
+- 💡 [Suggest features](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
 - 🔧 Submit pull requests
 - 📖 Improve documentation
+- 📧 Contact developer: tutaoyuan8@outlook.com
 
 ### 📄 License
 
@@ -101,33 +135,37 @@ If you find this plugin helpful, consider:
 
 ### 🌟 功能特性
 
-- **🔍 智能搜索和筛选**: 强大的搜索功能，支持颜色筛选
-- **📱 响应式网格布局**: 自动适应屏幕尺寸的卡片布局
-- **🎨 Canvas分组支持**: 将Canvas分组显示为可展开的卡片
-- **✏️ 直接编辑卡片**: 在网格视图中直接编辑卡片内容
-- **🔗 网络书签预览**: 自动解析链接，显示标题、描述和图标
-- **🎯 一键聚焦节点**: 直接跳转到Canvas视图中的节点
-- **⚡ 实时同步**: 与Canvas数据即时同步
-- **🌐 多语言支持**: 支持中英文界面切换
+- **🔍 智能搜索**: 支持内容、文件名、URL的全文搜索
+- **🎨 颜色筛选**: 可配置颜色分类和一键筛选功能
+- **📱 响应式布局**: 自适应屏幕宽度的网格布局
+- **🗂️ 分组管理**: Canvas分组的卡片化显示和编辑
+- **⏰ 时间胶囊**: 创新的内容收集和时间管理功能
+- **🔗 快速书签**: 网页链接的瞬间解析和美观展示
+- **✏️ 实时编辑**: 直接在网格视图中编辑卡片内容
+- **🎯 精准定位**: 一键聚焦到Canvas中的具体节点
+- **🔄 双向同步**: 与Canvas白板的实时数据同步
+- **🌐 多语言**: 支持中文和英文界面切换
 
 ### 📦 安装方法
 
 #### 方法一：手动安装
-1. 从 [Releases](https://github.com/zhuzhige123/canvas-grid-view/releases) 下载最新版本
-2. 解压文件到Obsidian插件文件夹：`库文件夹/.obsidian/plugins/canvas-grid-view/`
+1. 从 [Releases](https://github.com/zhuzhige123/Canvasgrid-Transit/releases) 下载最新版本
+2. 解压文件到Obsidian插件文件夹：`库文件夹/.obsidian/plugins/canvasgrid-transit/`
 3. 重新加载Obsidian，在设置 > 第三方插件中启用插件
 
 #### 方法二：BRAT插件（测试版）
 1. 安装 [BRAT插件](https://github.com/TfTHacker/obsidian42-brat)
-2. 添加此仓库：`zhuzhige123/canvas-grid-view`
+2. 添加此仓库：`zhuzhige123/Canvasgrid-Transit`
 3. 在设置 > 第三方插件中启用插件
 
 ### 🚀 快速开始
 
-1. **打开任意Canvas文件**
-2. **点击Canvas工具栏中的网格视图按钮**
-3. **或使用侧边栏的网格图标**启动插件
-4. **在美观的网格视图中搜索、筛选和编辑**卡片
+1. **打开任意Canvas文件或创建新的Canvas**
+2. **点击Canvas工具栏中的网格视图按钮切换**
+3. **使用顶部搜索框快速查找特定内容**
+4. **通过颜色点筛选不同类别的卡片**
+5. **尝试时间胶囊功能收集和管理内容**
+6. **双击卡片直接编辑，右键查看更多选项**
 
 ### 🎯 使用指南
 
@@ -143,27 +181,31 @@ If you find this plugin helpful, consider:
 - **导航**：使用返回按钮回到主视图
 
 #### 高级功能
-- **网络书签**：URL自动显示为带预览的书签卡片
+- **时间胶囊**：点击沙漏按钮启动倒计时，在指定时间内收集内容
+- **快速书签**：URL瞬间显示为书签卡片，智能提取标题和预览
+- **智能定位**：时间胶囊分组自动避开现有分组，防止重叠
 - **节点聚焦**：右键点击卡片选择"在Canvas中聚焦"跳转到原始节点
 - **实时同步**：网格视图和Canvas之间的更改自动同步
 
 ### ⚙️ 设置选项
 
-通过设置 > Canvas Grid View访问插件设置：
+通过设置 > Canvasgrid Transit 访问插件设置：
 
-- **网格布局**：调整卡片宽度、高度和间距
-- **颜色筛选器**：选择在筛选工具栏中显示的颜色
+- **颜色分类**：配置颜色编码（红色=重要，黄色=待办，蓝色=笔记等）
+- **时间胶囊**：设置默认时长和收集行为
 - **界面语言**：在中英文之间切换
-- **自动布局**：启用响应式网格调整
+- **网格显示**：响应式布局，自动调整
+- **搜索筛选**：自定义搜索行为和筛选选项
 
 ### 🤝 贡献
 
 欢迎贡献！请随时：
 
-- 🐛 [报告问题](https://github.com/zhuzhige123/canvas-grid-view/issues)
-- 💡 [建议功能](https://github.com/zhuzhige123/canvas-grid-view/issues)
+- 🐛 [报告问题](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
+- 💡 [建议功能](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
 - 🔧 提交拉取请求
 - 📖 改进文档
+- 📧 联系开发者：tutaoyuan8@outlook.com
 
 ### 📄 许可证
 
@@ -185,9 +227,10 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 ## 🔗 Links
 
-- [Documentation](https://github.com/zhuzhige123/canvas-grid-view/wiki)
-- [Issues](https://github.com/zhuzhige123/canvas-grid-view/issues)
-- [Discussions](https://github.com/zhuzhige123/canvas-grid-view/discussions)
+- [Documentation](https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/README.md)
+- [Issues](https://github.com/zhuzhige123/Canvasgrid-Transit/issues)
+- [Releases](https://github.com/zhuzhige123/Canvasgrid-Transit/releases)
+- [Support](https://github.com/zhuzhige123/Canvasgrid-Transit/blob/main/SUPPORT.md)
 
 ## 🛠️ Development
 
@@ -198,8 +241,8 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/zhuzhige123/canvas-grid-view.git
-cd canvas-grid-view
+git clone https://github.com/zhuzhige123/Canvasgrid-Transit.git
+cd Canvasgrid-Transit
 
 # Install dependencies
 npm install
@@ -213,7 +256,7 @@ npm run build
 
 ### Project Structure
 ```
-canvas-grid-view/
+Canvasgrid-Transit/
 ├── main.ts             # Main plugin file
 ├── styles.css          # Plugin styles
 ├── manifest.json       # Plugin manifest
@@ -229,7 +272,13 @@ canvas-grid-view/
 5. Submit a pull request
 
 ---
-![微信图片_20250705170742](https://github.com/user-attachments/assets/2f670ff3-110c-457d-9633-87809b9151fe)![微信图片_20250705170730](https://github.com/user-attachments/assets/739695e7-1750-44d8-8b27-91b083cbc742)
 
+## 🙏 Acknowledgments
 
-**Made with ❤️ for the Obsidian community**
+- **Special thanks to the Obsidian team** for creating such an excellent knowledge management platform
+- **Time capsule design inspiration** from Smartisan's time capsule feature by Hammer Technology
+- **Thanks to the Obsidian community** for continuous feedback and support
+
+---
+
+**Made with ❤️ for the Obsidian knowledge management community**

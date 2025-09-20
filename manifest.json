@@ -5,7 +5,7 @@
 	"minAppVersion": "1.0.0",
 	"description": "A powerful grid-based plugin for Obsidian Canvas that transforms your Canvas files into organized, searchable card layouts with advanced features like drag-and-drop, time capsule, Anki integration, and intelligent content management.",
 	"author": "Canvasgrid Transit Team",
-	"authorUrl": "https://github.com/zhuzhige123/Canvasgrid-Transit",
+	"authorUrl": "https://github.com/zhuzhige123",
 	"fundingUrl": "https://github.com/zhuzhige123/Canvasgrid-Transit#support",
 	"isDesktopOnly": false
 }

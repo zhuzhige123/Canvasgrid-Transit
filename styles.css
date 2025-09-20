@@ -1,0 +1,6387 @@
+/* Canvas Grid View 样式 */
+
+/* SVG图标通用样式 - 主题适配 */
+.svg-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.svg-icon svg {
+    /* 确保SVG图标颜色适应主题 */
+    color: inherit;
+    fill: currentColor;
+    stroke: currentColor;
+    /* 移除可能的默认颜色 */
+    opacity: 1;
+}
+
+/* 时间胶囊按钮特定的图标样式 */
+.canvas-grid-time-capsule-btn .svg-icon svg {
+    color: inherit;
+    fill: currentColor;
+}
+
+/* 确保在不同状态下图标颜色正确 */
+.canvas-grid-time-capsule-btn:hover .svg-icon svg {
+    color: inherit;
+    fill: currentColor;
+}
+
+.canvas-grid-time-capsule-btn.active .svg-icon svg {
+    color: white;
+    fill: white;
+}
+
+.canvas-grid-time-capsule-btn.warning .svg-icon svg {
+    color: white;
+    fill: white;
+}
+
+/* 深色主题下的图标适配 */
+.theme-dark .svg-icon svg {
+    color: inherit;
+    fill: currentColor;
+}
+
+/* 拖拽相关样式 - 优化版本 */
+.canvas-grid-card.drop-target-group {
+    border: 2px dashed var(--interactive-accent);
+    background-color: var(--interactive-accent-hover);
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
+}
+
+/* 🔧 新增：激活状态的分组放置目标 */
+.canvas-grid-card.drop-target-active {
+    border: 3px solid var(--interactive-accent);
+    background: linear-gradient(135deg,
+        var(--interactive-accent-hover) 0%,
+        rgba(var(--interactive-accent-rgb), 0.2) 100%);
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(var(--interactive-accent-rgb), 0.3);
+    animation: cgt-dropTargetPulse 1.5s ease-in-out infinite;
+}
+
+/* 🔧 新增：放置目标脉冲动画 */
+@keyframes cgt-dropTargetPulse {
+    0%, 100% {
+        box-shadow: 0 8px 25px rgba(var(--interactive-accent-rgb), 0.3);
+    }
+    50% {
+        box-shadow: 0 12px 35px rgba(var(--interactive-accent-rgb), 0.5);
+    }
+}
+
+/* 🔧 新增：分组放置目标指示器 */
+.canvas-grid-card.drop-target-active::before {
+    content: '📁 放置到此分组';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0.9;
+    animation: cgt-dropHintFadeIn 0.3s ease-out;
+}
+
+/* 🔧 新增：提示文字淡入动画 */
+@keyframes cgt-dropHintFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.canvas-grid-card.dragging-from-grid {
+    opacity: 0.6;
+    transform: rotate(2deg);
+    transition: all 0.2s ease;
+}
+
+/* 移动确认弹窗样式 */
+.move-confirmation-source,
+.move-confirmation-target {
+    margin: 10px 0;
+}
+
+.move-confirmation-arrow {
+    text-align: center;
+    font-size: 18px;
+    margin: 15px 0;
+    font-weight: bold;
+    color: var(--interactive-accent);
+}
+
+.card-preview {
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background-color: var(--background-secondary);
+    margin-top: 5px;
+    font-family: var(--font-monospace);
+    font-size: 12px;
+    max-height: 60px;
+    overflow: hidden;
+}
+
+.card-preview.source {
+    border-left: 3px solid var(--color-orange);
+}
+
+.card-preview.target {
+    border-left: 3px solid var(--color-green);
+}
+
+.move-description {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: var(--background-secondary);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.move-confirmation-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.move-confirmation-buttons button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.move-confirmation-buttons button:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.canvas-grid-view .move-confirmation-buttons button.mod-cta {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.canvas-grid-view .move-confirmation-buttons button.mod-cta:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* 加载指示器样式（作用域限定在插件视图内部，避免影响Obsidian启动界面） */
+.canvas-grid-view .loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.canvas-grid-view .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--background-modifier-border);
+    border-top: 3px solid var(--interactive-accent);
+    border-radius: 50%;
+    animation: cgt-spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+.canvas-grid-view .loading-text {
+    text-align: center;
+    line-height: 1.4;
+}
+
+@keyframes cgt-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* CSS变量定义 - 统一设计系统 */
+:root {
+    /* 间距系统 */
+    --toolbar-spacing-xs: 4px;   /* 最小间距 */
+    --toolbar-spacing-sm: 8px;   /* 小间距 */
+    --toolbar-spacing-md: 12px;  /* 中等间距 */
+    --toolbar-spacing-lg: 16px;  /* 大间距 */
+    --toolbar-spacing-xl: 24px;  /* 最大间距 */
+
+    /* 工具栏尺寸 */
+    --toolbar-min-height: 52px;  /* 增加高度以容纳更多内容 */
+    --toolbar-padding-x: var(--toolbar-spacing-lg);
+    --toolbar-padding-y: var(--toolbar-spacing-sm);
+    --toolbar-gap: var(--toolbar-spacing-md);
+
+    /* 搜索框尺寸 */
+    --search-min-width: 120px;
+    --search-max-width: 450px;
+    --search-height: 34px;
+
+    /* 颜色筛选器尺寸 */
+    --color-dot-size: 22px;
+    --color-filter-gap: 10px;
+    --color-filter-padding: var(--toolbar-spacing-sm);
+
+    /* 圆角和阴影 */
+    --toolbar-border-radius: 6px;
+    --toolbar-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    /* 动画时长 */
+    --toolbar-transition: 0.2s ease;
+
+    /* 功能键自适应尺寸 */
+    --button-min-width: 80px;
+    --button-max-width: 120px;
+    --button-padding-x: 12px;
+    --button-padding-y: 6px;
+
+    /* Canvas颜色变量 */
+    --canvas-color-1: #ff6b6b; /* 红色 */
+    --canvas-color-2: #ffa726; /* 橙色 */
+    --canvas-color-3: #ffeb3b; /* 黄色 */
+    --canvas-color-4: #66bb6a; /* 绿色 */
+    --canvas-color-5: #26c6da; /* 青色 */
+    --canvas-color-6: #42a5f5; /* 蓝色 */
+    --canvas-color-7: #ab47bc; /* 紫色 */
+
+    /* 拖拽相关变量 */
+    --drag-preview-opacity: 0.8;
+    --drag-preview-rotation: 5deg;
+    --drag-preview-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    --drag-hint-bg: var(--background-primary);
+    --drag-hint-border: var(--background-modifier-border);
+    --drag-hint-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 工具栏样式统一定义 */
+
+.canvas-grid-toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.canvas-grid-toolbar-title svg {
+    opacity: 0.8;
+}
+
+.canvas-grid-toolbar-menu {
+    position: relative;
+}
+
+.canvas-grid-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    color: var(--text-muted);
+}
+
+.canvas-grid-menu-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.canvas-grid-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    min-width: 160px;
+    z-index: 1000;
+    backdrop-filter: blur(20px);
+}
+
+.canvas-grid-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-normal);
+    font-size: 13px;
+    transition: background-color 0.1s ease;
+    user-select: none;
+}
+
+.canvas-grid-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-menu-item:active {
+    background: var(--background-modifier-active);
+}
+
+.canvas-grid-menu-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+
+
+.canvas-grid-container {
+    padding: 20px;
+    height: calc(100% - 60px);
+    overflow-y: auto;
+    overflow-x: hidden; /* 隐藏横向滚动条 */
+    background: var(--background-primary);
+    display: grid;
+    gap: var(--grid-card-spacing, 20px);
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min-width, 280px), 1fr));
+
+    align-content: start;
+}
+
+/* 工具栏隐藏状态下的网格容器样式 */
+.canvas-grid-container.toolbar-hidden {
+    height: 100% !important;
+    margin-top: 0 !important;
+    padding-top: 20px;
+    /* 确保没有额外的底部空间 */
+    box-sizing: border-box;
+}
+
+/* 确保父容器在工具栏隐藏时也正确处理高度 */
+.view-content:has(.canvas-grid-container.toolbar-hidden) {
+    height: 100% !important;
+    overflow: hidden;
+}
+
+/* 兼容性：如果浏览器不支持:has选择器，使用类名 */
+.view-content.toolbar-hidden-parent {
+    height: 100% !important;
+    overflow: hidden;
+}
+
+.canvas-grid-card {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    /* 使用官方Canvas卡片内边距 */
+    padding: var(--size-4-4, 16px);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    /* 默认样式使用CSS变量 */
+    width: var(--grid-card-width, 300px);
+    min-height: var(--grid-card-height, 200px);
+    /* 确保卡片内容布局 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 官方Canvas颜色样式 - 使用官方颜色变量 */
+.canvas-grid-card[data-canvas-color="1"] {
+    border-color: var(--color-red) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="2"] {
+    border-color: var(--color-orange) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="3"] {
+    border-color: var(--color-yellow) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="4"] {
+    border-color: var(--color-green) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="5"] {
+    border-color: var(--color-cyan) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="6"] {
+    border-color: var(--color-blue) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-canvas-color="7"] {
+    border-color: var(--color-purple) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--background-modifier-border-hover);
+}
+
+.canvas-grid-card:active {
+    transform: none;
+}
+
+/* 官方Canvas悬停效果 - 保持颜色边框在悬停时的优先级 */
+.canvas-grid-card[data-canvas-color]:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 深色主题下的悬停效果 */
+.theme-dark .canvas-grid-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-grid-card[data-canvas-color]:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.canvas-grid-card:focus {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+
+
+.card-content {
+    /* 使用官方Canvas样式变量 */
+    line-height: var(--line-height-normal);
+    font-size: var(--font-text-size);
+    font-family: var(--font-text);
+    color: var(--text-normal);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.card-content code {
+    background: var(--background-modifier-border);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--font-monospace);
+    font-size: var(--font-smaller);
+}
+
+.card-content strong {
+    font-weight: var(--font-bold);
+    color: var(--text-normal);
+}
+
+.card-content em {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+/* 文件容器样式 - 对齐官方Canvas */
+.file-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.file-name {
+    word-break: break-word;
+    flex: 1;
+}
+
+.file-subpath {
+    color: var(--text-muted);
+    font-size: var(--font-smaller);
+    margin-top: 4px;
+}
+
+.link-icon {
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
+.file-subpath {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+    font-family: var(--font-monospace);
+}
+
+/* 🔧 新增：图片预览样式 */
+.file-image-container {
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+    transition: all 0.2s ease;
+}
+
+.file-image-container.image-loaded {
+    background: transparent;
+}
+
+.file-image-preview {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.file-image-preview:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.file-image-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 2px 6px;
+    background: var(--background-modifier-border);
+    border-radius: 3px;
+}
+
+/* 图片加载错误样式 */
+.file-image-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--background-modifier-error);
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 6px;
+    min-height: 120px;
+}
+
+.file-image-error-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+}
+
+.file-image-error-text {
+    font-size: 12px;
+    color: var(--text-error);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.file-image-error-filename {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grid-message {
+    text-align: center;
+    color: var(--text-muted);
+    margin-top: 50px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 响应式设计 - 使用CSS Grid自动布局 */
+@media (max-width: 600px) {
+    .canvas-grid-container {
+        padding: 10px;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .canvas-grid-card {
+        padding: 12px;
+    }
+
+    /* 链接预览移动端优化 */
+    .link-preview-image {
+        height: 140px; /* 移动端也保持较大的图片 */
+    }
+
+    .link-preview-content {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+
+    .link-preview-title {
+        font-size: 12px;
+        -webkit-line-clamp: 1;
+    }
+
+    .link-preview-description {
+        display: none; /* 移动端隐藏描述 */
+    }
+
+    .link-preview-footer {
+        padding-top: 4px;
+        min-height: 20px;
+    }
+
+    .link-preview-site-name {
+        font-size: 10px;
+    }
+}
+
+
+
+/* 卡片颜色变体 - 统一定义 */
+/* 浅色主题 */
+.canvas-grid-card[data-color="1"] {
+    background-color: #ffebee !important;
+    border-color: var(--canvas-color-1) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="2"] {
+    background-color: #fff3e0 !important;
+    border-color: var(--canvas-color-2) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="3"] {
+    background-color: #fffde7 !important;
+    border-color: var(--canvas-color-3) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="4"] {
+    background-color: #e8f5e8 !important;
+    border-color: var(--canvas-color-4) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="5"] {
+    background-color: #e0f2f1 !important;
+    border-color: var(--canvas-color-5) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="6"] {
+    background-color: #e3f2fd !important;
+    border-color: var(--canvas-color-6) !important;
+    border-width: 2px !important;
+}
+
+.canvas-grid-card[data-color="7"] {
+    background-color: #f3e5f5 !important;
+    border-color: var(--canvas-color-7) !important;
+    border-width: 2px !important;
+}
+
+/* 深色主题覆盖 */
+.theme-dark .canvas-grid-card[data-color="1"] {
+    background-color: #4a1a1a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="2"] {
+    background-color: #4a2c1a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="3"] {
+    background-color: #4a4a1a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="4"] {
+    background-color: #1a4a1a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="5"] {
+    background-color: #1a3a3a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="6"] {
+    background-color: #1a2a4a !important;
+}
+
+.theme-dark .canvas-grid-card[data-color="7"] {
+    background-color: #3a1a4a !important;
+}
+
+/* 官方Canvas颜色系统 - 只在边框显示颜色，内容保持默认文本颜色 */
+/* 移除了文字颜色覆盖，使用官方Canvas设计：颜色仅体现在边框 */
+
+/* 重复的卡片颜色变体定义已移除，使用上面的统一定义 */
+
+/* 加载动画 */
+.canvas-grid-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: var(--text-muted);
+}
+
+.canvas-grid-loading::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--background-modifier-border);
+    border-top: 2px solid var(--interactive-accent);
+    border-radius: 50%;
+    animation: cgt-spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+/* 重复的spin动画已移除，使用上面的定义 */
+
+/* 空状态样式 */
+.canvas-grid-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.canvas-grid-empty h3 {
+    margin-bottom: 10px;
+    color: var(--text-normal);
+}
+
+.canvas-grid-empty p {
+    line-height: 1.5;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* 编辑模式样式 - 增强版 */
+.canvas-grid-card.editing {
+    border-color: var(--interactive-accent) !important;
+    border-width: 2px !important;
+    z-index: 1000;
+    position: relative;
+    /* 添加阴影效果突出编辑状态 */
+    box-shadow: 0 8px 25px rgba(var(--interactive-accent-rgb), 0.3) !important;
+
+}
+
+
+
+
+
+.card-editor-textarea {
+    width: 100%;
+    height: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: var(--font-text);
+    font-size: var(--font-text-size);
+    line-height: 1.5;
+    background: transparent;
+    color: var(--text-normal);
+    box-sizing: border-box;
+    border-radius: inherit;
+}
+
+.card-editor-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-text-size);
+    outline: none;
+}
+
+.card-editor-input:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+/* 编辑器使用自动保存模式 */
+
+
+
+/* 卡片工具栏样式 - 模仿Obsidian Canvas工具栏 */
+.canvas-card-toolbar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+    background: rgba(var(--background-primary-rgb), 0.9);
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+.canvas-grid-card:hover .canvas-card-toolbar {
+    opacity: 1;
+}
+
+.canvas-card-toolbar-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background: transparent;
+}
+
+.canvas-card-toolbar-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-card-toolbar-btn:active {
+    background: var(--background-modifier-active);
+}
+
+.canvas-card-toolbar-btn:focus {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.canvas-card-toolbar-icon {
+    width: 16px;
+    height: 16px;
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.8;
+}
+
+/* 删除按钮图标 */
+.canvas-card-toolbar-icon-delete {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3,6 5,6 21,6'/%3E%3Cpath d='m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E");
+}
+
+.canvas-card-toolbar-delete:hover .canvas-card-toolbar-icon-delete {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e74c3c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3,6 5,6 21,6'/%3E%3Cpath d='m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E");
+}
+
+/* 颜色按钮图标 */
+.canvas-card-toolbar-icon-color {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E");
+}
+
+.canvas-card-toolbar-color:hover .canvas-card-toolbar-icon-color {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23007acc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E");
+}
+
+/* 置顶按钮图标 */
+.canvas-card-toolbar-icon-pinned {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z'/%3E%3C/svg%3E");
+}
+
+/* 置顶按钮激活状态 */
+.canvas-card-toolbar-pinned.pinned-active {
+    background-color: var(--interactive-accent);
+}
+
+.canvas-card-toolbar-pinned.pinned-active .canvas-card-toolbar-icon-pinned {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1z'/%3E%3C/svg%3E");
+}
+
+.canvas-card-toolbar-pinned.pinned-active:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+.canvas-card-toolbar-pinned:hover .canvas-card-toolbar-icon-pinned {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23007acc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1z'/%3E%3C/svg%3E");
+}
+
+/* 置顶卡片标识 */
+.canvas-grid-card.pinned {
+    border-top: 2px solid var(--interactive-accent);
+    position: relative;
+}
+
+/* 卡片选中状态（官方Canvas风格） */
+.canvas-grid-card.selected {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--interactive-accent-rgb), 0.1);
+}
+
+/* 置顶图钉指示器（可点击） */
+.canvas-grid-card-pin-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 20px;
+    height: 20px;
+    background: var(--interactive-accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    opacity: 0.9;
+}
+
+.canvas-grid-card-pin-indicator:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.canvas-grid-card-pin-indicator::before {
+    content: "📌";
+    font-size: 10px;
+    color: white;
+    filter: brightness(1.2);
+}
+
+/* 取消置顶动画效果 */
+.canvas-grid-card-pin-indicator.removing {
+    animation: cgt-pinRemoveAnimation 0.3s ease-out forwards;
+}
+
+@keyframes cgt-pinRemoveAnimation {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3) rotate(15deg);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+/* 添加置顶动画效果 */
+.canvas-grid-card-pin-indicator.adding {
+    animation: cgt-pinAddAnimation 0.3s ease-out forwards;
+}
+
+@keyframes cgt-pinAddAnimation {
+    0% {
+        transform: scale(0) rotate(-15deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.3) rotate(5deg);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.9;
+    }
+}
+
+/* 颜色选择器样式 - 参考Obsidian Canvas */
+.canvas-color-picker {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(20px);
+    align-items: center;
+}
+
+.canvas-color-item {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+    flex-shrink: 0;
+    /* 移除文字相关样式 */
+}
+
+.canvas-color-item:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.canvas-color-item.selected {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+/* 移除选中状态的文字显示 */
+.canvas-color-item.selected::after {
+    content: none;
+}
+
+
+
+/* 深色主题下的图标 */
+.theme-dark .canvas-card-toolbar-icon-delete {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3,6 5,6 21,6'/%3E%3Cpath d='m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E");
+}
+
+.theme-dark .canvas-card-toolbar-icon-color {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E");
+}
+
+
+
+/* 自动保存编辑模式 */
+
+/* Canvas视图切换按钮样式 */
+
+/* Canvas视图切换按钮样式 */
+
+/* Canvas视图切换按钮 - 使用Obsidian原生样式，无自定义样式避免泄露 */
+/* 所有样式都通过JavaScript动态应用，使用Obsidian原生CSS类名 */
+
+/* 确保Canvas工具栏中的网格视图按钮底框始终显示 */
+.canvas-controls .clickable-icon[aria-label*="网格视图"],
+.canvas-controls .clickable-icon[aria-label*="Grid View"],
+.canvas-controls .clickable-icon[aria-label*="切换到网格视图"] {
+    border: 1px solid var(--background-modifier-border) !important;
+    background: var(--background-secondary) !important;
+    border-radius: 4px !important;
+}
+
+.canvas-controls .clickable-icon[aria-label*="网格视图"]:hover,
+.canvas-controls .clickable-icon[aria-label*="Grid View"]:hover,
+.canvas-controls .clickable-icon[aria-label*="切换到网格视图"]:hover {
+    border-color: var(--background-modifier-border-hover) !important;
+    background: var(--background-modifier-hover) !important;
+}
+
+/* 通用的Canvas工具栏按钮底框样式 */
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="网格视图"],
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="Grid View"],
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="切换到网格视图"] {
+    border: 1px solid var(--background-modifier-border) !important;
+    background: var(--background-secondary) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="网格视图"]:hover,
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="Grid View"]:hover,
+.workspace-leaf-content[data-type="canvas"] .clickable-icon[aria-label*="切换到网格视图"]:hover {
+    border-color: var(--interactive-accent) !important;
+    background: var(--background-modifier-hover) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 使用Obsidian原生样式 */
+
+
+
+/* 官方菜单中的网格视图按钮（备用） */
+.canvas-grid-view-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--icon-color);
+    padding: 0;
+    margin: 0;
+}
+
+.canvas-grid-view-action:hover {
+    background: var(--background-modifier-hover);
+    color: var(--icon-color-hover);
+}
+
+.canvas-grid-view-action:active {
+    background: var(--background-modifier-active);
+}
+
+.canvas-grid-view-action svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    opacity: 0.8;
+}
+
+.canvas-grid-view-action:hover svg {
+    opacity: 1;
+}
+
+/* 使用原生菜单集成 */
+
+
+
+/* 右键菜单样式 - 完全模仿Obsidian Canvas右键菜单 */
+.canvas-grid-context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    min-width: 160px;
+    backdrop-filter: blur(20px);
+    font-size: 13px;
+    font-family: var(--font-interface);
+}
+
+.canvas-grid-context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-normal);
+    transition: background-color 0.1s ease;
+    user-select: none;
+}
+
+.canvas-grid-context-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-context-menu-item:active {
+    background: var(--background-modifier-active);
+}
+
+.canvas-grid-context-menu-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* 图标样式 - 使用Obsidian的图标系统 */
+.canvas-grid-context-menu-icon.lucide-target {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v6m0 10v6m11-7h-6m-10 0H1'/%3E%3C/svg%3E");
+}
+
+.canvas-grid-context-menu-icon.lucide-edit {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+}
+
+.canvas-grid-context-menu-icon.lucide-trash-2 {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3,6 5,6 21,6'/%3E%3Cpath d='m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E");
+}
+
+.canvas-grid-context-menu-icon.lucide-edit-3 {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E");
+}
+
+.canvas-grid-context-menu-icon.lucide-search {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+}
+
+.canvas-grid-context-menu-icon.lucide-folder-plus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z'/%3E%3Cline x1='12' y1='10' x2='12' y2='16'/%3E%3Cline x1='9' y1='13' x2='15' y2='13'/%3E%3C/svg%3E");
+}
+
+
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-edit {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+}
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-trash-2 {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3,6 5,6 21,6'/%3E%3Cpath d='m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E");
+}
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-edit-3 {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E");
+}
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-search {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+}
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-folder-plus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z'/%3E%3Cline x1='12' y1='10' x2='12' y2='16'/%3E%3Cline x1='9' y1='13' x2='15' y2='13'/%3E%3C/svg%3E");
+}
+
+/* ==================== 拖拽功能样式 ==================== */
+
+/* 拖拽状态的网格容器 */
+.canvas-grid-container.drag-over {
+    background: linear-gradient(135deg,
+        rgba(var(--color-accent-rgb), 0.1) 0%,
+        rgba(var(--color-accent-rgb), 0.05) 100%);
+    border: 2px dashed var(--color-accent);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* 拖拽指示器 - 优化版本 */
+.drop-indicator {
+    position: absolute;
+    background: rgba(var(--color-accent-rgb), 0.2);
+    border: 2px dashed var(--color-accent);
+    border-radius: 6px;
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 1000;
+    transition: all 0.2s ease;
+    display: none;
+}
+
+/* 🔧 优化：通用拖拽指示器 */
+.drop-indicator.generic-drop-indicator {
+    background: linear-gradient(135deg,
+        rgba(var(--color-accent-rgb), 0.1) 0%,
+        rgba(var(--color-accent-rgb), 0.3) 100%);
+    border: 2px dashed var(--color-accent);
+    animation: cgt-genericDropPulse 2s ease-in-out infinite;
+}
+
+/* 🔧 新增：通用指示器脉冲动画 */
+@keyframes cgt-genericDropPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+}
+
+.drop-indicator::before {
+    content: '+ 在此创建新卡片';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--background-primary);
+    color: var(--color-accent);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--color-accent);
+}
+
+/* 🔧 新增：通用指示器的提示文字 */
+.drop-indicator.generic-drop-indicator::before {
+    content: '📄 在此创建新卡片';
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    animation: cgt-dropTextBounce 0.5s ease-out;
+}
+
+/* 🔧 新增：提示文字弹跳动画 */
+@keyframes cgt-dropTextBounce {
+    0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* 编辑器拖拽状态 */
+.cm-editor.drag-source {
+    cursor: grabbing !important;
+}
+
+.cm-editor .cm-selectionBackground {
+    background: rgba(var(--color-accent-rgb), 0.3) !important;
+}
+
+/* 新创建的卡片动画 */
+.canvas-grid-card.newly-created {
+    animation: cgt-cardAppear 0.6s ease-out;
+    box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.5);
+    border: 2px solid var(--color-accent);
+}
+
+@keyframes cgt-cardAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+        box-shadow: 0 0 30px rgba(var(--color-accent-rgb), 0.8);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05) translateY(-10px);
+        box-shadow: 0 0 25px rgba(var(--color-accent-rgb), 0.6);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.5);
+    }
+}
+
+/* 拖拽预览样式 */
+.drag-preview {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-normal);
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0.9;
+}
+
+/* 拖拽悬停效果 */
+.canvas-grid-container.drag-over::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center,
+        rgba(var(--color-accent-rgb), 0.1) 0%,
+        transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 拖拽时的卡片样式调整 */
+.canvas-grid-container.drag-over .canvas-grid-card {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+/* 拖拽提示文本 */
+.drag-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.canvas-grid-container.drag-over .drag-hint {
+    opacity: 1;
+}
+
+/* 空网格状态下的拖拽提示 */
+.canvas-grid-container:empty.drag-over::before {
+    content: '拖拽文本到此处创建新卡片';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--color-accent);
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 拖拽时的局部样式 - 限制在插件容器内 */
+.canvas-grid-view.is-dragging {
+    cursor: grabbing !important;
+}
+
+.canvas-grid-view.is-dragging * {
+    cursor: grabbing !important;
+}
+
+/* 拖拽兼容性样式 */
+.canvas-grid-container[draggable="true"] {
+    -webkit-user-drag: element;
+}
+
+/* 拖拽反馈动画 */
+.canvas-grid-container.drag-feedback {
+    animation: cgt-dragFeedback 0.3s ease-out;
+}
+
+@keyframes cgt-dragFeedback {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ==================== 关联标签页功能样式 ==================== */
+
+/* ==================== 工具栏布局重构 ==================== */
+
+
+
+
+
+
+
+/* ==================== 新的工具栏布局设计 ==================== */
+
+.canvas-grid-toolbar {
+    display: flex;
+    flex-direction: column; /* 垂直布局，支持功能按钮行和动态内容区域 */
+    background: var(--background-primary);
+    border-bottom: 1px solid var(--background-modifier-border);
+    /* 添加微妙的阴影提升层次感 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* 确保工具栏不会溢出 */
+    overflow: visible;
+    /* 滚动隐藏动画 - 位置由JavaScript动态控制 */
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: translateY(0);
+    opacity: 1;
+    /* 默认相对定位，滚动时会动态改为fixed */
+    position: relative;
+    z-index: 100;
+}
+
+/* 功能按钮行样式 */
+.canvas-grid-toolbar-function-row {
+    display: flex;
+    justify-content: center; /* 改为居中显示 */
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--background-primary);
+    /* 移除搜索框上方的分隔线 */
+    gap: 16px; /* 常规显示模式：较大间距提升用户体验 */
+}
+
+/* 窄边框和小屏幕下的紧凑间距 - 提高优先级 */
+@media (max-width: 767px) {
+    .canvas-grid-toolbar .canvas-grid-toolbar-function-row {
+        gap: 6px !important; /* 窄边框模式：较小间距节省空间 */
+        padding: 6px 8px !important;
+    }
+
+    /* 仅图标模式下进一步缩小间距 */
+    .canvas-grid-toolbar .function-btn.responsive-btn {
+        margin: 0 !important;
+    }
+
+    /* icon-only模式下使用最小间距 */
+    .canvas-grid-toolbar .function-btn.icon-only {
+        margin: 0 !important;
+        min-width: 32px; /* 稍微减小最小宽度 */
+    }
+}
+
+/* 动态内容区域样式 */
+.canvas-grid-toolbar-dynamic-content {
+    min-height: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: var(--background-primary);
+}
+
+.canvas-grid-toolbar-dynamic-content.expanded {
+    max-height: 200px;
+    /* 移除多余的分隔线 */
+}
+
+/* 响应式功能按钮样式 */
+.function-btn.responsive-btn {
+    flex: 1;
+    max-width: 120px;
+    height: 36px;
+    margin: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+.function-btn.responsive-btn:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.function-btn.responsive-btn.active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+/* 按钮图标样式 */
+.function-btn .btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.function-btn .btn-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 按钮文本样式 */
+.function-btn .btn-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 响应式状态 */
+.function-btn.icon-only {
+    max-width: 36px;
+    padding: 8px; /* 增加内边距提升点击体验 */
+    gap: 0;
+    /* margin已在响应式规则中统一设置 */
+}
+
+.function-btn.icon-only .btn-text {
+    display: none;
+}
+
+.function-btn.compact {
+    max-width: 80px;
+    gap: 4px;
+}
+
+.function-btn.compact .btn-text {
+    font-size: 11px;
+}
+
+.function-btn.full {
+    max-width: 120px;
+    gap: 6px;
+}
+
+/* 内容面板样式 */
+.content-panel {
+    display: none;
+    padding: 12px 16px;
+}
+
+.content-panel.active {
+    display: block;
+}
+
+/* 面板内容包装器 */
+.panel-content-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.panel-main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.panel-right-side {
+    flex-shrink: 0;
+}
+
+/* 面板中的时间胶囊按钮 */
+.panel-time-capsule {
+    width: 60px;
+    height: 36px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+}
+
+.panel-time-capsule:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.panel-time-capsule.active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.panel-time-capsule.counting {
+    animation: cgt-pulse 2s infinite;
+}
+
+@keyframes cgt-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.panel-time-capsule .timer-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.panel-time-capsule .timer-display svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 创建卡片表单样式 */
+.new-card-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.card-type-select {
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.card-content-input {
+    min-height: 80px;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+    resize: vertical;
+    font-family: var(--font-interface);
+}
+
+.create-card-btn {
+    align-self: flex-start;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* 导出功能样式 */
+.export-options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+}
+
+.coming-soon-message {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.coming-soon-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.coming-soon-text {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.coming-soon-subtitle {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* 右侧时间胶囊样式 */
+.canvas-grid-time-capsule-sidebar {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-grid-time-capsule-sidebar .canvas-grid-time-capsule-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.canvas-grid-time-capsule-sidebar .canvas-grid-time-capsule-btn:hover {
+    background: var(--interactive-accent-hover);
+    transform: scale(1.05);
+}
+
+.canvas-grid-time-capsule-sidebar .canvas-grid-time-capsule-btn.active {
+    background: var(--interactive-accent);
+    animation: cgt-pulse 2s infinite;
+}
+
+/* 重复的pulse动画已移除，使用统一的pulse定义 */
+
+/* 旧的工具栏区域样式已移除，使用新的功能按钮行布局 */
+
+/* 工具栏返回按钮 - 位于功能按钮行中 */
+.group-back-button-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--interactive-accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-right: 8px;
+    /* 与功能按钮保持一致的视觉效果 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* 确保图标居中 */
+    position: relative;
+}
+
+.group-back-button-toolbar:hover {
+    background: var(--interactive-accent-hover);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.group-back-button-toolbar:active {
+    transform: scale(0.95);
+}
+
+.group-back-button-toolbar svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    /* 确保图标完美居中 */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* ==================== 主菜单按钮样式 ==================== */
+
+.canvas-grid-main-menu {
+    position: relative;
+}
+
+.canvas-grid-main-btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    min-width: 140px;
+}
+
+.canvas-grid-main-btn:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--background-modifier-border-hover);
+}
+
+.canvas-grid-main-btn.active {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+    border-color: var(--color-accent);
+}
+
+.canvas-grid-main-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.canvas-grid-main-icon {
+    display: flex;
+    align-items: center;
+    color: var(--color-accent);
+}
+
+.canvas-grid-main-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.canvas-grid-main-title {
+    font-weight: 500;
+    color: var(--text-normal);
+    white-space: nowrap;
+}
+
+.canvas-grid-linked-indicator {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.canvas-grid-main-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.canvas-grid-main-btn.active .canvas-grid-main-arrow {
+    transform: rotate(180deg);
+}
+
+/* 纯图标模式样式 */
+.canvas-grid-main-btn.canvas-grid-icon-only {
+    min-width: auto;
+    width: auto;
+    padding: 8px;
+    justify-content: center;
+}
+
+.canvas-grid-main-btn.canvas-grid-icon-only .canvas-grid-main-btn-content {
+    gap: 4px;
+    width: auto;
+}
+
+.canvas-grid-main-btn.canvas-grid-icon-only .canvas-grid-main-arrow {
+    margin-left: 2px;
+}
+
+.canvas-grid-linked-indicator-hidden {
+    display: none !important;
+}
+
+/* ==================== 主下拉菜单样式 ==================== */
+
+/* 🎯 修复：多功能菜单容器样式 */
+.canvas-grid-multi-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.canvas-grid-main-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    min-width: auto; /* 移除最小宽度限制 */
+    max-width: none; /* 移除最大宽度限制 */
+    width: max-content; /* 根据内容自适应宽度 */
+    max-height: 500px; /* 增加最大高度，避免需要滚动 */
+    overflow-y: hidden; /* 隐藏纵向滚动条 */
+    overflow-x: hidden; /* 隐藏横向滚动条 */
+    z-index: 1000;
+    padding: 0;
+    white-space: nowrap;
+}
+
+.canvas-grid-menu-section {
+    padding: 8px 0;
+}
+
+.canvas-grid-menu-section:not(:last-child) {
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.canvas-grid-menu-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.canvas-grid-menu-title .menu-icon {
+    font-size: 14px;
+}
+
+/* ==================== Obsidian风格菜单样式 ==================== */
+
+/* 菜单项样式 - 参考Obsidian官方设计 */
+.canvas-grid-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-normal);
+    border-radius: 0;
+    min-height: 32px;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.canvas-grid-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-menu-item.canvas-grid-menu-back {
+    /* 移除额外的边框，使用section的分割线 */
+}
+
+.canvas-grid-menu-item .menu-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.canvas-grid-menu-item .menu-text {
+    color: var(--text-normal);
+    font-weight: 400;
+    white-space: nowrap;
+    flex: 1;
+    text-align: left;
+}
+
+/* 菜单分组样式 */
+.canvas-grid-menu-section {
+    padding: 4px 0;
+}
+
+.canvas-grid-menu-section:not(:last-child) {
+    border-bottom: 1px solid var(--background-modifier-border);
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+}
+
+.canvas-grid-menu-section:first-child {
+    padding-top: 8px;
+}
+
+.canvas-grid-menu-section:last-child {
+    padding-bottom: 8px;
+    border-bottom: none !important;
+    margin-bottom: 0;
+}
+
+/* 移除标题样式，采用Obsidian原生的分组方式 */
+.canvas-grid-menu-title {
+    display: none;
+}
+
+/* 菜单项勾选标记 */
+.canvas-grid-menu-item .menu-check {
+    margin-left: auto;
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 12px;
+}
+
+/* 菜单项状态标记（用于排序方向） */
+.canvas-grid-menu-item .menu-status {
+    margin-left: auto;
+    color: var(--interactive-accent);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* 子菜单项样式 */
+.canvas-grid-submenu-item {
+    position: relative;
+}
+
+.canvas-grid-submenu-item .menu-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* 子菜单容器样式 */
+.canvas-grid-submenu {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    min-width: 140px;
+    max-width: 180px;
+    width: fit-content;
+    padding: 4px 0;
+    white-space: nowrap;
+    z-index: 1001;
+    animation: cgt-submenu-appear 0.15s ease-out;
+}
+
+@keyframes cgt-submenu-appear {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.canvas-grid-submenu .canvas-grid-menu-item {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 0;
+    margin: 0;
+}
+
+.canvas-grid-submenu .canvas-grid-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-submenu .canvas-grid-menu-item:first-child {
+    border-radius: 6px 6px 0 0;
+}
+
+.canvas-grid-submenu .canvas-grid-menu-item:last-child {
+    border-radius: 0 0 6px 6px;
+}
+
+
+
+/* 操作按钮区域 */
+.canvas-grid-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 操作按钮样式 */
+.canvas-grid-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.canvas-grid-action-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.canvas-grid-action-btn.active {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+}
+
+.canvas-grid-action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+/* 移除官方关联按钮样式 - 改为自动关联 */
+
+/* ==================== 搜索框样式 ==================== */
+
+.canvas-grid-search-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 0;
+    /* 使用CSS变量优化响应式宽度设置 */
+    min-width: var(--search-min-width);
+    max-width: var(--search-max-width);
+    width: 100%; /* 占满父容器 */
+    flex: 1; /* 弹性增长 */
+    height: var(--search-height);
+    transition: border-color 0.1s ease;
+    /* 防止内容溢出 */
+    overflow: hidden;
+    /* 确保搜索框不会被挤压过小 */
+    flex-shrink: 1;
+}
+
+.canvas-grid-search-container:focus-within {
+    border-color: var(--color-accent);
+}
+
+.canvas-grid-search-input {
+    flex: 1;
+    border: none !important; /* 强制移除边框 */
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 13px;
+    padding: 6px 12px;
+    outline: none !important; /* 强制移除轮廓 */
+    box-shadow: none !important; /* 强制移除阴影 */
+    height: 100%;
+    appearance: none; /* 移除浏览器默认样式 */
+    -webkit-appearance: none; /* 移除WebKit默认样式 */
+    -moz-appearance: none; /* 移除Firefox默认样式 */
+}
+
+.canvas-grid-search-input::placeholder {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.canvas-grid-search-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.canvas-grid-search-clear:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* 搜索高亮 */
+.search-highlight {
+    background: rgba(var(--color-accent-rgb), 0.3);
+    color: var(--color-accent);
+    border-radius: 2px;
+    padding: 1px 2px;
+    font-weight: 500;
+}
+
+/* 分组标识样式 */
+.canvas-grid-group-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(var(--color-accent-rgb), 0.1);
+    color: var(--color-accent);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: auto;
+    cursor: pointer;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.canvas-grid-group-badge:hover {
+    background: rgba(var(--color-accent-rgb), 0.2);
+    border-color: rgba(var(--color-accent-rgb), 0.5);
+    transform: scale(1.05);
+}
+
+/* 分组内卡片的特殊样式 */
+.canvas-grid-card-in-group {
+    border-left: 3px solid var(--color-accent);
+}
+
+/* 深色主题下的分组标识 */
+.theme-dark .canvas-grid-group-badge {
+    background: rgba(var(--color-accent-rgb), 0.15);
+    border-color: rgba(var(--color-accent-rgb), 0.4);
+}
+
+/* 定位原文对话框样式 */
+.locate-results-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-bg);
+}
+
+.locate-results-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.locate-results-list::-webkit-scrollbar-track {
+    background: var(--scrollbar-bg);
+}
+
+.locate-results-list::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb-bg);
+    border-radius: 4px;
+}
+
+.locate-results-list::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover-bg);
+}
+
+.locate-result-item:last-child {
+    border-bottom: none;
+}
+
+.locate-result-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+
+
+
+
+
+
+.canvas-grid-filter-status {
+    padding: 4px 6px;
+    background: rgba(var(--color-accent-rgb), 0.1);
+    color: var(--color-accent);
+    border-radius: 3px;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.canvas-grid-menu-section {
+    padding: 8px 0;
+}
+
+.canvas-grid-menu-section:not(:last-child) {
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.canvas-grid-menu-title {
+    padding: 8px 16px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.canvas-grid-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 13px;
+}
+
+.canvas-grid-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-menu-item .menu-icon {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+}
+
+.canvas-grid-menu-item .menu-label {
+    flex: 1;
+    color: var(--text-normal);
+}
+
+.canvas-grid-menu-item .menu-check {
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+.canvas-grid-menu-subsection {
+    margin-left: 24px;
+    border-left: 2px solid var(--background-modifier-border);
+    padding-left: 8px;
+}
+
+.canvas-grid-menu-divider {
+    height: 1px;
+    background: var(--background-modifier-border);
+    margin: 4px 16px;
+}
+
+/* ==================== 状态显示样式 ==================== */
+
+.canvas-grid-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* 空状态样式增强 */
+.canvas-grid-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* 改为居中对齐 */
+    padding: 60px 20px; /* 减少上下内边距 */
+    text-align: center;
+    color: var(--text-muted);
+    min-height: 400px; /* 增加最小高度 */
+    max-width: 500px; /* 限制最大宽度 */
+    margin: 0 auto; /* 水平居中 */
+}
+
+.canvas-grid-empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.canvas-grid-empty-state .empty-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 8px;
+}
+
+.canvas-grid-empty-state .empty-desc {
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 20px;
+    max-width: 300px;
+}
+
+.canvas-grid-empty-state .empty-action {
+    padding: 8px 16px;
+    border: 1px solid var(--color-accent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.canvas-grid-empty-state .empty-action:hover {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+}
+
+/* 响应式设计增强 */
+
+/* 大屏幕优化 (1200px+) */
+@media (min-width: 1200px) {
+    .canvas-grid-toolbar {
+        padding: var(--toolbar-spacing-md) var(--toolbar-spacing-xl);
+        gap: var(--toolbar-spacing-md);
+        min-height: 70px; /* 增加高度以容纳两行内容 */
+    }
+
+    .canvas-grid-toolbar-function-row {
+        gap: 20px !important; /* 大屏幕下使用更大间距，提升用户体验 */
+        min-height: 44px;
+    }
+
+    /* 旧的工具栏区域样式已移除 */
+
+    .canvas-grid-search-container {
+        min-width: 300px; /* 大屏幕下增加最小宽度 */
+        height: 38px; /* 增加高度 */
+    }
+
+    .canvas-grid-color-filter {
+        gap: var(--toolbar-spacing-md);
+        padding: var(--toolbar-spacing-sm) var(--toolbar-spacing-md);
+    }
+
+    .canvas-grid-color-dot {
+        width: 26px; /* 大屏幕下增加尺寸 */
+        height: 26px;
+    }
+
+    /* 功能键在大屏幕下的优化 */
+    .canvas-grid-main-menu-btn,
+    .canvas-grid-time-capsule-btn {
+        min-width: 100px;
+        max-width: 150px;
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}
+
+    .canvas-grid-color-filter {
+        max-width: 900px; /* 增加颜色筛选器最大宽度 */
+        gap: 16px; /* 增加间距 */
+    }
+}
+
+/* 中等屏幕优化 (768px - 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .canvas-grid-toolbar {
+        gap: var(--toolbar-spacing-sm);
+        padding: var(--toolbar-spacing-sm) var(--toolbar-spacing-lg);
+        min-height: 65px;
+    }
+
+    .canvas-grid-toolbar-function-row {
+        gap: 14px !important; /* 中屏幕下使用适中间距 */
+        min-height: 40px;
+    }
+
+    /* 旧的工具栏区域样式已移除 */
+
+    .canvas-grid-search-container {
+        min-width: 200px;
+        height: 34px;
+    }
+
+    .canvas-grid-color-filter {
+        gap: var(--toolbar-spacing-sm);
+        padding: var(--toolbar-spacing-xs) var(--toolbar-spacing-sm);
+    }
+
+    .canvas-grid-color-dot {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* 功能键在中等屏幕下的优化 */
+    .canvas-grid-main-menu-btn,
+    .canvas-grid-time-capsule-btn {
+        min-width: 80px;
+        max-width: 120px;
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+
+/* 小屏幕 (768px以下) */
+@media (max-width: 768px) {
+    .canvas-grid-toolbar {
+        gap: var(--toolbar-spacing-xs);
+        padding: var(--toolbar-spacing-sm) var(--toolbar-spacing-md);
+        min-height: auto;
+    }
+
+    .canvas-grid-toolbar-function-row {
+        gap: 8px !important; /* 小屏幕下使用较小间距，但不为0 */
+        min-height: 36px;
+        /* 在小屏幕下可能需要换行 */
+        flex-wrap: wrap;
+    }
+
+    /* 旧的工具栏区域样式已移除 */
+
+    .canvas-grid-search-container {
+        min-width: 0;
+        height: 32px;
+    }
+
+    .canvas-grid-color-filter {
+        gap: var(--toolbar-spacing-xs);
+        padding: var(--toolbar-spacing-xs);
+        /* 在小屏幕下保持显示但更紧凑 */
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .canvas-grid-color-dot {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* 功能键在小屏幕下的优化 */
+    .canvas-grid-main-menu-btn,
+    .canvas-grid-time-capsule-btn {
+        min-width: 60px;
+        max-width: 100px;
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+}
+
+    .canvas-grid-color-filter {
+        max-width: none;
+        margin: 0;
+        padding: 12px 16px;
+    }
+}
+
+/* 极小屏幕优化 (480px以下) */
+@media (max-width: 480px) {
+    .canvas-grid-toolbar {
+        padding: var(--toolbar-spacing-xs) var(--toolbar-spacing-sm);
+        gap: var(--toolbar-spacing-xs);
+        min-height: auto;
+    }
+
+    .canvas-grid-toolbar-function-row {
+        /* 在极小屏幕下强制换行 */
+        flex-direction: column;
+        gap: 4px !important; /* 极小屏幕下使用最小间距，但保持一定间隔 */
+        align-items: stretch;
+    }
+
+    /* 旧的工具栏区域样式已移除 */
+
+    .canvas-grid-search-container {
+        height: 30px;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .canvas-grid-search-input {
+        font-size: 12px;
+        padding: var(--toolbar-spacing-xs) var(--toolbar-spacing-sm);
+    }
+
+    /* 在极小屏幕下隐藏颜色筛选器以节省空间 */
+    .canvas-grid-color-filter {
+        display: none;
+    }
+
+    /* 功能键在极小屏幕下的优化 */
+    .canvas-grid-main-menu-btn,
+    .canvas-grid-time-capsule-btn {
+        min-width: 50px;
+        max-width: none;
+        width: 100%;
+        padding: var(--toolbar-spacing-xs) var(--toolbar-spacing-sm);
+        font-size: 11px;
+        justify-content: center;
+    }
+
+    .canvas-grid-time-capsule-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* 提供颜色筛选器切换按钮 */
+    .canvas-grid-color-toggle {
+        display: block;
+        padding: var(--toolbar-spacing-xs);
+        background: var(--background-modifier-hover);
+        border-radius: var(--toolbar-border-radius);
+        cursor: pointer;
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: var(--toolbar-spacing-xs);
+    }
+}
+
+    .canvas-grid-main-dropdown {
+        left: 0;
+        right: auto; /* 允许右侧自适应 */
+        width: max-content; /* 根据内容自适应宽度 */
+        max-width: calc(100vw - 32px); /* 限制最大宽度不超过屏幕 */
+    }
+
+    .canvas-grid-main-btn {
+        min-width: auto;
+        width: 100%;
+    }
+}
+
+/* 关联状态指示器 */
+.linked-canvas-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(var(--color-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--color-accent);
+    margin-left: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.linked-canvas-indicator:hover {
+    background: rgba(var(--color-accent-rgb), 0.15);
+    border-color: rgba(var(--color-accent-rgb), 0.5);
+}
+
+.linked-canvas-indicator.not-linked {
+    color: var(--text-muted);
+    background: var(--background-modifier-border);
+    border-color: var(--background-modifier-border);
+}
+
+.linked-canvas-indicator::before {
+    content: '🔗';
+    font-size: 10px;
+}
+
+.linked-canvas-indicator.not-linked::before {
+    content: '⚠️';
+}
+
+/* Canvas选择对话框样式 */
+.canvas-selection-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+/* ==================== 外部链接样式 ==================== */
+
+/* 外部链接基础样式 */
+.canvas-grid-card .external-link {
+    color: var(--text-accent) !important;
+    text-decoration: none !important;
+    border-bottom: 1px solid var(--text-accent) !important;
+    cursor: pointer !important;
+    word-break: break-all;
+    display: inline-block;
+    max-width: 100%;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+/* 外部链接悬停效果 */
+.canvas-grid-card .external-link:hover {
+    background-color: var(--background-modifier-hover) !important;
+    border-radius: 3px !important;
+    padding: 2px 4px !important;
+    margin: -2px -4px !important;
+    border-bottom-color: var(--text-accent-hover) !important;
+}
+
+/* 外部链接图标 */
+.canvas-grid-card .external-link-icon {
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: middle;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.canvas-grid-card .external-link:hover .external-link-icon {
+    opacity: 1;
+}
+
+.canvas-grid-card .external-link svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    vertical-align: middle;
+}
+
+/* 链接编辑器样式优化 */
+.canvas-grid-card.editing .card-editor-input[type="url"] {
+    font-family: var(--font-monospace);
+    font-size: 13px;
+    border: 2px solid var(--color-accent);
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.canvas-grid-card.editing .card-editor-input[type="url"]:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.2);
+}
+
+/* 深色主题适配 */
+.theme-dark .canvas-grid-card .external-link {
+    border-bottom-color: var(--text-accent);
+}
+
+.theme-dark .canvas-grid-card .external-link:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* ==================== 链接预览卡片样式 ==================== */
+
+/* 链接预览容器 */
+.link-card-content {
+    padding: 0 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.link-preview-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.link-preview-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    background: var(--background-primary);
+}
+
+.link-preview-container:hover {
+    background: var(--background-modifier-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 图片优先模式 */
+.link-preview-container.image-priority {
+    justify-content: flex-start;
+}
+
+.link-preview-container.image-priority .link-preview-image {
+    height: 180px; /* 更大的图片显示 */
+    flex-shrink: 0;
+}
+
+.link-preview-container.image-priority .link-preview-content {
+    padding: 8px 12px;
+    gap: 4px;
+}
+
+.link-preview-container.image-priority .link-preview-description {
+    display: none; /* 图片优先模式下隐藏描述 */
+}
+
+.link-preview-container.image-priority .link-preview-title {
+    font-size: 12px;
+    -webkit-line-clamp: 1;
+}
+
+/* 预览图片 - 优化为更大显示 */
+.link-preview-image {
+    width: 100%;
+    height: 160px; /* 增加高度 */
+    overflow: hidden;
+    background: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* 防止被压缩 */
+}
+
+.link-preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+.link-preview-container:hover .link-preview-image img {
+    transform: scale(1.05);
+}
+
+/* 内容区域 - 紧凑布局 */
+.link-preview-content {
+    padding: 10px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0; /* 允许内容区域收缩 */
+}
+
+/* 标题 - 优先显示 */
+.link-preview-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-normal);
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+    flex-shrink: 0; /* 标题不被压缩 */
+}
+
+/* 描述 - 可隐藏 */
+.link-preview-description {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 减少到2行 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+    opacity: 0.8;
+}
+
+/* 当空间不足时隐藏描述 */
+@media (max-height: 250px) {
+    .link-preview-description {
+        display: none;
+    }
+}
+
+/* 小卡片时隐藏描述 */
+.canvas-grid-card[style*="height: 200px"] .link-preview-description,
+.canvas-grid-card[style*="min-height: 200px"] .link-preview-description {
+    display: none;
+}
+
+/* 底部信息栏 - 紧凑设计 */
+.link-preview-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid var(--background-modifier-border);
+    flex-shrink: 0; /* 底部信息不被压缩 */
+    min-height: 24px;
+}
+
+/* 网站信息 */
+.link-preview-site {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.link-preview-favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.link-preview-site-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 外部链接图标 */
+.link-preview-external {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.link-preview-container:hover .link-preview-external {
+    opacity: 1;
+}
+
+.link-preview-external svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+}
+
+/* ==================== 加载骨架样式 ==================== */
+
+.link-preview-loading {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.link-preview-skeleton {
+    padding: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-title {
+    height: 16px;
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+    animation: cgt-skeleton-pulse 1.5s ease-in-out infinite alternate;
+    width: 80%;
+}
+
+.skeleton-description {
+    height: 12px;
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+    animation: cgt-skeleton-pulse 1.5s ease-in-out infinite alternate;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.skeleton-description:nth-child(3) {
+    width: 60%;
+}
+
+.skeleton-url {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+@keyframes cgt-skeleton-pulse {
+    0% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* ==================== 简单链接样式 ==================== */
+
+.simple-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-accent) !important;
+    text-decoration: none !important;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.simple-link:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+    transform: translateY(-1px);
+}
+
+/* ==================== 响应式设计 ==================== */
+
+/* 移动端优化已合并到上方的 @media (max-width: 600px) 中 */
+
+/* 小卡片优化 */
+.canvas-grid-card[style*="min-height: 150px"] .link-preview-image,
+.canvas-grid-card[style*="height: 150px"] .link-preview-image {
+    height: 80px;
+}
+
+.canvas-grid-card[style*="min-height: 150px"] .link-preview-description,
+.canvas-grid-card[style*="height: 150px"] .link-preview-description {
+    display: none;
+}
+
+/* 超小卡片优化 */
+.canvas-grid-card[style*="min-height: 120px"] .link-preview-image,
+.canvas-grid-card[style*="height: 120px"] .link-preview-image {
+    height: 60px;
+}
+
+.canvas-grid-card[style*="min-height: 120px"] .link-preview-title,
+.canvas-grid-card[style*="height: 120px"] .link-preview-title {
+    font-size: 11px;
+    -webkit-line-clamp: 1;
+}
+
+/* ==================== 网络书签样式 ==================== */
+
+.link-bookmark-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.link-bookmark-container {
+    display: flex;
+    height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.link-bookmark-container:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 左侧内容区域 */
+.link-bookmark-content {
+    flex: 1;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* 书签标题 */
+.link-bookmark-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* 书签描述 */
+.link-bookmark-description {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    opacity: 0.8;
+    flex: 1;
+}
+
+/* 底部信息 */
+.link-bookmark-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 网站信息 */
+.link-bookmark-site-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.link-bookmark-favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.link-bookmark-site-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* URL显示 */
+.link-bookmark-url {
+    font-size: 10px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.7;
+}
+
+/* 右侧缩略图 */
+.link-bookmark-image-container {
+    width: 80px;
+    flex-shrink: 0;
+    background: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.link-bookmark-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+.link-bookmark-container:hover .link-bookmark-image {
+    transform: scale(1.05);
+}
+
+/* 无图片时的样式调整 */
+.link-bookmark-container.no-image {
+    /* 无图片时保持原有布局 */
+}
+
+/* 小卡片优化 */
+.canvas-grid-card[style*="min-height: 150px"] .link-bookmark-description,
+.canvas-grid-card[style*="height: 150px"] .link-bookmark-description {
+    display: none;
+}
+
+.canvas-grid-card[style*="min-height: 120px"] .link-bookmark-title,
+.canvas-grid-card[style*="height: 120px"] .link-bookmark-title {
+    font-size: 12px;
+    -webkit-line-clamp: 1;
+}
+
+/* ==================== 深色主题适配 ==================== */
+
+.theme-dark .link-preview-container {
+    background: var(--background-primary);
+}
+
+.theme-dark .link-preview-container:hover {
+    background: var(--background-modifier-hover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .link-preview-image {
+    background: var(--background-secondary);
+}
+
+.theme-dark .link-bookmark-container {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .link-bookmark-container:hover {
+    background: var(--background-modifier-hover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .link-bookmark-image-container {
+    background: var(--background-secondary);
+}
+
+/* ==================== 分组卡片样式 ==================== */
+
+.group-card {
+    border: 2px solid var(--background-modifier-border);
+    border-radius: 12px;
+    background: var(--background-primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.group-card:hover {
+    border-color: var(--interactive-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-card-content {
+    padding: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 分组图标 */
+.group-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--interactive-accent);
+    border-radius: 8px;
+    color: white;
+    margin: 0 auto;
+}
+
+/* 🔧 新增：收集分组的archive图标特殊样式 */
+.group-icon svg[viewBox="0 0 512 512"] {
+    /* Font Awesome archive图标的特殊样式 */
+    width: 20px !important;
+    height: 20px !important;
+    fill: currentColor;
+}
+
+/* 🔧 收集分组图标容器的特殊样式 */
+.canvas-grid-card[data-group-label="收集"] .group-icon,
+.canvas-grid-card[data-group-label="collection"] .group-icon,
+.canvas-grid-card .group-icon:has(svg[viewBox="0 0 512 512"]) {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+}
+
+.canvas-grid-card[data-group-label="收集"] .group-icon:hover,
+.canvas-grid-card[data-group-label="collection"] .group-icon:hover,
+.canvas-grid-card .group-icon:has(svg[viewBox="0 0 512 512"]):hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* 🔧 收集分组卡片的整体样式优化 */
+.canvas-grid-card[data-group-label="收集"],
+.canvas-grid-card[data-group-label="collection"] {
+    border: 2px solid rgba(76, 175, 80, 0.3);
+    background: linear-gradient(135deg,
+        rgba(76, 175, 80, 0.05) 0%,
+        rgba(76, 175, 80, 0.02) 100%);
+}
+
+.canvas-grid-card[data-group-label="收集"]:hover,
+.canvas-grid-card[data-group-label="collection"]:hover {
+    border-color: rgba(76, 175, 80, 0.5);
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
+}
+
+/* 分组标题 */
+.group-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+    text-align: center;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 分组来源标识（左下角） */
+.canvas-grid-card-group-source {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(var(--interactive-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--interactive-accent-rgb), 0.3);
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--interactive-accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 5;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+}
+
+.canvas-grid-card-group-source:hover {
+    background: rgba(var(--interactive-accent-rgb), 0.2);
+    border-color: var(--interactive-accent);
+    transform: scale(1.05);
+}
+
+.canvas-grid-card-group-source .group-source-icon {
+    font-size: 10px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.canvas-grid-card-group-source .group-source-text {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
+
+/* 深色主题适配 */
+.theme-dark .canvas-grid-card-group-source {
+    background: rgba(var(--interactive-accent-rgb), 0.15);
+    border-color: rgba(var(--interactive-accent-rgb), 0.4);
+}
+
+.theme-dark .canvas-grid-card-group-source:hover {
+    background: rgba(var(--interactive-accent-rgb), 0.25);
+}
+
+/* 成员数量 */
+.group-member-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* 成员预览 */
+.group-members-preview {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.member-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.member-icon.text-icon {
+    background: var(--color-blue);
+    color: white;
+}
+
+.member-icon.file-icon {
+    background: var(--color-green);
+    color: white;
+}
+
+.member-icon.link-icon {
+    background: var(--color-orange);
+    color: white;
+}
+
+.member-icon.more-icon {
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+/* 进入分组按钮 */
+.group-enter-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--background-modifier-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.group-card:hover .group-enter-button {
+    opacity: 1;
+}
+
+.group-enter-button:hover {
+    background: var(--interactive-accent);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* 分组导航样式 */
+.group-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    margin-left: auto;
+}
+
+.group-back-button {
+    background: var(--interactive-accent);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.group-back-button:hover {
+    background: var(--interactive-accent-hover);
+    transform: translateX(-2px);
+}
+
+.group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.group-member-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+/* 分组视图返回按钮 */
+.group-view-back-button {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    margin-bottom: 16px;
+    background: var(--background-primary);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding: 12px;
+}
+
+.group-back-main-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--interactive-accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.group-back-main-button:hover {
+    background: var(--interactive-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group-back-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.group-back-text {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* 深色主题适配 */
+.theme-dark .group-card {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .group-card:hover {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .group-enter-button {
+    background: var(--background-modifier-hover);
+}
+
+.theme-dark .group-navigation {
+    background: var(--background-secondary);
+}
+
+.theme-dark .group-view-back-button {
+    background: var(--background-primary);
+    border-bottom-color: var(--background-modifier-border);
+}
+
+.theme-dark .skeleton-title,
+.theme-dark .skeleton-description {
+    background: var(--background-modifier-border);
+}
+
+.canvas-selection-empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.canvas-selection-empty .empty-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-normal);
+}
+
+.canvas-selection-empty .empty-desc {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Canvas文件搜索框样式 */
+.canvas-search-container {
+    position: relative;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.canvas-search-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.canvas-search-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.canvas-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.canvas-search-clear {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.canvas-search-clear:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    border-color: var(--interactive-accent);
+}
+
+/* 搜索结果高亮 */
+.canvas-file-item mark {
+    background: var(--text-highlight-bg);
+    color: var(--text-normal);
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* 无搜索结果样式 */
+.canvas-search-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.canvas-search-no-results .no-results-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.canvas-search-no-results .no-results-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-normal);
+}
+
+.canvas-search-no-results .no-results-desc {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Obsidian渲染引擎样式已移除，使用简单文本渲染 */
+
+.canvas-card-markdown-content code {
+    /* 内联代码样式 */
+    background: var(--code-background);
+    color: var(--code-normal);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+}
+
+.canvas-card-markdown-content pre {
+    /* 代码块样式 */
+    background: var(--code-background);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 12px;
+    margin: 8px 0;
+    overflow-x: auto;
+}
+
+.canvas-card-markdown-content pre code {
+    /* 代码块内的代码样式 */
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* 回退渲染内容样式 */
+.canvas-card-fallback-content {
+    /* 简单渲染的内容样式 */
+    line-height: 1.5;
+    color: var(--text-normal);
+}
+
+.canvas-file-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 16px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+}
+
+.canvas-file-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.canvas-file-item:last-child {
+    border-bottom: none;
+}
+
+.canvas-file-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-file-item .file-icon {
+    font-size: 20px;
+    margin-right: 12px;
+    opacity: 0.8;
+}
+
+.canvas-file-item .file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.canvas-file-item .file-name {
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-file-item .file-path {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-file-item .file-action {
+    margin-left: 12px;
+}
+
+.canvas-file-item .select-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--color-accent);
+    background: transparent;
+    color: var(--color-accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.canvas-file-item .select-btn:hover {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+}
+
+.canvas-selection-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.canvas-selection-actions button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.canvas-selection-actions button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-view .canvas-selection-actions button.mod-cta {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+    border-color: var(--color-accent);
+}
+
+.canvas-grid-view .canvas-selection-actions button.mod-cta:hover {
+    background: var(--color-accent-hover);
+}
+
+/* ==================== 颜色筛选器样式 ==================== */
+
+/* 重新设计的颜色筛选器 - 位于搜索框下方 */
+.canvas-grid-color-filter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--color-filter-gap);
+    padding: var(--color-filter-padding);
+    /* 简洁的背景设计 */
+    background: transparent;
+    border-radius: var(--toolbar-border-radius);
+    /* 添加过渡动画 */
+    transition: all var(--toolbar-transition);
+    /* 限制最大宽度以保持紧凑 */
+    max-width: 100%;
+    /* 支持换行 */
+    flex-wrap: wrap;
+    /* 与搜索框对齐 */
+    width: 100%;
+}
+
+/* ==================== 功能键自适应样式 ==================== */
+
+/* 主菜单按钮自适应 */
+.canvas-grid-main-menu-btn {
+    min-width: var(--button-min-width);
+    max-width: var(--button-max-width);
+    padding: var(--button-padding-y) var(--button-padding-x);
+    /* 根据容器宽度自适应 */
+    flex: 0 1 auto;
+    /* 文字自适应 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 响应式字体大小 */
+    font-size: clamp(12px, 2vw, 14px);
+    transition: all var(--toolbar-transition);
+}
+
+/* 时间胶囊按钮自适应 */
+.canvas-grid-time-capsule-btn {
+    min-width: var(--button-min-width);
+    max-width: var(--button-max-width);
+    padding: var(--button-padding-y) var(--button-padding-x);
+    /* 根据容器宽度自适应 */
+    flex: 0 1 auto;
+    /* 文字自适应 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 响应式字体大小 */
+    font-size: clamp(11px, 2vw, 13px);
+    transition: all var(--toolbar-transition);
+}
+
+/* 搜索框自适应优化 */
+.canvas-grid-search-container {
+    /* 确保搜索框占据主要空间 */
+    flex: 1;
+    min-width: 150px;
+    max-width: none; /* 移除最大宽度限制 */
+    /* 响应式高度 */
+    height: clamp(30px, 4vw, var(--search-height));
+}
+
+.canvas-grid-color-dot {
+    width: var(--color-dot-size);
+    height: var(--color-dot-size);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all var(--toolbar-transition);
+    position: relative;
+    /* 优化阴影效果 */
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    /* 添加更好的交互反馈 */
+    transform: scale(1);
+}
+
+.canvas-grid-color-dot:hover {
+    transform: scale(1.15);
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.1);
+    /* 添加微妙的上升效果 */
+    z-index: 1;
+}
+
+.canvas-grid-color-dot.active {
+    transform: scale(1.1);
+    border-color: var(--interactive-accent);
+    box-shadow:
+        0 0 0 2px var(--interactive-accent),
+        0 2px 12px rgba(0, 0, 0, 0.2);
+    /* 保持激活状态的层级 */
+    z-index: 2;
+}
+
+.canvas-grid-color-dot.all-colors {
+    /* 混合色渐变背景由JavaScript设置 */
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    /* 添加微妙的内阴影增强立体感 */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 添加一个内部高光效果 */
+.canvas-grid-color-dot.all-colors::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+}
+
+/* 移除文字显示 */
+.canvas-grid-color-dot.all-colors::after {
+    content: none;
+}
+
+.canvas-grid-color-dot.all-colors:hover {
+    transform: scale(1.15);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15),
+                0 4px 15px rgba(0, 0, 0, 0.25);
+    filter: brightness(1.1) saturate(1.1);
+}
+
+.canvas-grid-color-dot.all-colors.active {
+    transform: scale(1.2);
+    border: 3px solid var(--text-on-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent),
+                inset 0 1px 3px rgba(0, 0, 0, 0.2),
+                0 6px 20px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.15) saturate(1.2);
+}
+
+/* 添加旋转动画效果 */
+.canvas-grid-color-dot.all-colors.active::before {
+    animation: cgt-colorWheelRotate 8s linear infinite;
+}
+
+@keyframes cgt-colorWheelRotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== 宽度控制样式 ==================== */
+
+/* 紧凑模式样式 - 适应小宽度显示 */
+.canvas-grid-compact-mode {
+    /* 添加视觉提示，表明当前处于紧凑模式 */
+    border-left: 2px solid var(--interactive-accent) !important;
+    transition: border-left 0.3s ease;
+}
+
+/* 紧凑模式下的网格容器调整 */
+.canvas-grid-compact-mode .canvas-grid-container {
+    padding: 4px;
+    /* 使用单列布局 */
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+}
+
+/* 紧凑模式下的卡片调整 */
+.canvas-grid-compact-mode .canvas-grid-card {
+    /* 卡片占满可用宽度 */
+    min-width: unset !important;
+    max-width: unset !important;
+    width: 100% !important;
+    /* 减小内边距 */
+    padding: 8px !important;
+}
+
+/* 紧凑模式下的工具栏调整 */
+.canvas-grid-compact-mode .canvas-grid-toolbar {
+    padding: 4px 8px;
+    /* 工具栏按钮更紧凑 */
+    gap: 4px;
+}
+
+/* 紧凑模式下的搜索容器调整 */
+.canvas-grid-compact-mode .canvas-grid-search-container {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+}
+
+/* ==================== 时间胶囊功能样式 ==================== */
+
+.canvas-grid-time-capsule-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.canvas-grid-time-capsule-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.canvas-grid-time-capsule-btn:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+    color: var(--text-normal);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-grid-time-capsule-btn.active {
+    background: var(--color-cyan);
+    border-color: var(--color-cyan);
+    color: white;
+    animation: cgt-pulse 2s infinite;
+}
+
+.canvas-grid-time-capsule-btn.warning {
+    background: var(--color-red);
+    border-color: var(--color-red);
+    color: white;
+    animation: cgt-flash 1s infinite;
+}
+
+.canvas-grid-time-capsule-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    /* 确保SVG图标颜色适应主题 */
+    color: inherit;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+.canvas-grid-time-capsule-btn .time-display {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* 时长选择菜单 */
+.canvas-grid-duration-menu {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(20px);
+    padding: 8px;
+    min-width: 120px;
+}
+
+.duration-menu-item {
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 13px;
+    color: var(--text-normal);
+}
+
+.duration-menu-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.duration-menu-item:active {
+    background: var(--background-modifier-active);
+}
+
+/* 动画效果 - pulse动画已在上面统一定义 */
+
+@keyframes cgt-flash {
+    0%, 50%, 100% {
+        opacity: 1;
+    }
+    25%, 75% {
+        opacity: 0.5;
+    }
+}
+
+/* 深色主题适配 */
+.theme-dark .canvas-grid-time-capsule-btn {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .canvas-grid-time-capsule-btn:hover {
+    background: var(--background-modifier-hover);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-grid-duration-menu {
+    background: var(--background-primary);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* 紧凑模式下的按钮调整 */
+.canvas-grid-compact-mode .canvas-grid-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* 紧凑模式下的卡片内容调整 */
+.canvas-grid-compact-mode .canvas-card-content {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* 紧凑模式下的卡片标题调整 */
+.canvas-grid-compact-mode .canvas-card-title {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+/* ==================== 设置界面颜色配置样式 ==================== */
+
+.color-filter-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.color-config-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.color-config-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.color-preview {
+    flex-shrink: 0;
+}
+
+.color-label {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-normal);
+}
+
+.color-config-item input[type="checkbox"] {
+    flex-shrink: 0;
+}
+
+/* ==================== 分组重命名对话框样式 ==================== */
+
+.group-rename-input-container {
+    margin-bottom: 20px;
+}
+
+.group-rename-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.group-rename-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.group-rename-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+
+
+/* ==================== 简单编辑器样式 ==================== */
+
+/* === 编辑器视觉对齐与标题隐藏（使编辑界面与预览间距一致） === */
+.card-editor-container .mod-header,
+.card-editor-container .inline-title {
+    display: none !important; /* 隐藏内联标题与头部，避免显示临时文件名与分隔线 */
+}
+
+/* 移除 CodeMirror 左侧 gutter（行号/折叠指示），对齐预览左边距 */
+.card-editor-container .cm-gutters,
+.card-editor-container .cm-foldGutter {
+    display: none !important;
+    width: 0 !important;
+}
+
+/* 去除编辑器内部额外的左右内边距与外边距 */
+.card-editor-container .markdown-source-view,
+.card-editor-container .cm-editor,
+.card-editor-container .cm-scroller,
+.card-editor-container .cm-content,
+.card-editor-container .cm-contentContainer,
+.card-editor-container .cm-sizer {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* 保证行元素不再引入额外缩进 */
+.card-editor-container .cm-line,
+.card-editor-container .cm-lineWrapping {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* 编辑器容器样式 */
+.card-editor-container {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.obsidian-editor {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+/* CodeMirror编辑器样式重置 - 实现0间距 */
+.card-editor-container .cm-editor {
+    height: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.card-editor-container .cm-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 100%;
+}
+
+.card-editor-container .cm-focused {
+    outline: none !important;
+}
+
+.card-editor-container .cm-scroller {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* 确保所有可能的CodeMirror子元素都是0间距 */
+.card-editor-container .cm-line {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.card-editor-container .cm-lineWrapping {
+    padding: 0 !important;
+}
+
+.card-editor-container .cm-cursor {
+    margin: 0 !important;
+}
+
+.card-editor-textarea {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    font-family: var(--font-text);
+    font-size: var(--font-text-size);
+    line-height: 1.5;
+    background: transparent;
+    color: var(--text-normal);
+    border-radius: inherit;
+}
+
+.card-editor-textarea:focus {
+    outline: none;
+}
+
+/* 富文本编辑器增强样式 */
+.card-editor-textarea.rich-text {
+    font-family: var(--font-text);
+    tab-size: 4;
+    white-space: pre-wrap;
+}
+
+/* 格式提示样式 */
+.format-hint {
+    position: absolute;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    z-index: 1001;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-dark .format-hint {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+
+
+
+.group-rename-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.group-rename-buttons button {
+    padding: 8px 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.group-rename-buttons button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-view .group-rename-buttons button.mod-cta {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.canvas-grid-view .group-rename-buttons button.mod-cta:hover {
+    background: var(--interactive-accent-hover);
+}
+
+/* ==================== 拖拽功能样式 ==================== */
+
+/* 拖拽预览样式 */
+.drag-preview {
+    position: fixed !important;
+    opacity: var(--drag-preview-opacity) !important;
+    pointer-events: none !important;
+    z-index: 10000 !important;
+    transform: rotate(var(--drag-preview-rotation)) !important;
+    box-shadow: var(--drag-preview-shadow) !important;
+    transition: none !important;
+}
+
+/* 正在拖拽的卡片样式 */
+.canvas-grid-card.dragging-from-grid {
+    opacity: 0.5;
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+/* 长按激活状态样式 */
+.canvas-grid-card.long-press-active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    border: 2px solid var(--interactive-accent);
+    background: rgba(var(--interactive-accent-rgb), 0.05);
+}
+
+/* ==================== 时间胶囊分组样式 ==================== */
+
+/* 时间胶囊分组基础样式 */
+.canvas-grid-card.time-capsule-group {
+    position: relative !important;
+    border: 2px solid #00bcd4 !important;
+    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.2) !important;
+}
+
+/* 强制隐藏时间胶囊分组中的普通分组元素 */
+.time-capsule-group .group-icon:not(.time-capsule-icon-wrapper) {
+    display: none !important;
+}
+
+.time-capsule-group .group-title:not(.time-capsule-title) {
+    display: none !important;
+}
+
+.time-capsule-group .group-member-count {
+    display: none !important;
+}
+
+.time-capsule-group .group-members-preview {
+    display: none !important;
+}
+
+/* 收集中动画效果 */
+.canvas-grid-card.time-capsule-collecting {
+    animation: cgt-timeCapsulePulse 2s ease-in-out infinite;
+}
+
+@keyframes cgt-timeCapsulePulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(0, 188, 212, 0.2);
+        border-color: #00bcd4;
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+        border-color: #00e5ff;
+    }
+}
+
+/* 紧急状态（最后1分钟）*/
+.canvas-grid-card.time-capsule-urgent {
+    animation: cgt-timeCapsuleUrgent 1s ease-in-out infinite;
+}
+
+@keyframes cgt-timeCapsuleUrgent {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        border-color: #ff9800;
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        border-color: #ff5722;
+    }
+}
+
+/* 时间胶囊特殊布局 */
+.time-capsule-group .group-card-content {
+    position: relative;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 16px !important;
+    height: 100% !important;
+}
+
+.time-capsule-title {
+    order: -1 !important; /* 确保标题在最顶部 */
+    margin-bottom: 8px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+}
+
+.time-capsule-icon-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    gap: 8px !important;
+}
+
+.time-capsule-icon-wrapper {
+    width: 50px !important;
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--interactive-accent) !important;
+    border-radius: 12px !important;
+    color: white !important;
+    margin: 0 !important;
+}
+
+/* 时间胶囊图标动画 */
+.time-capsule-icon.time-capsule-active {
+    animation: cgt-timeCapsuleIconRotate 3s linear infinite;
+}
+
+.time-capsule-icon.time-capsule-historical {
+    opacity: 0.7;
+}
+
+@keyframes cgt-timeCapsuleIconRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 收集状态显示 */
+.time-capsule-collecting-status,
+.time-capsule-completed-status {
+    text-align: center !important;
+    flex-shrink: 0 !important;
+}
+
+.collecting-text {
+    font-size: 11px !important;
+    color: #00bcd4 !important;
+    font-weight: 600 !important;
+    animation: cgt-collectingBlink 1.5s ease-in-out infinite !important;
+}
+
+@keyframes cgt-collectingBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.completed-text {
+    font-size: 11px !important;
+    color: #4caf50 !important;
+    font-weight: 600 !important;
+}
+
+/* 时间胶囊底部信息区域 */
+.time-capsule-bottom-info {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: auto !important;
+    padding-top: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+/* 文件图标预览（左侧） */
+.time-capsule-file-icons {
+    display: flex !important;
+    gap: 4px !important;
+    align-items: center !important;
+}
+
+.time-capsule-member-icon {
+    width: 20px !important;
+    height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0, 188, 212, 0.1) !important;
+    border-radius: 4px !important;
+    color: #00bcd4 !important;
+    flex-shrink: 0 !important;
+}
+
+.time-capsule-historical .time-capsule-member-icon {
+    background: rgba(76, 175, 80, 0.1) !important;
+    color: #4caf50 !important;
+}
+
+/* 计数信息（右侧） */
+.time-capsule-count-info {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 2px !important;
+    text-align: right !important;
+}
+
+.countdown-display {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #ff5722 !important;
+    background: rgba(255, 87, 34, 0.1) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-family: 'Courier New', monospace !important;
+    border: 1px solid rgba(255, 87, 34, 0.2) !important;
+}
+
+.item-count-text {
+    font-size: 10px !important;
+    color: var(--text-muted) !important;
+    font-weight: 500 !important;
+}
+
+/* 保留原有的徽章样式（用于兼容性） */
+.time-capsule-count-badge {
+    position: absolute !important;
+    bottom: 8px !important;
+    right: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+    z-index: 10 !important;
+}
+
+.item-count-badge {
+    background: #00bcd4 !important;
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+    border-radius: 10px !important;
+    min-width: 16px !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+}
+
+/* 历史时间胶囊的数量徽章 */
+.time-capsule-historical .item-count-badge {
+    background: #4caf50 !important;
+}
+
+/* 保留原有的时间胶囊状态显示（用于兼容性） */
+.time-capsule-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.countdown-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff5722;
+    background: rgba(255, 87, 34, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+.member-count {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* 历史时间胶囊样式 */
+.canvas-grid-card.time-capsule-historical {
+    border: 2px solid rgba(0, 188, 212, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.1);
+    opacity: 0.8;
+}
+
+.completed-text {
+    font-size: 12px;
+    color: #4caf50;
+    font-weight: 600;
+}
+
+/* 拖拽提示样式 */
+.drag-hint {
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: var(--drag-hint-bg) !important;
+    border: 1px solid var(--drag-hint-border) !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    color: var(--text-normal) !important;
+    z-index: 10001 !important;
+    box-shadow: var(--drag-hint-shadow) !important;
+    white-space: nowrap !important;
+    user-select: none !important;
+}
+
+/* 拖拽目标区域高亮 */
+.canvas-wrapper.drag-target {
+    background: rgba(var(--interactive-accent-rgb), 0.1) !important;
+    border: 2px dashed var(--interactive-accent) !important;
+    border-radius: 8px !important;
+}
+
+/* 长按选择效果 */
+.canvas-grid-card.long-press-selecting {
+    background: rgba(var(--interactive-accent-rgb), 0.1);
+    border-color: var(--interactive-accent);
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
+
+/* 拖拽时的鼠标样式 */
+.canvas-grid-container.dragging-active {
+    cursor: grabbing !important;
+}
+
+.canvas-grid-container.dragging-active * {
+    cursor: grabbing !important;
+}
+
+/* 侧边栏模式下的拖拽优化 */
+.workspace-leaf.mod-right-split .canvas-grid-view,
+.workspace-leaf.mod-left-split .canvas-grid-view {
+    /* 侧边栏模式下的特殊样式 */
+}
+
+.workspace-leaf.mod-right-split .canvas-grid-card.dragging-from-grid,
+.workspace-leaf.mod-left-split .canvas-grid-card.dragging-from-grid {
+    /* 侧边栏拖拽时的特殊效果 */
+    border: 2px solid var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+/* ==================== 统一深色主题适配 ==================== */
+
+/* 基础组件深色主题适配 */
+.theme-dark .canvas-grid-dropdown-menu {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.theme-dark .canvas-grid-card {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .canvas-grid-card:hover {
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+}
+
+
+
+.theme-dark .card-editor-textarea {
+    background: transparent;
+}
+
+/* 工具栏组件深色主题适配 */
+.theme-dark .canvas-card-toolbar {
+    background: rgba(var(--background-primary-rgb), 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-color-picker {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.theme-dark .canvas-grid-controls-container {
+    background: rgba(var(--background-primary-rgb), 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-grid-switch-btn {
+    background: rgba(var(--background-primary-rgb), 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-grid-switch-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* 右键菜单深色主题适配 */
+.theme-dark .canvas-grid-context-menu {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.theme-dark .canvas-grid-context-menu-icon.lucide-target {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dcddde' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v6m0 10v6m11-7h-6m-10 0H1'/%3E%3C/svg%3E");
+}
+
+/* 外部链接深色主题适配 */
+.theme-dark .canvas-grid-card .external-link {
+    border-bottom-color: var(--text-accent);
+}
+
+.theme-dark .canvas-grid-card .external-link:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* 分组卡片深色主题适配 */
+.theme-dark .group-card {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .group-card:hover {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 时间胶囊深色主题适配 */
+.theme-dark .canvas-grid-time-capsule-btn {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .canvas-grid-time-capsule-btn:hover {
+    background: var(--background-modifier-hover);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ==================== 视图切换样式 ==================== */
+
+/* 视图切换按钮样式（单个切换按钮） */
+.canvas-view-switch {
+    display: flex;
+    margin-left: 12px;
+}
+
+.canvas-view-switch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-view-switch-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    border-color: var(--interactive-accent);
+    transform: scale(1.05);
+}
+
+.canvas-view-switch-btn:active {
+    transform: scale(0.95);
+}
+
+.canvas-view-switch-btn svg {
+    width: 16px;
+    height: 16px;
+    transition: all 0.3s ease;
+}
+
+.canvas-view-switch-btn:hover svg {
+    transform: rotate(5deg);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ==================== 日历组件样式 ==================== */
+
+
+
+/* 日历头部 */
+.calendar-container {
+    width: 100%;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.calendar-month-header {
+    flex: 1;
+}
+
+.calendar-month-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.calendar-month-info {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.calendar-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.calendar-prev-btn,
+.calendar-next-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--interactive-normal);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.calendar-prev-btn:hover,
+.calendar-next-btn:hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+/* 星期标题 */
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+
+.calendar-weekdays span {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 8px 4px;
+}
+
+/* 日历网格 */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 16px;
+}
+
+.calendar-day {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: var(--text-normal);
+}
+
+.calendar-day:hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.calendar-day.other-month {
+    color: var(--text-faint);
+    background: var(--background-modifier-form-field);
+}
+
+.calendar-day.today {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    font-weight: 600;
+}
+
+.calendar-day.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+.calendar-day.highlighted {
+    border-color: var(--color-blue);
+    background: rgba(var(--color-blue-rgb), 0.1);
+}
+
+.calendar-day.has-content {
+    border-color: var(--color-green);
+    background: rgba(var(--color-green-rgb), 0.05);
+}
+
+.calendar-day.has-content::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    background: var(--color-green);
+    border-radius: 50%;
+}
+
+/* 内容指示器 */
+.content-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--color-red);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* 快速导航 */
+.calendar-quick-nav {
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+}
+
+.quick-nav-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.quick-nav-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.quick-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: var(--interactive-normal);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.quick-nav-btn:hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.nav-label {
+    font-weight: 500;
+}
+
+.nav-count {
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* 紧凑模式 */
+.calendar-container.compact .calendar-day {
+    height: 28px;
+    font-size: 12px;
+}
+
+.calendar-container.compact .calendar-weekdays span {
+    padding: 4px 2px;
+    font-size: 11px;
+}
+
+.calendar-container.compact .content-indicator {
+    font-size: 9px;
+    padding: 1px 3px;
+    min-width: 14px;
+}
+
+
+
+.theme-dark .calendar-day {
+    background: var(--background-modifier-form-field);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .calendar-day:hover {
+    background: var(--background-modifier-hover);
+}
+
+.theme-dark .calendar-day.other-month {
+    background: var(--background-secondary);
+    color: var(--text-faint);
+}
+
+.theme-dark .quick-nav-btn {
+    background: var(--background-modifier-form-field);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .quick-nav-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+
+
+/* 🔧 新增：分组选择模态窗口样式 */
+.group-selection-source {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+}
+
+/* 🔧 新增：左右切换标签样式 */
+.group-tab-container {
+    margin-bottom: 16px;
+}
+
+.group-tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--background-modifier-border);
+    margin-bottom: 16px;
+}
+
+.group-tab-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.group-tab-btn:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+.group-tab-btn.active {
+    color: var(--interactive-accent);
+    border-bottom-color: var(--interactive-accent);
+    background: rgba(var(--interactive-accent-rgb), 0.1);
+}
+
+.group-list.current-groups,
+.group-list.other-groups {
+    display: none;
+}
+
+.group-list.active {
+    display: block;
+}
+
+.node-preview {
+    padding: 8px 12px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text-normal);
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.group-search-container {
+    margin-bottom: 16px;
+}
+
+.group-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 13px;
+}
+
+.group-search-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.group-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+}
+
+.group-list {
+    padding: 4px;
+}
+
+.group-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    gap: 12px;
+}
+
+.group-list-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.group-list-item.current-canvas {
+    background: rgba(var(--interactive-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--interactive-accent-rgb), 0.3);
+}
+
+.group-item-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.group-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.group-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.group-item-details {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.group-item-file {
+    color: var(--text-faint);
+}
+
+.group-list-empty,
+.group-list-error {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.group-list-error {
+    color: var(--text-error);
+}
+
+.group-selection-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.group-selection-buttons button {
+    padding: 6px 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.group-selection-buttons button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.canvas-grid-view .group-selection-buttons .mod-cta {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.canvas-grid-view .group-selection-buttons .mod-cta:hover {
+    background: var(--interactive-accent-hover);
+}
+
+/* 🔧 新增：视频预览样式 */
+.file-video-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.file-video-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: #000;
+}
+
+.file-video-preview:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.file-video-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-video-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: var(--background-modifier-error);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.file-video-error-icon {
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+.file-video-error-text {
+    font-size: 12px;
+    color: var(--text-error);
+    font-weight: 500;
+}
+
+.file-video-error-filename {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 深色主题适配 */
+.theme-dark .file-video-container {
+    background: var(--background-primary-alt);
+}
+
+.theme-dark .file-video-preview {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .file-video-preview:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ==================== Anki Connect 功能样式 ==================== */
+
+/* Anki 导出选项容器 */
+.export-options {
+    padding: 16px;
+    background: var(--background-primary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+/* Anki 禁用状态消息 */
+.anki-disabled-message {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px dashed var(--background-modifier-border);
+}
+
+.anki-disabled-message .anki-disabled-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.anki-disabled-message .anki-disabled-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-normal);
+}
+
+.anki-disabled-message .anki-disabled-desc {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.anki-disabled-message .anki-settings-link {
+    color: var(--interactive-accent);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.anki-disabled-message .anki-settings-link:hover {
+    color: var(--interactive-accent-hover);
+    text-decoration: underline;
+}
+
+/* Anki 同步状态显示 */
+.anki-sync-status {
+    margin-bottom: 20px;
+}
+
+.anki-sync-status-display {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.anki-status-icon {
+    font-size: 20px;
+}
+
+.anki-status-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.anki-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.anki-status-item {
+    text-align: center;
+    padding: 8px;
+    background: var(--background-primary);
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-status-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--interactive-accent);
+    margin-bottom: 4px;
+}
+
+.anki-status-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Anki 同步选项 */
+.anki-sync-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.anki-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 颜色同步选项 */
+.color-sync-container {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.anki-color-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--background-primary);
+    border: 2px solid var(--background-modifier-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.anki-color-card:hover {
+    border-color: var(--interactive-accent);
+    background: var(--background-modifier-hover);
+}
+
+.anki-color-card.selected {
+    border-color: var(--interactive-accent);
+    background: var(--interactive-accent-hover);
+}
+
+.anki-color-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    color: var(--interactive-accent);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.anki-color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--background-modifier-border);
+    flex-shrink: 0;
+}
+
+.anki-color-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.anki-color-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 2px;
+}
+
+.anki-color-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 全量同步按钮 */
+.full-sync-container {
+    text-align: center;
+    padding: 16px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-sync-all-btn {
+    background: var(--interactive-accent);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.anki-sync-all-btn:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.anki-sync-all-btn:disabled {
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* 同步历史显示 */
+.sync-history-container {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-sync-history {
+    /* 继承父容器样式 */
+}
+
+.anki-history-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.anki-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.anki-history-item:last-child {
+    border-bottom: none;
+}
+
+.anki-history-label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.anki-history-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-normal);
+}
+
+/* Anki 设置页面样式 */
+.anki-settings-container {
+    padding: 20px;
+}
+
+.anki-setting-item {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.anki-setting-item:last-child {
+    border-bottom: none;
+}
+
+.anki-setting-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.anki-setting-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.anki-setting-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.anki-setting-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.anki-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.anki-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+.anki-test-btn {
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.anki-test-btn:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.anki-test-result {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.anki-test-result.success {
+    background: var(--background-modifier-success);
+    color: var(--text-success);
+    border: 1px solid var(--text-success);
+}
+
+.anki-test-result.error {
+    background: var(--background-modifier-error);
+    color: var(--text-error);
+    border: 1px solid var(--text-error);
+}
+
+.anki-test-result.loading {
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border);
+}
+
+/* Anki 模态窗样式 */
+.anki-sync-modal-container .progress-container {
+    padding: 20px;
+}
+
+.anki-sync-modal-container .progress-wrapper {
+    background: var(--background-secondary);
+    border-radius: 10px;
+    height: 20px;
+    margin: 16px 0;
+    overflow: hidden;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-sync-modal-container .progress-bar {
+    background: linear-gradient(90deg, var(--interactive-accent), var(--interactive-accent-hover));
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.anki-sync-modal-container .progress-percent {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-normal);
+    text-align: center;
+}
+
+.status-text {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.sync-details {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    font-family: var(--font-monospace);
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* 模态窗按钮样式 */
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-cta {
+    background: var(--interactive-accent);
+    color: white;
+    border-color: var(--interactive-accent);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-cta:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-cancel {
+    background: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-cancel:hover {
+    background: var(--background-modifier-hover);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-secondary {
+    background: var(--background-secondary);
+    color: var(--text-normal);
+}
+
+.anki-sync-modal-container .modal-buttons .mod-secondary:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .anki-color-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .anki-status-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .anki-setting-control {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .anki-input {
+        min-width: auto;
+    }
+}
+
+/* 深色主题适配 */
+.theme-dark .anki-color-card {
+    background: var(--background-primary);
+}
+
+.theme-dark .anki-color-card:hover {
+    background: var(--background-modifier-hover);
+}
+
+.theme-dark .anki-color-card.selected {
+    background: var(--interactive-accent-hover);
+}
+
+/* 高对比度主题适配 */
+@media (prefers-contrast: high) {
+    .anki-color-card {
+        border-width: 3px;
+    }
+
+    .anki-color-dot {
+        border-width: 3px;
+    }
+
+    .anki-sync-modal-container .progress-bar {
+        background: var(--interactive-accent);
+    }
+}
+
+/* Anki同步模态窗样式 */
+.anki-sync-modal-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 同步配置区域 */
+.anki-sync-config-section {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-config-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-normal);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.anki-deck-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.anki-deck-select:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+.auto-sync-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.anki-auto-sync-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--interactive-accent);
+}
+
+.anki-sync-btn {
+    background: var(--interactive-accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.anki-sync-btn:hover {
+    background: var(--interactive-accent-hover);
+}
+
+.anki-sync-btn:disabled {
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.anki-export-btn {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.anki-export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.anki-status-brief {
+    text-align: center;
+    padding: 8px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.anki-status-text {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* 简化颜色同步选项样式 */
+.anki-color-sync-grid-simplified {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+    justify-content: center;
+}
+
+.anki-color-item-simplified {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.anki-color-item-simplified:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.anki-color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--background-modifier-border);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.anki-color-check {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+/* 同步历史表格样式 */
+.sync-history-table-container {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+    overflow-x: auto;
+}
+
+.sync-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.sync-history-table th {
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-normal);
+    border-right: 1px solid var(--background-modifier-border);
+    border-bottom: 2px solid var(--background-modifier-border);
+    background: var(--background-modifier-form-field);
+}
+
+.sync-history-table th:last-child {
+    border-right: none;
+}
+
+.sync-history-table td {
+    padding: 10px 8px;
+    text-align: center;
+    color: var(--text-normal);
+    border-right: 1px solid var(--background-modifier-border);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sync-history-table td:last-child {
+    border-right: none;
+}
+
+.sync-history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sync-history-table tbody tr:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* 错误数据高亮 */
+.sync-history-table .error-cell {
+    color: var(--text-error);
+    font-weight: 600;
+}
+
+/* 成功数据高亮 */
+.sync-history-table .success-cell {
+    color: var(--text-success);
+    font-weight: 600;
+}
+
+/* 响应式表格 */
+@media (max-width: 600px) {
+    .sync-history-table-container {
+        padding: 8px;
+    }
+
+    .sync-history-table th,
+    .sync-history-table td {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
+}
+
+/* 当前Canvas同步历史样式 */
+.current-canvas-sync-history {
+    padding: 16px;
+}
+
+.anki-sync-title {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+    text-align: center;
+}
+
+.current-sync-table-container {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 12px;
+}
+
+.current-sync-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.current-sync-table th {
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-normal);
+    font-size: 11px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.current-sync-table td {
+    padding: 8px 4px;
+    text-align: center;
+    color: var(--text-normal);
+    font-size: 11px;
+}
+
+.current-sync-table tbody tr:hover {
+    background: var(--background-modifier-hover);
+}
+
+.current-canvas-sync-btn {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.current-canvas-sync-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.current-canvas-sync-btn:active {
+    transform: translateY(0);
+}
+
+/* 同步按钮容器 - 导航栏样式 */
+.sync-button-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* 导航栏风格的工具栏按钮基础样式 */
+.sync-button-container .toolbar-button {
+    min-height: 36px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* 配置按钮样式 - 导航栏风格（限定到插件容器） */
+.canvas-grid-view .sync-button-container .toolbar-button:not(.mod-cta) {
+    background: var(--interactive-normal);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.canvas-grid-view .sync-button-container .toolbar-button:not(.mod-cta):hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+/* 同步按钮样式 - 导航栏风格（限定到插件容器） */
+.canvas-grid-view .sync-button-container .toolbar-button.mod-cta {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+}
+
+.canvas-grid-view .sync-button-container .toolbar-button.mod-cta:hover {
+    background: var(--interactive-accent-hover);
+}
+
+/* Anki同步选项容器 */
+.anki-sync-options {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+}
+
+/* 颜色筛选开关样式 */
+.filter-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background-primary);
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    transition: all 0.2s ease;
+}
+
+.filter-toggle-container:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.anki-filter-toggle-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--interactive-accent);
+    cursor: pointer;
+}
+
+.anki-filter-toggle-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-normal);
+    cursor: pointer;
+    user-select: none;
+}
+
+.anki-filter-toggle-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+    transition: color 0.2s ease;
+}
+
+/* 颜色筛选开关激活状态 */
+.anki-filter-toggle-checkbox:checked + .anki-filter-toggle-label {
+    color: var(--interactive-accent);
+}
+
+.anki-filter-toggle-checkbox:checked ~ .anki-filter-toggle-desc {
+    color: var(--text-normal);
+}
+
+/* 响应式设计 - 当前Canvas同步表格 */
+@media (max-width: 600px) {
+    .current-sync-table-container {
+        padding: 8px;
+    }
+
+    .current-sync-table th,
+    .current-sync-table td {
+        padding: 6px 2px;
+        font-size: 10px;
+    }
+
+    .anki-sync-title {
+        font-size: 14px;
+    }
+
+    .current-canvas-sync-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
+/* 🎯 结束：Canvas Grid View 样式定义 */

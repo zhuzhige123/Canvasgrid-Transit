@@ -14,7 +14,7 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = (process.argv[2] === 'production');
 
 // 目标目录
-const targetDir = 'D:\\桌面\\obsidian文件 卢曼\\.obsidian\\plugins\\canvans';
+const targetDir = 'D:\\桌面\\obsidian luman\\.obsidian\\plugins\\canvas-grid-plugin';
 
 // 确保目标目录存在
 function ensureTargetDir() {

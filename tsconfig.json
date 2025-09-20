@@ -4,16 +4,21 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
-    "target": "ES6",
+    "target": "ES2020",
     "allowJs": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
+    "strict": true,
     "moduleResolution": "node",
     "importHelpers": true,
-    "isolatedModules": true,
-    "strictNullChecks": true,
+    "declaration": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
     "lib": [
       "DOM",
-      "ES6"
+      "ES2020"
     ]
   },
   "include": [

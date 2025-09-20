@@ -5,182 +5,128 @@ All notable changes to Canvasgrid Transit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.1] - 2025-01-06
-
-### 🎉 Major Release - Plugin Rebranding and Feature Enhancement
-
-### 🔧 Latest Hotfixes (2025-01-06)
-
-#### 🐛 Critical Bug Fixes
-- **Fixed view initialization errors**: Resolved "Cannot read properties of undefined (reading 'settings')" error
-- **Fixed multi-language system**: Resolved "ReferenceError: zh is not defined" error
-- **Fixed sorting functionality**: Restored sorting feature that was not working properly
-- **Fixed return button icon size**: Optimized return button icon display size and positioning
-
-#### 🎨 UI/UX Improvements
-- **Return button optimization**: Improved icon size (16px → 14px) and perfect centering in 28px circular button
-- **Hover effects**: Enhanced hover animations with more natural scaling (1.1 → 1.05)
-- **CSS cleanup**: Removed duplicate styles and improved code quality
-- **Visual consistency**: Better alignment with overall UI design system
-
-#### ✨ Added
-- **Time Capsule Feature**: Revolutionary content collection system inspired by Smartisan's time capsule
-  - Countdown timer (5-60 minutes configurable)
-  - Automatic group creation for collected content
-  - Smart positioning to avoid overlapping with existing groups
-  - Visual countdown display and collection status
-  - Hotkey-based content capture during active collection
-
-- **Fast Bookmarks**: Lightning-fast web link parsing and display
-  - Instant basic bookmark display (<100ms response time)
-  - Smart title extraction from URLs
-  - Asynchronous detailed metadata enhancement
-  - Google favicon service integration
-  - Fallback mechanisms for reliability
-
-- **Enhanced Group Management**: Improved Canvas group handling
-  - Groups display as cards in grid view
-  - Click to enter detailed group interface
-  - Drag-and-drop content management within groups
-  - Right-click group name editing with Canvas sync
-  - Return button for easy navigation
-
-- **Smart Color System**: Configurable color categories
-  - Red = Important, Yellow = Todo, Blue = Notes, Purple = Inspiration, Cyan = Collected
-  - One-click color filtering (non-additive)
-  - Color tooltips with category names
-  - Unified color settings interface
-
-- **Multi-language Support**: Complete internationalization
-  - Chinese and English interface switching
-  - All UI elements and messages translated
-  - Language preference persistence
-
-#### 🔄 Changed
-- **Plugin Name**: Canvas Grid View → **Canvasgrid Transit**
-- **Version Reset**: Starting fresh with v0.5.1 for new branding
-- **Repository**: Moved to https://github.com/zhuzhige123/Canvasgrid-Transit
-- **Interface Design**: Modernized UI with responsive layout
-- **Search System**: Enhanced full-text search for content, filenames, and URLs
-- **Settings Organization**: Streamlined settings interface with logical grouping
-
-#### 🛠️ Improved
-- **Performance**: Optimized rendering and search algorithms
-- **Responsive Design**: Better adaptation to different screen sizes
-- **User Experience**: Simplified workflows and intuitive interactions
-- **Code Quality**: Comprehensive refactoring and type safety improvements
-- **Documentation**: Complete README rewrite with detailed feature descriptions
-
-#### 🐛 Fixed
-- Grid layout issues on narrow screens
-- Search performance with large Canvas files
-- Color filter synchronization problems
-- Group editing conflicts with Canvas
-- Memory leaks in bookmark parsing
-
-#### 🗑️ Removed
-- Manual card size adjustment options (replaced with responsive design)
-- Background frames from color dots
-- Bottom horizontal scrollbar
-- Quick start guide from settings (simplified interface)
-
-### 🙏 Acknowledgments
-- Special thanks to the Obsidian team for the excellent platform
-- Time capsule design inspiration from Smartisan/Hammer Technology
-- Community feedback that shaped this major update
-
----
-
-## [0.4.0] - 2024-12-15
-
-### Added
-- Canvas group support with expandable cards
-- Web bookmark preview functionality
-- Real-time synchronization with Canvas
-- Color-based filtering system
-
-### Improved
-- Search performance and accuracy
-- Grid layout responsiveness
-- User interface design
+## [0.5.1] - 2025-01-14
 
 ### Fixed
-- Canvas data loading issues
-- Grid view refresh problems
-
----
-
-## [0.3.0] - 2024-11-20
-
-### Added
-- Direct card editing in grid view
-- Advanced search capabilities
-- Node focus functionality
-- Settings panel
+- **CSS Style Leakage**: Resolved critical issue where plugin styles were affecting Obsidian's startup loading interface
+- **Animation Conflicts**: Fixed global animation keyframe conflicts by adding `cgt-` prefix to all animations
+- **Namespace Isolation**: Properly scoped all CSS selectors to prevent global style pollution
+- **Modal Button Styles**: Limited modal button styles to plugin containers only
 
 ### Changed
-- Improved grid layout algorithm
-- Enhanced visual design
+- **Version Consistency**: Updated all version references to 0.5.1 across manifest, package.json, and UI
+- **CSS Architecture**: Implemented comprehensive CSS namespace isolation strategy
+- **Animation Naming**: Standardized all animation names with plugin-specific prefixes
 
----
+### Technical
+- **Build Process**: Enhanced build validation and file copying
+- **Style Management**: Improved CSS organization and scoping
+- **Performance**: Reduced style conflicts and improved loading performance
 
-## [0.2.0] - 2024-10-25
+## [0.5.0] - 2025-01-13
 
 ### Added
-- Basic grid view functionality
-- Search and filter capabilities
-- Canvas integration
+- **Anki Connect Integration**: Full integration with Anki for spaced repetition learning
+- **Color-based Sync**: Selective synchronization based on Canvas color categories
+- **Batch Processing**: Efficient handling of large card collections for Anki sync
+- **Progress Tracking**: Visual progress indicators for sync operations
+
+### Enhanced
+- **Time Capsule Feature**: Improved content collection with better positioning
+- **Search Functionality**: Enhanced full-text search with better performance
+- **Drag & Drop**: Refined drag and drop operations with visual feedback
+- **User Interface**: Polished UI elements and improved user experience
 
 ### Fixed
-- Initial stability issues
+- **Backlink Creation**: Resolved issues with automatic backlink generation
+- **Canvas Synchronization**: Improved bidirectional sync reliability
+- **Group Management**: Fixed group expansion and navigation issues
 
----
-
-## [0.1.0] - 2024-10-01
+## [0.4.0] - 2025-01-10
 
 ### Added
-- Initial release
-- Basic Canvas to grid conversion
-- Simple card display
+- **Time Capsule System**: Revolutionary content collection feature with timer functionality
+- **Smart Positioning**: Automatic group placement to avoid overlaps
+- **Block Reference Integration**: Seamless Obsidian block reference creation
+- **Content Locating**: Intelligent search for cards without backlinks
+
+### Improved
+- **Grid Layout**: Enhanced responsive design with better card sizing
+- **Color Management**: Refined color system with custom labels
+- **Search Performance**: Optimized search algorithms for better speed
+- **Mobile Support**: Improved mobile device compatibility
+
+### Fixed
+- **Memory Leaks**: Resolved resource cleanup issues
+- **Theme Compatibility**: Fixed dark/light theme switching problems
+- **Canvas Loading**: Improved Canvas file loading reliability
+
+## [0.3.0] - 2025-01-05
+
+### Added
+- **Advanced Search**: Full-text search across content, filenames, and URLs
+- **Color Filtering**: One-click filtering by Canvas color categories
+- **Group Management**: Special handling for Canvas groups with expandable views
+- **Real-time Editing**: Direct card content editing in grid view
+
+### Enhanced
+- **Drag & Drop**: Improved drag and drop with better visual feedback
+- **Responsive Design**: Better adaptation to different screen sizes
+- **Performance**: Optimized rendering for large Canvas files
+- **Accessibility**: Improved keyboard navigation support
+
+### Fixed
+- **Sync Issues**: Resolved bidirectional synchronization problems
+- **UI Glitches**: Fixed various interface rendering issues
+- **Error Handling**: Improved error messages and recovery
+
+## [0.2.0] - 2024-12-28
+
+### Added
+- **Grid View Display**: Transform Canvas files into organized card layouts
+- **Canvas Integration**: Seamless conversion of Canvas nodes to cards
+- **Multi-Canvas Support**: Switch between different Canvas files
+- **Basic Search**: Simple content search functionality
+
+### Enhanced
+- **User Interface**: Clean and intuitive design following Obsidian conventions
+- **Theme Integration**: Automatic theme adaptation (light/dark)
+- **Navigation**: Easy switching between Canvas and grid views
+
+### Fixed
+- **Initial Bugs**: Resolved early stability issues
+- **Performance**: Optimized initial rendering performance
+
+## [0.1.0] - 2024-12-20
+
+### Added
+- **Initial Release**: Basic grid view functionality for Canvas files
+- **Card Display**: Simple card-based representation of Canvas nodes
+- **Basic Navigation**: Switch between Canvas and grid views
+- **Foundation**: Core architecture and plugin structure
+
+### Technical
+- **Plugin Architecture**: Established modular plugin structure
+- **TypeScript**: Full TypeScript implementation
+- **Obsidian API**: Integration with Obsidian plugin API
+- **Build System**: Set up development and build processes
 
 ---
 
-## 🔮 Upcoming Features
+## Upcoming Features
 
-### v0.6.0 (Planned)
-- [ ] Advanced time capsule analytics
-- [ ] Bookmark collections and tagging
-- [ ] Enhanced drag-and-drop between Canvas and grid
-- [ ] Plugin API for third-party integrations
+### Planned for v0.6.0
+- **Enhanced Mobile Support**: Improved mobile user experience
+- **Performance Optimizations**: Better handling of large Canvas files
+- **Additional Export Formats**: More options for exporting content
+- **Improved Accessibility**: Enhanced keyboard navigation and screen reader support
 
-### v0.7.0 (Planned)
-- [ ] AI-powered content organization
-- [ ] Advanced search with filters
-- [ ] Team collaboration features
-- [ ] Mobile optimization
-
-### v1.0.0 (Future)
-- [ ] Stable API
-- [ ] Complete feature set
-- [ ] Performance optimizations
-- [ ] Comprehensive documentation
+### Future Considerations
+- **Plugin Integrations**: Compatibility with other popular Obsidian plugins
+- **Advanced Analytics**: Usage insights and productivity metrics
+- **Cloud Synchronization**: Optional cloud sync capabilities
+- **Custom Themes**: User-customizable card themes and layouts
 
 ---
 
-## 📝 Notes
-
-### Version Numbering
-- **Major** (x.0.0): Breaking changes or major feature additions
-- **Minor** (0.x.0): New features, backward compatible
-- **Patch** (0.0.x): Bug fixes and small improvements
-
-### Support
-- **Current Version**: v0.5.1 (actively supported)
-- **Previous Versions**: Limited support for critical bugs only
-- **Minimum Obsidian**: v0.15.0
-
-### Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to this project.
-
-### Support
-See [SUPPORT.md](SUPPORT.md) for information on getting help and supporting the project.
+For detailed information about each release, visit our [GitHub Releases](https://github.com/zhuzhige123/Canvasgrid-Transit/releases) page.

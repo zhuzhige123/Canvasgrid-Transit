@@ -1,22 +1,33 @@
 {
-	"name": "canvas-grid-view",
-	"version": "1.3.0",
-	"description": "Adds a grid card view to Obsidian Canvas with enhanced editing capabilities",
+	"name": "canvasgrid-transit",
+	"version": "0.5.1",
+	"description": "A powerful grid-based plugin for Obsidian Canvas that transforms your Canvas files into organized, searchable card layouts with advanced features like drag-and-drop, time capsule, Anki integration, and intelligent content management.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"dev-watch": "node dev-watch-sync.js",
-		"dev-sync": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"build-only": "node esbuild.config.mjs production",
-		"build-sync": "npm run build-only && powershell -ExecutionPolicy Bypass -File sync-to-obsidian.ps1",
-		"sync": "powershell -ExecutionPolicy Bypass -File sync-to-obsidian.ps1",
-		"type-check": "tsc -noEmit -skipLibCheck",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
-	"keywords": [],
-	"author": "",
+	"keywords": [
+		"obsidian",
+		"plugin",
+		"canvas",
+		"grid",
+		"cards",
+		"productivity",
+		"knowledge-management",
+		"note-taking"
+	],
+	"author": "Canvasgrid Transit Team",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zhuzhige123/Canvasgrid-Transit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/zhuzhige123/Canvasgrid-Transit/issues"
+	},
+	"homepage": "https://github.com/zhuzhige123/Canvasgrid-Transit#readme",
 	"devDependencies": {
 		"@types/node": "^20.11.0",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
@@ -26,5 +37,15 @@
 		"obsidian": "latest",
 		"tslib": "^2.6.0",
 		"typescript": "^5.3.0"
+	},
+	"dependencies": {
+		"@codemirror/autocomplete": "^6.18.7",
+		"@codemirror/commands": "^6.8.1",
+		"@codemirror/lang-markdown": "^6.3.4",
+		"@codemirror/language": "^6.11.3",
+		"@codemirror/search": "^6.5.11",
+		"@codemirror/state": "^6.5.2",
+		"@codemirror/theme-one-dark": "^6.1.3",
+		"@codemirror/view": "^6.38.2"
 	}
 }

@@ -1,0 +1,83 @@
+name: Validate Plugin
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate manifest
+      run: |
+        echo "Validating manifest.json..."
+        node -e "
+          const manifest = require('./manifest.json');
+          const package = require('./package.json');
+          
+          console.log('Plugin ID:', manifest.id);
+          console.log('Plugin Name:', manifest.name);
+          console.log('Version:', manifest.version);
+          console.log('Author:', manifest.author);
+          console.log('AuthorUrl:', manifest.authorUrl);
+          
+          if (manifest.version !== package.version) {
+            throw new Error('Version mismatch between manifest.json and package.json');
+          }
+          
+          console.log('✅ Manifest validation passed');
+        "
+        
+    - name: Build plugin
+      run: npm run build
+      
+    - name: Validate build output
+      run: |
+        if [ ! -f "main.js" ]; then
+          echo "❌ main.js not found"
+          exit 1
+        fi
+        
+        if [ ! -f "manifest.json" ]; then
+          echo "❌ manifest.json not found"
+          exit 1
+        fi
+        
+        if [ ! -f "styles.css" ]; then
+          echo "❌ styles.css not found"
+          exit 1
+        fi
+        
+        echo "✅ All required files present"
+        
+    - name: Check file sizes
+      run: |
+        echo "File sizes:"
+        ls -lh main.js manifest.json styles.css versions.json
+        
+        # Check if main.js is reasonable size (not empty, not too large)
+        size=$(stat -c%s main.js)
+        if [ $size -lt 1000 ]; then
+          echo "❌ main.js seems too small ($size bytes)"
+          exit 1
+        fi
+        
+        if [ $size -gt 10000000 ]; then
+          echo "❌ main.js seems too large ($size bytes)"
+          exit 1
+        fi
+        
+        echo "✅ File sizes are reasonable"

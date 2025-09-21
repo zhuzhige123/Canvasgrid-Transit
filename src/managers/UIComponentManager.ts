@@ -1,4 +1,5 @@
-import { App, TFile, Notice, Modal } from 'obsidian';
+import { App, TFile, Notice, Modal, setIcon } from 'obsidian';
+import { SafeDOMUtils } from '../utils/SafeDOMUtils';
 
 // UI组件配置接口
 export interface UIComponentConfig {
@@ -100,11 +101,8 @@ export class ToolbarManager {
 			attr: { 'aria-label': '主菜单' }
 		});
 
-		button.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M2 4h12v1H2V4zm0 3h12v1H2V7zm0 3h12v1H2v-1z"/>
-			</svg>
-		`;
+		// 使用Obsidian的setIcon方法设置图标
+		setIcon(button, 'menu');
 
 		button.addEventListener('click', (e) => {
 			this.showMainMenu(e);
@@ -122,12 +120,8 @@ export class ToolbarManager {
 			attr: { 'aria-label': '时间胶囊' }
 		});
 
-		button.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/>
-				<path d="M8 3v5l3 2-1 1-3-2V3h1z"/>
-			</svg>
-		`;
+		// 使用Obsidian的setIcon方法设置时钟图标
+		setIcon(button, 'clock');
 
 		button.addEventListener('click', () => {
 			this.toggleTimeCapsule();
@@ -154,12 +148,9 @@ export class ToolbarManager {
 		const searchIcon = searchContainer.createEl('div', {
 			cls: 'search-icon'
 		});
-		
-		searchIcon.innerHTML = `
-			<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-				<path d="M10.5 9.5L13 12l-1 1-2.5-2.5A5.5 5.5 0 1 1 10.5 9.5zM6 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
-			</svg>
-		`;
+
+		// 使用Obsidian的setIcon方法设置搜索图标
+		setIcon(searchIcon, 'search');
 
 		// 搜索功能
 		let searchTimeout: NodeJS.Timeout;
@@ -185,11 +176,8 @@ export class ToolbarManager {
 			attr: { 'aria-label': '颜色筛选' }
 		});
 
-		filterButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M2 2h12l-5 6v4l-2 1V8L2 2z"/>
-			</svg>
-		`;
+		// 使用Obsidian的setIcon方法设置筛选图标
+		setIcon(filterButton, 'filter');
 
 		filterButton.addEventListener('click', () => {
 			this.showColorFilterMenu(filterButton);
@@ -209,11 +197,8 @@ export class ToolbarManager {
 			attr: { 'aria-label': '排序选项' }
 		});
 
-		sortButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M3 3h10v1H3V3zm0 3h8v1H3V6zm0 3h6v1H3V9zm0 3h4v1H3v-1z"/>
-			</svg>
-		`;
+		// 使用Obsidian的setIcon方法设置排序图标
+		setIcon(sortButton, 'arrow-up-down');
 
 		sortButton.addEventListener('click', () => {
 			this.showSortMenu(sortButton);
@@ -233,15 +218,13 @@ export class ToolbarManager {
 			attr: { 'aria-label': 'Anki同步' }
 		});
 
-		syncButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M8 1a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V1z"/>
-				<path d="M1 8a7 7 0 0 0 7 7v-2a5 5 0 0 1-5-5H1z"/>
-				<path d="M8 3v2l3-3-3-3v2z"/>
-				<path d="M8 13v-2l-3 3 3 3v-2z"/>
-			</svg>
-			<span style="margin-left: 6px;">Anki同步</span>
-		`;
+		// 使用Obsidian的setIcon方法设置同步图标
+		setIcon(syncButton, 'refresh-cw');
+
+		// 添加文本标签
+		const textSpan = syncButton.createSpan();
+		SafeDOMUtils.setTextContent(textSpan, 'Anki同步');
+		SafeDOMUtils.addClasses(textSpan, 'anki-sync-text');
 
 		syncButton.addEventListener('click', async () => {
 			await this.handleAnkiSync();
@@ -352,8 +335,10 @@ export class CardRendererManager {
 		
 		// 卡片头部
 		const header = card.createDiv('card-header');
-		header.createSpan('card-type-icon').innerHTML = '📝';
-		header.createSpan('card-title').textContent = '文本卡片';
+		const typeIcon = header.createSpan('card-type-icon');
+		SafeDOMUtils.setTextContent(typeIcon, '📝');
+		const title = header.createSpan('card-title');
+		SafeDOMUtils.setTextContent(title, '文本卡片');
 
 		// 卡片内容
 		const content = card.createDiv('card-content');
@@ -385,10 +370,12 @@ export class CardRendererManager {
 		
 		// 卡片头部
 		const header = card.createDiv('card-header');
-		header.createSpan('card-type-icon').innerHTML = '📄';
-		
+		const typeIcon = header.createSpan('card-type-icon');
+		SafeDOMUtils.setTextContent(typeIcon, '📄');
+
 		const fileName = node.file || 'Unknown File';
-		header.createSpan('card-title').textContent = fileName;
+		const title = header.createSpan('card-title');
+		SafeDOMUtils.setTextContent(title, fileName);
 
 		// 卡片内容
 		const content = card.createDiv('card-content');
@@ -415,8 +402,10 @@ export class CardRendererManager {
 		
 		// 卡片头部
 		const header = card.createDiv('card-header');
-		header.createSpan('card-type-icon').innerHTML = '🔗';
-		header.createSpan('card-title').textContent = '链接卡片';
+		const typeIcon = header.createSpan('card-type-icon');
+		SafeDOMUtils.setTextContent(typeIcon, '🔗');
+		const title = header.createSpan('card-title');
+		SafeDOMUtils.setTextContent(title, '链接卡片');
 
 		// 卡片内容
 		const content = card.createDiv('card-content');
@@ -447,7 +436,7 @@ export class CardRendererManager {
 			cls: 'card-action-btn edit-btn',
 			attr: { 'aria-label': '编辑' }
 		});
-		editBtn.innerHTML = '✏️';
+		setIcon(editBtn, 'edit');
 		editBtn.addEventListener('click', () => this.editCard(node));
 
 		// 删除按钮
@@ -455,7 +444,7 @@ export class CardRendererManager {
 			cls: 'card-action-btn delete-btn',
 			attr: { 'aria-label': '删除' }
 		});
-		deleteBtn.innerHTML = '🗑️';
+		setIcon(deleteBtn, 'trash');
 		deleteBtn.addEventListener('click', () => this.deleteCard(node));
 
 		// 复制按钮
@@ -463,7 +452,7 @@ export class CardRendererManager {
 			cls: 'card-action-btn copy-btn',
 			attr: { 'aria-label': '复制' }
 		});
-		copyBtn.innerHTML = '📋';
+		setIcon(copyBtn, 'copy');
 		copyBtn.addEventListener('click', () => this.copyCard(node));
 	}
 
@@ -864,15 +853,20 @@ export class ModalManager {
 
 				// 帮助内容
 				const helpContent = contentEl.createDiv('help-content');
-				helpContent.innerHTML = `
-					<h3>Canvasgrid Transit 使用指南</h3>
-					<ul>
-						<li>拖拽文本到界面创建卡片</li>
-						<li>使用搜索框查找卡片</li>
-						<li>点击颜色筛选器按颜色过滤</li>
-						<li>使用排序选项重新排列卡片</li>
-					</ul>
-				`;
+
+				// 创建标题
+				const title = helpContent.createEl('h3');
+				SafeDOMUtils.setTextContent(title, 'Canvasgrid Transit 使用指南');
+
+				// 创建使用指南列表
+				const guideItems = [
+					'拖拽文本到界面创建卡片',
+					'使用搜索框查找卡片',
+					'点击颜色筛选器按颜色过滤',
+					'使用排序选项重新排列卡片'
+				];
+				const guideList = SafeDOMUtils.createList(guideItems, false);
+				helpContent.appendChild(guideList);
 
 				// 按钮组
 				const buttonContainer = contentEl.createDiv('modal-buttons');
@@ -1161,36 +1155,54 @@ export class ModalManager {
 				const estimatedCards = this.colorFilterEnabled ?
 					Math.floor(totalCards * (selectedColorsCount / 7)) : totalCards;
 
-				this.statsSection.innerHTML = `
-					<h4 style="margin: 0 0 8px 0; color: var(--text-normal);">同步统计:</h4>
-					<div style="display: flex; flex-direction: column; gap: 4px; font-size: 14px;">
-						<div style="color: var(--text-muted);">
-							<span>同步模式:</span>
-							<span style="color: var(--text-normal); font-weight: 500;">
-								${this.colorFilterEnabled ? '颜色筛选' : '全量同步'}
-							</span>
-						</div>
-						<div style="color: var(--text-muted);">
-							<span>总卡片数:</span>
-							<span style="color: var(--text-normal); font-weight: 500;">${totalCards}</span>
-						</div>
-						${this.colorFilterEnabled ? `
-						<div style="color: var(--text-muted);">
-							<span>已选颜色:</span>
-							<span style="color: var(--interactive-accent); font-weight: 500;">${selectedColorsCount}/7</span>
-						</div>
-						<div style="color: var(--text-muted);">
-							<span>预计同步:</span>
-							<span style="color: var(--text-success); font-weight: 500;">${estimatedCards} 张卡片</span>
-						</div>
-						` : `
-						<div style="color: var(--text-muted);">
-							<span>将同步:</span>
-							<span style="color: var(--text-success); font-weight: 500;">所有 ${totalCards} 张卡片</span>
-						</div>
-						`}
-					</div>
-				`;
+				// 清空并重建统计信息
+				this.statsSection.empty();
+
+				// 创建标题
+				const title = this.statsSection.createEl('h4');
+				SafeDOMUtils.setTextContent(title, '同步统计:');
+				SafeDOMUtils.addClasses(title, 'anki-stats-title');
+
+				// 创建统计容器
+				const statsContainer = this.statsSection.createDiv('anki-stats-container');
+
+				// 同步模式
+				const modeRow = statsContainer.createDiv('anki-stats-row');
+				const modeLabel = modeRow.createSpan('anki-stats-label');
+				SafeDOMUtils.setTextContent(modeLabel, '同步模式:');
+				const modeValue = modeRow.createSpan('anki-stats-value');
+				SafeDOMUtils.setTextContent(modeValue, this.colorFilterEnabled ? '颜色筛选' : '全量同步');
+
+				// 总卡片数
+				const totalRow = statsContainer.createDiv('anki-stats-row');
+				const totalLabel = totalRow.createSpan('anki-stats-label');
+				SafeDOMUtils.setTextContent(totalLabel, '总卡片数:');
+				const totalValue = totalRow.createSpan('anki-stats-value');
+				SafeDOMUtils.setTextContent(totalValue, totalCards.toString());
+
+				// 根据模式显示不同信息
+				if (this.colorFilterEnabled) {
+					// 已选颜色
+					const colorRow = statsContainer.createDiv('anki-stats-row');
+					const colorLabel = colorRow.createSpan('anki-stats-label');
+					SafeDOMUtils.setTextContent(colorLabel, '已选颜色:');
+					const colorValue = colorRow.createSpan('anki-stats-value anki-stats-accent');
+					SafeDOMUtils.setTextContent(colorValue, `${selectedColorsCount}/7`);
+
+					// 预计同步
+					const estimateRow = statsContainer.createDiv('anki-stats-row');
+					const estimateLabel = estimateRow.createSpan('anki-stats-label');
+					SafeDOMUtils.setTextContent(estimateLabel, '预计同步:');
+					const estimateValue = estimateRow.createSpan('anki-stats-value anki-stats-success');
+					SafeDOMUtils.setTextContent(estimateValue, `${estimatedCards} 张卡片`);
+				} else {
+					// 将同步
+					const syncRow = statsContainer.createDiv('anki-stats-row');
+					const syncLabel = syncRow.createSpan('anki-stats-label');
+					SafeDOMUtils.setTextContent(syncLabel, '将同步:');
+					const syncValue = syncRow.createSpan('anki-stats-value anki-stats-success');
+					SafeDOMUtils.setTextContent(syncValue, `所有 ${totalCards} 张卡片`);
+				}
 			}
 
 			onClose() {

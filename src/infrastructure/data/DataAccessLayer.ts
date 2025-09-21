@@ -220,7 +220,8 @@ export class DataAccessLayer {
                 await this.createBackup(filePath);
             }
             
-            await this.vault.delete(file);
+            // 使用推荐的文件管理器方法
+            await this.app.fileManager.trashFile(file);
             
             // 清理缓存和监听器
             this.invalidateCache(filePath);
@@ -400,7 +401,7 @@ export class DataAccessLayer {
                 
                 const filesToDelete = backupFiles.slice(0, backupFiles.length - this.config.maxBackups);
                 for (const file of filesToDelete) {
-                    await this.vault.delete(file);
+                    await this.app.fileManager.trashFile(file);
                 }
             }
         } catch (error) {

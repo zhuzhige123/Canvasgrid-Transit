@@ -1,4 +1,5 @@
 import { App, TFile } from 'obsidian';
+import { DebugManager } from '../utils/DebugManager';
 
 // 搜索配置接口
 export interface SearchConfig {
@@ -550,7 +551,7 @@ export class SearchAndFilterManager {
 				query
 			};
 		} catch (error) {
-			console.error('Search error:', error);
+			DebugManager.error('Search error:', error);
 			return {
 				nodes: [],
 				totalCount: nodes.length,

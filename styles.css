@@ -6384,4 +6384,105 @@
     }
 }
 
+/* 🎨 Canvas卡片颜色类 - 替代JavaScript内联样式 */
+.canvas-card-color-1 {
+    --node-color: #ff6b6b; /* 红色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-2 {
+    --node-color: #ffa726; /* 橙色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-3 {
+    --node-color: #ffeb3b; /* 黄色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-4 {
+    --node-color: #66bb6a; /* 绿色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-5 {
+    --node-color: #26c6da; /* 青色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-6 {
+    --node-color: #42a5f5; /* 蓝色 */
+    border-left: 4px solid var(--node-color);
+}
+
+.canvas-card-color-7 {
+    --node-color: #ab47bc; /* 紫色 */
+    border-left: 4px solid var(--node-color);
+}
+
+/* 🎨 Canvas卡片内容样式类 - 替代JavaScript内联样式 */
+.canvas-card-text-content {
+    color: var(--text-normal);
+}
+
+.canvas-card-empty-text {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.canvas-card-file-name {
+    color: var(--text-normal);
+    margin-left: 8px;
+}
+
+.canvas-card-link-text {
+    color: var(--text-normal);
+    margin-left: 8px;
+}
+
+.canvas-card-invalid-file,
+.canvas-card-invalid-link {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* 🎨 Anki同步按钮样式 */
+.anki-sync-text {
+    margin-left: 6px;
+}
+
+/* 🎨 Anki统计信息样式 - 替代JavaScript内联样式 */
+.anki-stats-title {
+    margin: 0 0 8px 0;
+    color: var(--text-normal);
+}
+
+.anki-stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.anki-stats-row {
+    color: var(--text-muted);
+}
+
+.anki-stats-label {
+    margin-right: 8px;
+}
+
+.anki-stats-value {
+    color: var(--text-normal);
+    font-weight: 500;
+}
+
+.anki-stats-accent {
+    color: var(--interactive-accent) !important;
+}
+
+.anki-stats-success {
+    color: var(--text-success) !important;
+}
+
 /* 🎯 结束：Canvas Grid View 样式定义 */

@@ -28,6 +28,8 @@ import { EditorStateCoordinator } from './src/managers/EditorStateCoordinator';
 import { ObsidianRenderManager } from './src/managers/ObsidianRenderManager';
 import { DiagnosticsManager } from './src/managers/DiagnosticsManager';
 import { DebugManager } from './src/utils/DebugManager';
+import { ProtocolHandler } from './src/managers/ProtocolHandler';
+import './src/utils/CanvasDebugger'; // 导入调试工具
 import { DataValidator } from './src/utils/DataValidator';
 import { ColorUtils } from './src/utils/ColorUtils';
 import { SEARCH_CONSTANTS, GRID_CONSTANTS, PERFORMANCE_CONSTANTS, NOTIFICATION_CONSTANTS, FILE_CONSTANTS, REGEX_PATTERNS, COLOR_CONSTANTS } from './src/constants/AppConstants';
@@ -16574,12 +16576,16 @@ export default class CanvasGridPlugin extends Plugin {
 	// 新增：临时文件和编辑器管理器（插件级别）
 	private tempFileManager?: TempFileManager;
 	private editorStateCoordinator?: EditorStateCoordinator;
+	private protocolHandler?: ProtocolHandler;
 
 	async onload() {
 		await this.loadSettings();
 
 		// 初始化国际化
 		i18n.setLanguage(this.settings.language);
+
+		// 初始化协议处理器
+		this.protocolHandler = new ProtocolHandler(this.app);
 
 		// 注册Obsidian协议处理器
 		this.registerObsidianProtocolHandler('canvasgrid-transit', this.handleObsidianProtocol.bind(this));
@@ -16664,7 +16670,6 @@ export default class CanvasGridPlugin extends Plugin {
 		this.addCommand({
 			id: 'time-capsule-collect',
 			name: '时间胶囊收集内容',
-			hotkeys: [{ modifiers: ['Ctrl', 'Shift'], key: 'c' }],
 			callback: () => {
 				this.collectToTimeCapsule();
 			}
@@ -16674,7 +16679,6 @@ export default class CanvasGridPlugin extends Plugin {
 		this.addCommand({
 			id: 'toggle-time-capsule',
 			name: '切换时间胶囊状态',
-			hotkeys: [{ modifiers: ['Ctrl', 'Shift'], key: 't' }],
 			callback: () => {
 				this.toggleTimeCapsule();
 			}
@@ -16732,37 +16736,18 @@ export default class CanvasGridPlugin extends Plugin {
 	}
 
 	/**
-	 * 处理Obsidian协议请求
+	 * 处理Obsidian协议请求 - 使用增强的ProtocolHandler
 	 */
 	private async handleObsidianProtocol(params: Record<string, string>): Promise<void> {
 		try {
-			const { file, nodeId, x, y } = params;
-
-			if (!file) {
-				new Notice('缺少文件参数');
+			if (!this.protocolHandler) {
+				console.error('ProtocolHandler not initialized');
+				new Notice('协议处理器未初始化');
 				return;
 			}
 
-			// 查找Canvas文件
-			const canvasFile = this.app.vault.getAbstractFileByPath(file);
-			if (!canvasFile || !(canvasFile instanceof TFile)) {
-				new Notice(`找不到Canvas文件: ${file}`);
-				return;
-			}
-
-			// 打开Canvas文件
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.openFile(canvasFile);
-
-			// 如果提供了节点ID和坐标，尝试定位到节点
-			if (nodeId && x && y) {
-				// 等待Canvas视图加载完成
-				setTimeout(() => {
-					this.focusCanvasNode(nodeId, parseFloat(x), parseFloat(y));
-				}, 500);
-			}
-
-			new Notice(`已打开Canvas文件: ${canvasFile.basename}`);
+			// 委托给专用的协议处理器
+			await this.protocolHandler.handleProtocolRequest(params);
 		} catch (error) {
 			console.error('处理Obsidian协议失败:', error);
 			new Notice('打开Canvas文件失败');

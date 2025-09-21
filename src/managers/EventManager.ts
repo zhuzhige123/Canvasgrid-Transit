@@ -1,4 +1,5 @@
 import { CanvasNode } from './DataManager';
+import { DebugManager } from '../utils/DebugManager';
 
 // 事件类型定义
 export interface CardEvent {
@@ -49,7 +50,7 @@ export class EventBus {
 				try {
 					await handler(data);
 				} catch (error) {
-					console.error(`Event handler error for ${event}:`, error);
+					DebugManager.error(`Event handler error for ${event}:`, error);
 				}
 			}
 		}

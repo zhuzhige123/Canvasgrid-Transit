@@ -1,4 +1,6 @@
 import { CanvasNode } from './DataManager';
+import { SafeDOMUtils } from '../utils/SafeDOMUtils';
+import { DebugManager } from '../utils/DebugManager';
 
 // 卡片常量
 export const CARD_CONSTANTS = {
@@ -7,77 +9,48 @@ export const CARD_CONSTANTS = {
 	spacing: 20
 };
 
-// DOM工具类
+// DOM工具类 - 已弃用，使用SafeDOMUtils替代
 export class DOMUtils {
 	/**
+	 * @deprecated 使用SafeDOMUtils.setSafeHTML替代
 	 * 安全地设置元素的HTML内容
 	 */
 	static setHTML(element: HTMLElement, htmlContent: string, allowedTags: string[] = ['strong', 'em', 'code', 'br']): void {
-		element.empty();
-		
-		if (!htmlContent.includes('<')) {
-			element.textContent = htmlContent;
-			return;
-		}
-		
-		const tempDiv = document.createElement('div');
-		tempDiv.innerHTML = htmlContent;
-		
-		this.sanitizeAndAppend(tempDiv, element, allowedTags);
+		SafeDOMUtils.setSafeHTML(element, htmlContent, allowedTags);
 	}
 
 	/**
+	 * @deprecated 使用SafeDOMUtils.createSVGIcon替代
 	 * 创建SVG图标
 	 */
 	static createSVGIcon(iconName: string, size: string = '16'): HTMLElement {
-		const icons: Record<string, string> = {
-			grid: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
-			edit: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
-			file: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>`,
-			link: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>`
+		// 映射旧图标名称到Obsidian图标名称
+		const iconMap: Record<string, string> = {
+			grid: 'layout-grid',
+			edit: 'edit',
+			file: 'file',
+			link: 'link',
+			text: 'file-text'
 		};
 
-		const container = document.createElement('span');
-		container.className = 'svg-icon';
-		
-		const svgContent = icons[iconName] || icons.file;
-		container.innerHTML = svgContent;
-		
-		return container;
+		const obsidianIconName = iconMap[iconName] || 'file';
+		return SafeDOMUtils.createSVGIcon(obsidianIconName, parseInt(size));
 	}
 
 	/**
-	 * 递归清理和复制安全的元素
+	 * @deprecated 已移至SafeDOMUtils，此方法不再使用
 	 */
 	private static sanitizeAndAppend(source: Element, target: HTMLElement, allowedTags: string[]): void {
-		Array.from(source.childNodes).forEach(node => {
-			if (node.nodeType === Node.TEXT_NODE) {
-				target.appendChild(node.cloneNode(true));
-			} else if (node.nodeType === Node.ELEMENT_NODE) {
-				const element = node as Element;
-				const tagName = element.tagName.toLowerCase();
-				
-				if (allowedTags.includes(tagName)) {
-					const newElement = document.createElement(tagName);
-					this.copySafeAttributes(element, newElement);
-					this.sanitizeAndAppend(element, newElement as HTMLElement, allowedTags);
-					target.appendChild(newElement);
-				}
-			}
-		});
+		// 方法已弃用，功能已移至SafeDOMUtils
+		DebugManager.warn('DOMUtils.sanitizeAndAppend is deprecated. Use SafeDOMUtils instead.');
 	}
 
 	/**
-	 * 复制安全的属性
+	 * @deprecated 已移至SafeDOMUtils，此方法不再使用
 	 */
 	private static copySafeAttributes(source: Element, target: Element): void {
-		const safeAttributes = ['class', 'id'];
-		safeAttributes.forEach(attr => {
-			const value = source.getAttribute(attr);
-			if (value !== null) {
-				target.setAttribute(attr, value);
-			}
-		});
+		// 方法已弃用，功能已移至SafeDOMUtils
+		DebugManager.warn('DOMUtils.copySafeAttributes is deprecated. Use SafeDOMUtils instead.');
 	}
 }
 
@@ -88,15 +61,14 @@ export class CardFactory {
 	 */
 	createBaseCard(node: CanvasNode): HTMLElement {
 		const card = document.createElement('div');
-		card.className = 'canvas-grid-card';
-		card.style.minHeight = `${CARD_CONSTANTS.height}px`;
-		card.dataset.nodeId = node.id;
-		card.dataset.nodeType = node.type;
+		SafeDOMUtils.addClasses(card, 'canvas-grid-card');
+		SafeDOMUtils.setSafeAttribute(card, 'data-node-id', node.id);
+		SafeDOMUtils.setSafeAttribute(card, 'data-node-type', node.type);
 
-		// 设置颜色
+		// 设置颜色类而不是内联样式
 		if (node.color) {
-			card.dataset.nodeColor = node.color;
-			card.style.setProperty('--node-color', this.getColorValue(node.color));
+			SafeDOMUtils.setSafeAttribute(card, 'data-node-color', node.color);
+			SafeDOMUtils.addClasses(card, `canvas-card-color-${node.color}`);
 		}
 
 		return card;
@@ -155,12 +127,11 @@ export class CardFactory {
 	private renderTextContent(container: HTMLElement, node: CanvasNode): void {
 		if (node.text) {
 			// 简化显示，主要渲染逻辑在main.ts的ObsidianMarkdownRenderer中
-			container.textContent = node.text.length > 100 ? node.text.substring(0, 100) + '...' : node.text;
-			container.style.color = 'var(--text-normal)';
+			SafeDOMUtils.setTextContent(container, node.text.length > 100 ? node.text.substring(0, 100) + '...' : node.text);
+			SafeDOMUtils.addClasses(container, 'canvas-card-text-content');
 		} else {
-			container.textContent = "空文本节点";
-			container.style.color = 'var(--text-muted)';
-			container.style.fontStyle = 'italic';
+			SafeDOMUtils.setTextContent(container, "空文本节点");
+			SafeDOMUtils.addClasses(container, 'canvas-card-empty-text');
 		}
 	}
 
@@ -170,17 +141,17 @@ export class CardFactory {
 	private renderFileContent(container: HTMLElement, node: CanvasNode): void {
 		if (node.file) {
 			const fileName = node.file.split('/').pop() || node.file;
-			const fileIcon = DOMUtils.createSVGIcon('file', '16');
-			
+			const fileIcon = SafeDOMUtils.createSVGIcon('file', 16);
+
 			container.appendChild(fileIcon);
-			
+
 			const fileNameSpan = document.createElement('span');
-			fileNameSpan.textContent = fileName;
-			fileNameSpan.className = 'file-name';
+			SafeDOMUtils.setTextContent(fileNameSpan, fileName);
+			SafeDOMUtils.addClasses(fileNameSpan, 'canvas-card-file-name');
 			container.appendChild(fileNameSpan);
 		} else {
-			container.textContent = "无效文件节点";
-			container.style.color = 'var(--text-muted)';
+			SafeDOMUtils.setTextContent(container, "无效文件节点");
+			SafeDOMUtils.addClasses(container, 'canvas-card-invalid-file');
 		}
 	}
 
@@ -189,16 +160,16 @@ export class CardFactory {
 	 */
 	private renderLinkContent(container: HTMLElement, node: CanvasNode): void {
 		if (node.url) {
-			const linkIcon = DOMUtils.createSVGIcon('link', '16');
+			const linkIcon = SafeDOMUtils.createSVGIcon('link', 16);
 			container.appendChild(linkIcon);
-			
+
 			const linkText = document.createElement('span');
-			linkText.textContent = this.extractDomainFromUrl(node.url);
-			linkText.className = 'link-text';
+			SafeDOMUtils.setTextContent(linkText, this.extractDomainFromUrl(node.url));
+			SafeDOMUtils.addClasses(linkText, 'canvas-card-link-text');
 			container.appendChild(linkText);
 		} else {
-			container.textContent = "无效链接节点";
-			container.style.color = 'var(--text-muted)';
+			SafeDOMUtils.setTextContent(container, "无效链接节点");
+			SafeDOMUtils.addClasses(container, 'canvas-card-invalid-link');
 		}
 	}
 
@@ -217,19 +188,12 @@ export class CardFactory {
 	}
 
 	/**
-	 * 获取颜色值
+	 * @deprecated 不再使用内联样式设置颜色，改用CSS类
+	 * 颜色现在通过CSS类 .canvas-card-color-{number} 设置
 	 */
 	private getColorValue(color: string): string {
-		const colorMap: Record<string, string> = {
-			'1': '#ff6b6b', // 红色
-			'2': '#ffa726', // 橙色
-			'3': '#ffeb3b', // 黄色
-			'4': '#66bb6a', // 绿色
-			'5': '#26c6da', // 青色
-			'6': '#42a5f5', // 蓝色
-			'7': '#ab47bc'  // 紫色
-		};
-		return colorMap[color] || '#666666';
+		DebugManager.warn('getColorValue is deprecated. Use CSS classes instead.');
+		return '';
 	}
 }
 

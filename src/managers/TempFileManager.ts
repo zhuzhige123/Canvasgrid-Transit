@@ -151,7 +151,7 @@ export class TempFileManager {
 
             // 删除临时文件
             if (await this.app.vault.adapter.exists(file.path)) {
-                await this.app.vault.delete(file);
+                await this.app.fileManager.trashFile(file);
             }
 
             this.currentTempFile = null;
@@ -218,7 +218,7 @@ export class TempFileManager {
             // 清理所有临时文件
             for (const file of tempFiles) {
                 try {
-                    await this.app.vault.delete(file);
+                    await this.app.fileManager.trashFile(file);
                     DebugManager.log('Recovered temp file:', file.path);
                 } catch (error) {
                     DebugManager.error('Failed to recover temp file:', file.path, error);

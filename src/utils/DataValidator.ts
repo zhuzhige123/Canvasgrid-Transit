@@ -1,4 +1,5 @@
 import { Notice } from 'obsidian';
+import { DebugManager } from './DebugManager';
 
 // 验证结果
 export interface ValidationResult {
@@ -390,16 +391,16 @@ export class DataValidator {
 
 		if (criticalErrors.length > 0) {
 			new Notice(`发现 ${criticalErrors.length} 个严重错误，数据可能无法正常使用`, 5000);
-			console.error('❌ Critical validation errors:', criticalErrors);
+			DebugManager.error('❌ Critical validation errors:', criticalErrors);
 		}
 
 		if (highErrors.length > 0) {
 			new Notice(`发现 ${highErrors.length} 个重要错误，已尝试自动修复`, 3000);
-			console.warn('⚠️ High priority validation errors:', highErrors);
+			DebugManager.warn('⚠️ High priority validation errors:', highErrors);
 		}
 
 		if (warnings.length > 0) {
-			console.warn('⚠️ Validation warnings:', warnings);
+			DebugManager.warn('⚠️ Validation warnings:', warnings);
 		}
 
 		if (result.isValid && criticalErrors.length === 0 && highErrors.length === 0) {

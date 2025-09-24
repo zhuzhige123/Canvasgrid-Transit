@@ -237,10 +237,72 @@ export class ToolbarManager {
 	 * 显示主菜单
 	 */
 	private showMainMenu(event: MouseEvent): void {
-		console.log('显示主菜单');
-		// 基础实现：显示简单菜单
-		// 实际实现应该由具体的菜单管理器处理
+		const button = event.target as HTMLElement;
+		const existingMenu = document.querySelector('.canvas-grid-main-dropdown');
+
+		if (existingMenu) {
+			existingMenu.remove();
+			return;
+		}
+
+		// 创建下拉菜单
+		const dropdown = document.createElement('div');
+		dropdown.className = 'canvas-grid-main-dropdown';
+
+		// 基础菜单内容（预留扩展）
+		const basicSection = dropdown.createDiv('canvas-grid-menu-section');
+		const infoItem = this.createMenuItem('网格视图', 'grid', () => {
+			console.log('网格视图信息');
+			dropdown.remove();
+		});
+		basicSection.appendChild(infoItem);
+
+		// 定位菜单
+		const buttonRect = button.getBoundingClientRect();
+		dropdown.style.position = 'absolute';
+		dropdown.style.top = `${buttonRect.bottom + 4}px`;
+		dropdown.style.left = `${buttonRect.left}px`;
+		dropdown.style.zIndex = '1000';
+
+		// 添加到页面
+		document.body.appendChild(dropdown);
+
+		// 点击外部关闭菜单
+		const closeMenu = (e: MouseEvent) => {
+			if (!dropdown.contains(e.target as Node)) {
+				dropdown.remove();
+				document.removeEventListener('click', closeMenu);
+			}
+		};
+		setTimeout(() => document.addEventListener('click', closeMenu), 0);
 	}
+
+	/**
+	 * 创建菜单项
+	 */
+	private createMenuItem(text: string, iconName: string, onClick: () => void): HTMLElement {
+		const item = document.createElement('div');
+		item.className = 'canvas-grid-menu-item';
+
+		// 图标
+		const icon = document.createElement('span');
+		icon.className = 'menu-icon';
+		setIcon(icon, iconName);
+		item.appendChild(icon);
+
+		// 文本
+		const label = document.createElement('span');
+		label.className = 'menu-label';
+		label.textContent = text;
+		item.appendChild(label);
+
+		// 点击事件
+		item.addEventListener('click', onClick);
+
+		return item;
+	}
+
+
 
 	/**
 	 * 处理Anki同步

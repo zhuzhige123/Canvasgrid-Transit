@@ -1,6 +1,7 @@
 import { App } from 'obsidian';
 import { DebugManager } from '../utils/DebugManager';
 import { TempFileManager } from './TempFileManager';
+import { PersistentFileManager } from './PersistentFileManager';
 import { HiddenEditorManager } from './HiddenEditorManager';
 import { EditorStateCoordinator } from './EditorStateCoordinator';
 
@@ -147,11 +148,15 @@ export class DiagnosticsManager {
         const editorStatus = this.editorStateCoordinator.getEditorStatusInfo();
 
         // 检查编辑器状态一致性
-        if (editorStatus.hasActiveEditor !== editorStatus.tempFileStatus.hasActive) {
+        const fileHasActive = editorStatus.fileMode === 'persistent'
+            ? editorStatus.fileStatus.isInUse
+            : editorStatus.fileStatus.hasActive;
+
+        if (editorStatus.hasActiveEditor !== fileHasActive) {
             issues.push({
                 severity: 'high',
                 category: 'state',
-                description: '编辑器和临时文件状态不一致',
+                description: `编辑器和${editorStatus.fileMode === 'persistent' ? '持久化' : '临时'}文件状态不一致`,
                 details: editorStatus
             });
         }

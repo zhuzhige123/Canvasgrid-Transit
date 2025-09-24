@@ -2759,7 +2759,50 @@ var ToolbarManager = class {
    * 显示主菜单
    */
   showMainMenu(event) {
-    console.log("\u663E\u793A\u4E3B\u83DC\u5355");
+    const button = event.target;
+    const existingMenu = document.querySelector(".canvas-grid-main-dropdown");
+    if (existingMenu) {
+      existingMenu.remove();
+      return;
+    }
+    const dropdown = document.createElement("div");
+    dropdown.className = "canvas-grid-main-dropdown";
+    const basicSection = dropdown.createDiv("canvas-grid-menu-section");
+    const infoItem = this.createMenuItem("\u7F51\u683C\u89C6\u56FE", "grid", () => {
+      console.log("\u7F51\u683C\u89C6\u56FE\u4FE1\u606F");
+      dropdown.remove();
+    });
+    basicSection.appendChild(infoItem);
+    const buttonRect = button.getBoundingClientRect();
+    dropdown.style.position = "absolute";
+    dropdown.style.top = `${buttonRect.bottom + 4}px`;
+    dropdown.style.left = `${buttonRect.left}px`;
+    dropdown.style.zIndex = "1000";
+    document.body.appendChild(dropdown);
+    const closeMenu = (e) => {
+      if (!dropdown.contains(e.target)) {
+        dropdown.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", closeMenu), 0);
+  }
+  /**
+   * 创建菜单项
+   */
+  createMenuItem(text, iconName, onClick) {
+    const item = document.createElement("div");
+    item.className = "canvas-grid-menu-item";
+    const icon = document.createElement("span");
+    icon.className = "menu-icon";
+    (0, import_obsidian2.setIcon)(icon, iconName);
+    item.appendChild(icon);
+    const label = document.createElement("span");
+    label.className = "menu-label";
+    label.textContent = text;
+    item.appendChild(label);
+    item.addEventListener("click", onClick);
+    return item;
   }
   /**
    * 处理Anki同步
@@ -8462,13 +8505,286 @@ var _TempFileManager = class _TempFileManager {
 _TempFileManager.instance = null;
 var TempFileManager = _TempFileManager;
 
+// src/managers/PersistentFileManager.ts
+var _PersistentFileManager = class _PersistentFileManager {
+  constructor(app, config) {
+    this.persistentFile = null;
+    this.isInitialized = false;
+    this.app = app;
+    this.config = {
+      fileName: ".canvasgrid-editor-workspace.md",
+      defaultContent: this.generateDefaultContent(),
+      hiddenDirectory: ".obsidian/plugins/canvasgrid-transit",
+      enableFileHiding: true,
+      ...config
+    };
+    DebugManager.log("PersistentFileManager initialized with config:", this.config);
+  }
+  /**
+   * 获取单例实例
+   */
+  static getInstance(app, config) {
+    if (!_PersistentFileManager.instance) {
+      _PersistentFileManager.instance = new _PersistentFileManager(app, config);
+    }
+    return _PersistentFileManager.instance;
+  }
+  /**
+   * 初始化持久化文件
+   */
+  async initialize() {
+    if (this.isInitialized) {
+      return;
+    }
+    try {
+      await this.ensurePersistentFile();
+      this.isInitialized = true;
+      DebugManager.log("PersistentFileManager initialized successfully");
+    } catch (error) {
+      DebugManager.error("Failed to initialize PersistentFileManager:", error);
+      throw new Error(`\u6301\u4E45\u5316\u6587\u4EF6\u7BA1\u7406\u5668\u521D\u59CB\u5316\u5931\u8D25: ${error}`);
+    }
+  }
+  /**
+   * 准备编辑器文件（清空内容并填充卡片数据）
+   */
+  async prepareEditorFile(content) {
+    try {
+      await this.ensureInitialized();
+      if (!this.persistentFile) {
+        throw new Error("\u6301\u4E45\u5316\u6587\u4EF6\u672A\u6B63\u786E\u521D\u59CB\u5316");
+      }
+      await this.app.vault.modify(this.persistentFile.file, content);
+      this.persistentFile.isInUse = true;
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Prepared editor file with content length:", content.length);
+      return this.persistentFile.file;
+    } catch (error) {
+      DebugManager.error("Failed to prepare editor file:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`\u7F16\u8F91\u5668\u6587\u4EF6\u51C6\u5907\u5931\u8D25: ${errorMessage}`);
+    }
+  }
+  /**
+   * 更新编辑器文件内容
+   */
+  async updateEditorFile(content) {
+    if (!this.persistentFile || !this.persistentFile.isInUse) {
+      throw new Error("\u6CA1\u6709\u6D3B\u8DC3\u7684\u7F16\u8F91\u5668\u6587\u4EF6\u53EF\u4EE5\u66F4\u65B0");
+    }
+    try {
+      await this.app.vault.modify(this.persistentFile.file, content);
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Updated editor file content");
+    } catch (error) {
+      DebugManager.error("Failed to update editor file:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`\u7F16\u8F91\u5668\u6587\u4EF6\u66F4\u65B0\u5931\u8D25: ${errorMessage}`);
+    }
+  }
+  /**
+   * 恢复文件到默认状态（结束编辑时调用）
+   */
+  async restoreDefaultContent() {
+    if (!this.persistentFile) {
+      return;
+    }
+    try {
+      await this.app.vault.modify(this.persistentFile.file, this.config.defaultContent);
+      this.persistentFile.isInUse = false;
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Restored file to default content");
+    } catch (error) {
+      DebugManager.error("Failed to restore default content:", error);
+    }
+  }
+  /**
+   * 获取当前的leaf实例
+   */
+  getCurrentLeaf() {
+    return this.persistentFile?.leaf || null;
+  }
+  /**
+   * 检查是否有活跃的编辑器文件
+   */
+  hasActiveEditorFile() {
+    return this.persistentFile?.isInUse || false;
+  }
+  /**
+   * 获取文件状态信息
+   */
+  getFileStatus() {
+    if (!this.persistentFile) {
+      return { hasFile: false, isInUse: false };
+    }
+    const now = Date.now();
+    return {
+      hasFile: true,
+      isInUse: this.persistentFile.isInUse,
+      fileName: this.persistentFile.file.name,
+      age: now - this.persistentFile.createdAt,
+      lastAccessed: now - this.persistentFile.lastAccessed
+    };
+  }
+  /**
+   * 确保持久化文件存在
+   */
+  async ensurePersistentFile() {
+    const filePath = this.getFilePath();
+    let existingFile = this.app.vault.getAbstractFileByPath(filePath);
+    if (!existingFile) {
+      await this.ensureDirectory();
+      existingFile = await this.app.vault.create(filePath, this.config.defaultContent);
+      DebugManager.log("Created persistent file:", filePath);
+    }
+    const leaf = await this.createHiddenLeaf(existingFile);
+    this.persistentFile = {
+      file: existingFile,
+      leaf,
+      createdAt: Date.now(),
+      lastAccessed: Date.now(),
+      isInUse: false
+    };
+    if (this.config.enableFileHiding) {
+      this.hideFileFromExplorer();
+    }
+  }
+  /**
+   * 确保目录存在
+   */
+  async ensureDirectory() {
+    const dirPath = this.config.hiddenDirectory;
+    try {
+      const dirExists = await this.app.vault.adapter.exists(dirPath);
+      if (!dirExists) {
+        await this.app.vault.createFolder(dirPath);
+        DebugManager.log("Created directory:", dirPath);
+      }
+    } catch (error) {
+      DebugManager.warn("Failed to create directory, using root:", error);
+      this.config.hiddenDirectory = "";
+    }
+  }
+  /**
+   * 获取完整文件路径
+   */
+  getFilePath() {
+    if (this.config.hiddenDirectory) {
+      return `${this.config.hiddenDirectory}/${this.config.fileName}`;
+    }
+    return this.config.fileName;
+  }
+  /**
+   * 生成默认文件内容
+   */
+  generateDefaultContent() {
+    return `<!-- 
+Canvasgrid Transit \u7F16\u8F91\u5668\u5DE5\u4F5C\u6587\u4EF6
+\u6B64\u6587\u4EF6\u7531\u63D2\u4EF6\u81EA\u52A8\u7BA1\u7406\uFF0C\u8BF7\u52FF\u624B\u52A8\u7F16\u8F91
+
+Editor Workspace File for Canvasgrid Transit Plugin
+This file is automatically managed by the plugin, please do not edit manually
+
+\u521B\u5EFA\u65F6\u95F4 / Created: ${(/* @__PURE__ */ new Date()).toISOString()}
+-->
+
+<!-- \u63D2\u4EF6\u5DE5\u4F5C\u533A\u57DF - Plugin Workspace -->
+`;
+  }
+  /**
+   * 创建隐藏的leaf
+   */
+  async createHiddenLeaf(file) {
+    const hiddenContainer = document.createElement("div");
+    hiddenContainer.style.display = "none";
+    hiddenContainer.style.position = "absolute";
+    hiddenContainer.style.top = "-9999px";
+    hiddenContainer.style.left = "-9999px";
+    document.body.appendChild(hiddenContainer);
+    const leaf = this.app.workspace.createLeafInParent(
+      this.app.workspace.rootSplit,
+      0
+    );
+    if (leaf.containerEl) {
+      hiddenContainer.appendChild(leaf.containerEl);
+    }
+    await leaf.openFile(file);
+    return leaf;
+  }
+  /**
+   * 从文件浏览器隐藏文件
+   */
+  hideFileFromExplorer() {
+    if (!this.persistentFile)
+      return;
+    const fileName = this.persistentFile.file.name;
+    const filePath = this.persistentFile.file.path;
+    const style = document.createElement("style");
+    style.id = "canvasgrid-hide-workspace-file";
+    style.textContent = `
+            .nav-file-title[data-path="${filePath}"] {
+                display: none !important;
+            }
+            .nav-file-title[data-path*="${fileName}"] {
+                display: none !important;
+            }
+        `;
+    const existingStyle = document.getElementById("canvasgrid-hide-workspace-file");
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    document.head.appendChild(style);
+    DebugManager.log("Hidden file from explorer:", fileName);
+  }
+  /**
+   * 确保已初始化
+   */
+  async ensureInitialized() {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+  }
+  /**
+   * 清理资源
+   */
+  async cleanup() {
+    try {
+      await this.restoreDefaultContent();
+      if (this.persistentFile?.leaf && !this.persistentFile.leaf.isDeferred) {
+        this.persistentFile.leaf.detach();
+      }
+      const style = document.getElementById("canvasgrid-hide-workspace-file");
+      if (style) {
+        style.remove();
+      }
+      DebugManager.log("PersistentFileManager cleanup completed");
+    } catch (error) {
+      DebugManager.error("Failed to cleanup PersistentFileManager:", error);
+    }
+  }
+  /**
+   * 销毁管理器实例
+   */
+  static async destroy() {
+    if (_PersistentFileManager.instance) {
+      await _PersistentFileManager.instance.cleanup();
+      _PersistentFileManager.instance = null;
+    }
+  }
+};
+_PersistentFileManager.instance = null;
+var PersistentFileManager = _PersistentFileManager;
+
 // src/managers/HiddenEditorManager.ts
 var HiddenEditorManager = class {
+  // 默认使用持久化文件
   constructor(app, config) {
     this.currentEditor = null;
     this.hiddenContainer = null;
+    this.usePersistentFile = true;
     this.app = app;
     this.tempFileManager = TempFileManager.getInstance(app);
+    this.persistentFileManager = PersistentFileManager.getInstance(app);
     this.config = {
       enableSyntaxHighlight: true,
       enableAutoComplete: true,
@@ -8477,7 +8793,20 @@ var HiddenEditorManager = class {
       ...config
     };
     this.initializeHiddenContainer();
-    DebugManager.log("HiddenEditorManager initialized");
+    this.initializePersistentFileManager();
+    DebugManager.log("HiddenEditorManager initialized with persistent file support");
+  }
+  /**
+   * 初始化持久化文件管理器
+   */
+  async initializePersistentFileManager() {
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized successfully");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager, falling back to temp files:", error);
+      this.usePersistentFile = false;
+    }
   }
   /**
    * 创建隐藏编辑器
@@ -8487,10 +8816,19 @@ var HiddenEditorManager = class {
       if (this.currentEditor) {
         await this.cleanupCurrentEditor();
       }
-      const tempFile = await this.tempFileManager.createTempFile(content);
-      const leaf = this.tempFileManager.getCurrentLeaf();
+      let workspaceFile;
+      let leaf;
+      if (this.usePersistentFile) {
+        workspaceFile = await this.persistentFileManager.prepareEditorFile(content);
+        leaf = this.persistentFileManager.getCurrentLeaf();
+        DebugManager.log("Using persistent file for editor");
+      } else {
+        workspaceFile = await this.tempFileManager.createTempFile(content);
+        leaf = this.tempFileManager.getCurrentLeaf();
+        DebugManager.log("Using temporary file for editor (fallback)");
+      }
       if (!leaf) {
-        throw new Error("\u65E0\u6CD5\u83B7\u53D6\u4E34\u65F6\u6587\u4EF6\u7684leaf");
+        throw new Error("\u65E0\u6CD5\u83B7\u53D6\u5DE5\u4F5C\u6587\u4EF6\u7684leaf");
       }
       const markdownView = leaf.view;
       if (!markdownView || !markdownView.editor) {
@@ -8505,14 +8843,22 @@ var HiddenEditorManager = class {
         editor,
         markdownView,
         leaf,
-        tempFile,
+        workspaceFile,
         container,
         createdAt: Date.now()
       };
-      DebugManager.log("Created hidden editor successfully");
+      DebugManager.log(
+        "Created hidden editor successfully using",
+        this.usePersistentFile ? "persistent file" : "temporary file"
+      );
       return container;
     } catch (error) {
       DebugManager.error("Failed to create hidden editor:", error);
+      if (this.usePersistentFile && !this.currentEditor) {
+        DebugManager.warn("Persistent file failed, falling back to temporary file");
+        this.usePersistentFile = false;
+        return this.createHiddenEditor(content);
+      }
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`\u9690\u85CF\u7F16\u8F91\u5668\u521B\u5EFA\u5931\u8D25: ${errorMessage}`);
     }
@@ -8615,7 +8961,13 @@ var HiddenEditorManager = class {
       if (keyHandler) {
         container.removeEventListener("keydown", keyHandler);
       }
-      await this.tempFileManager.cleanupCurrentTempFile();
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.restoreDefaultContent();
+        DebugManager.log("Restored persistent file to default content");
+      } else {
+        await this.tempFileManager.cleanupCurrentTempFile();
+        DebugManager.log("Cleaned up temporary file");
+      }
       if (container.parentNode) {
         container.parentNode.removeChild(container);
       }
@@ -8724,11 +9076,56 @@ var HiddenEditorManager = class {
     };
   }
   /**
+   * 更新编辑器内容（支持持久化文件）
+   */
+  async updateEditorContent(content) {
+    if (!this.currentEditor) {
+      throw new Error("\u6CA1\u6709\u6D3B\u8DC3\u7684\u7F16\u8F91\u5668\u53EF\u4EE5\u66F4\u65B0");
+    }
+    try {
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.updateEditorFile(content);
+      } else {
+        await this.tempFileManager.updateTempFile(content);
+      }
+      DebugManager.log("Editor content updated");
+    } catch (error) {
+      DebugManager.error("Failed to update editor content:", error);
+      throw error;
+    }
+  }
+  /**
+   * 切换文件管理模式
+   */
+  setPersistentFileMode(enabled) {
+    this.usePersistentFile = enabled;
+    DebugManager.log("Persistent file mode set to:", enabled);
+  }
+  /**
+   * 获取当前文件管理模式
+   */
+  isPersistentFileMode() {
+    return this.usePersistentFile;
+  }
+  /**
+   * 获取文件状态信息
+   */
+  getFileStatus() {
+    if (this.usePersistentFile) {
+      return this.persistentFileManager.getFileStatus();
+    } else {
+      return this.tempFileManager.getTempFileStatus();
+    }
+  }
+  /**
    * 强制清理所有资源
    */
   async forceCleanup() {
     try {
       await this.cleanupCurrentEditor();
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.cleanup();
+      }
       if (this.hiddenContainer && this.hiddenContainer.parentNode) {
         this.hiddenContainer.parentNode.removeChild(this.hiddenContainer);
         this.hiddenContainer = null;
@@ -8747,9 +9144,22 @@ var EditorStateCoordinator = class {
     this.app = app;
     this.editorStateManager = editorStateManager;
     this.tempFileManager = TempFileManager.getInstance(app);
+    this.persistentFileManager = PersistentFileManager.getInstance(app);
     this.hiddenEditorManager = new HiddenEditorManager(app);
     this.tempFileManager.startPeriodicCleanup();
-    DebugManager.log("EditorStateCoordinator initialized");
+    this.initializePersistentFileManager();
+    DebugManager.log("EditorStateCoordinator initialized with persistent file support");
+  }
+  /**
+   * 初始化持久化文件管理器
+   */
+  async initializePersistentFileManager() {
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized in coordinator");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager in coordinator:", error);
+    }
   }
   /**
    * 创建简化的编辑器实例（官方Canvas风格）
@@ -8939,11 +9349,13 @@ var EditorStateCoordinator = class {
    * 获取编辑器状态信息
    */
   getEditorStatusInfo() {
+    const isPersistentMode = this.hiddenEditorManager.isPersistentFileMode();
     return {
       hasActiveEditor: this.activeEditorNodeId !== null,
       activeNodeId: this.activeEditorNodeId,
       editorStatus: this.hiddenEditorManager.getEditorStatus(),
-      tempFileStatus: this.tempFileManager.getTempFileStatus(),
+      fileStatus: isPersistentMode ? this.persistentFileManager.getFileStatus() : this.tempFileManager.getTempFileStatus(),
+      fileMode: isPersistentMode ? "persistent" : "temporary",
       stateManagerStatus: {
         hasActiveEditors: this.editorStateManager.hasActiveEditors(),
         hasUnsavedChanges: this.editorStateManager.hasUnsavedChanges(),
@@ -8958,7 +9370,13 @@ var EditorStateCoordinator = class {
     try {
       DebugManager.log("Starting editor coordinator exception recovery...");
       await this.cleanupAllEditors();
-      await this.tempFileManager.recoverFromException();
+      if (this.hiddenEditorManager.isPersistentFileMode()) {
+        await this.persistentFileManager.cleanup();
+        DebugManager.log("Persistent file manager recovered");
+      } else {
+        await this.tempFileManager.recoverFromException();
+        DebugManager.log("Temporary file manager recovered");
+      }
       this.activeEditorNodeId = null;
       DebugManager.log("Editor coordinator exception recovery completed");
     } catch (error) {
@@ -8972,10 +9390,16 @@ var EditorStateCoordinator = class {
     const issues = [];
     const recommendations = [];
     const hasActiveEditor = this.hiddenEditorManager.hasActiveEditor();
-    const hasActiveTempFile = this.tempFileManager.hasActiveTempFile();
     const hasActiveStateManager = this.editorStateManager.hasActiveEditors();
-    if (hasActiveEditor !== hasActiveTempFile) {
-      issues.push("\u7F16\u8F91\u5668\u548C\u4E34\u65F6\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4");
+    let hasActiveFile = false;
+    if (this.hiddenEditorManager.isPersistentFileMode()) {
+      hasActiveFile = this.persistentFileManager.hasActiveEditorFile();
+    } else {
+      hasActiveFile = this.tempFileManager.hasActiveTempFile();
+    }
+    if (hasActiveEditor !== hasActiveFile) {
+      const fileType = this.hiddenEditorManager.isPersistentFileMode() ? "\u6301\u4E45\u5316\u6587\u4EF6" : "\u4E34\u65F6\u6587\u4EF6";
+      issues.push(`\u7F16\u8F91\u5668\u548C${fileType}\u72B6\u6001\u4E0D\u4E00\u81F4`);
       recommendations.push("\u6267\u884C\u5F02\u5E38\u6062\u590D");
     }
     if (hasActiveEditor !== hasActiveStateManager) {
@@ -9395,11 +9819,12 @@ var DiagnosticsManager = class {
   checkEditorHealth() {
     const issues = [];
     const editorStatus = this.editorStateCoordinator.getEditorStatusInfo();
-    if (editorStatus.hasActiveEditor !== editorStatus.tempFileStatus.hasActive) {
+    const fileHasActive = editorStatus.fileMode === "persistent" ? editorStatus.fileStatus.isInUse : editorStatus.fileStatus.hasActive;
+    if (editorStatus.hasActiveEditor !== fileHasActive) {
       issues.push({
         severity: "high",
         category: "state",
-        description: "\u7F16\u8F91\u5668\u548C\u4E34\u65F6\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4",
+        description: `\u7F16\u8F91\u5668\u548C${editorStatus.fileMode === "persistent" ? "\u6301\u4E45\u5316" : "\u4E34\u65F6"}\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4`,
         details: editorStatus
       });
     }
@@ -13099,7 +13524,7 @@ var IncrementalRenderer = class {
     });
     return this.simpleHash(content).toString();
   }
-  // 简单哈希函数
+  // 🚨 统一：简单哈希函数 - 用于生成精确缓存键
   simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -13107,7 +13532,7 @@ var IncrementalRenderer = class {
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-    return hash;
+    return Math.abs(hash);
   }
   // 更新渲染状态
   updateRenderState(changes) {
@@ -13569,6 +13994,8 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
     this.incrementalRenderer = null;
     // 🎯 修复：DOM状态监控器
     this.domStateMonitor = null;
+    // 🚨 新增：DOM一致性检查标志
+    this.isDOMValidationInProgress = false;
     // 编辑状态管理
     this.currentEditingCard = null;
     this.currentEditingNode = null;
@@ -14104,6 +14531,7 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
       }
     );
     this.domStateMonitor.startMonitoring();
+    this.startPeriodicDOMValidation();
     DebugManager.log("\u2705 \u6570\u636E\u4E00\u81F4\u6027\u7EC4\u4EF6\u5B8C\u6574\u521D\u59CB\u5316\u5B8C\u6210");
   }
   // 🎯 新增：处理DOM状态问题
@@ -14121,6 +14549,19 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
         });
       }
     }
+  }
+  // 🚨 新增：启动定期DOM一致性检查
+  startPeriodicDOMValidation() {
+    setInterval(async () => {
+      if (!this.isDOMValidationInProgress && this.gridContainer && this.canvasData) {
+        try {
+          await this.validateDOMConsistency();
+        } catch (error) {
+          DebugManager.error("\u5B9A\u671FDOM\u9A8C\u8BC1\u5931\u8D25:", error);
+        }
+      }
+    }, 3e4);
+    DebugManager.log("\u2705 \u5B9A\u671FDOM\u4E00\u81F4\u6027\u68C0\u67E5\u5DF2\u542F\u52A8 (30\u79D2\u95F4\u9694)");
   }
   // 🎯 新增：彻底清理方法
   async thoroughCleanup() {
@@ -16315,6 +16756,7 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
     if (!this.gridContainer)
       return;
     DebugManager.log("\u{1F3AF} \u5F00\u59CB\u6E32\u67D3\u7F51\u683C (\u589E\u91CF\u66F4\u65B0\u6A21\u5F0F)");
+    await this.validateDOMConsistency();
     if (this.currentGroupView) {
       await this.renderGroupMembers();
       return;
@@ -16605,6 +17047,82 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
     });
   }
   // ==================== 渲染相关方法 ====================
+  // 🚨 新增：DOM一致性验证方法 - 防止假数据问题
+  async validateDOMConsistency() {
+    if (this.isDOMValidationInProgress) {
+      DebugManager.log("\u23F3 DOM\u9A8C\u8BC1\u5DF2\u5728\u8FDB\u884C\u4E2D\uFF0C\u8DF3\u8FC7\u91CD\u590D\u9A8C\u8BC1");
+      return;
+    }
+    this.isDOMValidationInProgress = true;
+    try {
+      const existingCards = this.gridContainer.querySelectorAll("[data-node-id]");
+      const nodeIds = /* @__PURE__ */ new Set();
+      const duplicates = [];
+      const orphanElements = [];
+      DebugManager.log("\u{1F50D} \u5F00\u59CBDOM\u4E00\u81F4\u6027\u68C0\u67E5", {
+        existingCardsCount: existingCards.length,
+        canvasNodesCount: this.canvasData?.nodes.length || 0
+      });
+      existingCards.forEach((card) => {
+        const nodeId = card.getAttribute("data-node-id");
+        if (nodeId) {
+          if (nodeIds.has(nodeId)) {
+            duplicates.push(nodeId);
+            DebugManager.warn("\u{1F6A8} \u53D1\u73B0\u91CD\u590DDOM\u5143\u7D20:", nodeId);
+          }
+          nodeIds.add(nodeId);
+          const nodeExists = this.canvasData?.nodes.some((n) => n.id === nodeId);
+          if (!nodeExists) {
+            orphanElements.push(card);
+            DebugManager.warn("\u{1F6A8} \u53D1\u73B0\u5B64\u7ACBDOM\u5143\u7D20:", nodeId);
+          }
+        }
+      });
+      if (duplicates.length > 0 || orphanElements.length > 0) {
+        DebugManager.error("\u{1F6A8} \u68C0\u6D4B\u5230DOM\u4E0D\u4E00\u81F4\u95EE\u9898", {
+          duplicates: duplicates.length,
+          orphans: orphanElements.length
+        });
+        await this.forceClearInconsistentElements(duplicates, orphanElements);
+      } else {
+        DebugManager.log("\u2705 DOM\u4E00\u81F4\u6027\u68C0\u67E5\u901A\u8FC7");
+      }
+    } catch (error) {
+      DebugManager.error("\u274C DOM\u4E00\u81F4\u6027\u68C0\u67E5\u5931\u8D25:", error);
+    } finally {
+      this.isDOMValidationInProgress = false;
+    }
+  }
+  // 🚨 新增：强制清理不一致的DOM元素
+  async forceClearInconsistentElements(duplicates, orphanElements) {
+    let cleanedCount = 0;
+    duplicates.forEach((nodeId) => {
+      const elements = this.gridContainer.querySelectorAll(`[data-node-id="${nodeId}"]`);
+      for (let i = 1; i < elements.length; i++) {
+        elements[i].remove();
+        cleanedCount++;
+        DebugManager.log("\u{1F9F9} \u6E05\u7406\u91CD\u590DDOM\u5143\u7D20:", nodeId, `(\u7B2C${i + 1}\u4E2A)`);
+      }
+    });
+    orphanElements.forEach((element) => {
+      const nodeId = element.getAttribute("data-node-id");
+      element.remove();
+      cleanedCount++;
+      DebugManager.log("\u{1F9F9} \u6E05\u7406\u5B64\u7ACBDOM\u5143\u7D20:", nodeId);
+    });
+    duplicates.concat(orphanElements.map((el) => el.getAttribute("data-node-id")).filter(Boolean)).forEach((nodeId) => {
+      this.domElementRegistry.removeElement(nodeId);
+    });
+    DebugManager.log(`\u2705 DOM\u6E05\u7406\u5B8C\u6210\uFF0C\u5171\u6E05\u7406 ${cleanedCount} \u4E2A\u95EE\u9898\u5143\u7D20`);
+    if (cleanedCount > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const remainingIssues = this.gridContainer.querySelectorAll("[data-node-id]");
+      DebugManager.log("\u{1F50D} \u6E05\u7406\u540EDOM\u72B6\u6001:", {
+        remainingElements: remainingIssues.length,
+        expectedElements: this.canvasData?.nodes.length || 0
+      });
+    }
+  }
   // 立即渲染（小量数据）
   async renderGridImmediate(nodes) {
     const fragment = document.createDocumentFragment();
@@ -16673,11 +17191,19 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
   }
   // 🎯 修复：创建单个卡片 - 使用DOM元素注册表和数据缓存
   async createCard(node) {
+    const existingElement = this.domElementRegistry.getElement(node.id);
+    if (existingElement && existingElement.parentNode) {
+      DebugManager.warn("\u{1F6A8} \u68C0\u6D4B\u5230\u91CD\u590D\u521B\u5EFA\u5361\u7247\uFF0C\u79FB\u9664\u65E7\u5143\u7D20:", node.id);
+      existingElement.remove();
+      this.domElementRegistry.removeElement(node.id);
+    }
     const card = this.domElementRegistry.createUniqueElement(node.id, "div");
     card.className = "canvas-grid-card";
     card.style.minHeight = `${CARD_CONSTANTS.height}px`;
     card.dataset.nodeType = node.type;
-    const cacheKey = this.generateDataCacheKey(node);
+    card.dataset.nodeId = node.id;
+    card.dataset.createdAt = Date.now().toString();
+    const cacheKey = this.generatePreciseCacheKey(node);
     const cachedData = this.getDataCacheItem(cacheKey);
     if (cachedData && this.isDataCacheValid(cachedData, node)) {
       await this.renderCardFromCachedData(card, node, cachedData);
@@ -16743,7 +17269,7 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
     };
     return JSON.stringify(keyData);
   }
-  // 简单哈希函数
+  // 🚨 新增：简单哈希函数（用于精确缓存键生成）
   simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -16751,7 +17277,7 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-    return hash;
+    return Math.abs(hash);
   }
   // 🎯 修复：获取数据缓存项（替代DOM缓存）
   getDataCacheItem(key) {
@@ -16765,9 +17291,25 @@ var CanvasGridView = class extends import_obsidian12.ItemView {
   clearDataCache() {
     this.dataCache.clear();
   }
-  // 🎯 新增：生成数据缓存键（替代DOM缓存键）
+  // 🎯 新增：生成数据缓存键（替代DOM缓存键）- 增强精确性防止假数据
   generateDataCacheKey(node) {
-    return `data-${node.id}-${node.type}-${this.getNodeContentHash(node)}`;
+    const contentHash = this.getNodeContentHash(node);
+    const timestamp = Date.now();
+    const groupInfo = this.getNodeGroupInfo(node.id);
+    const isPinned = this.settings.enablePinnedCards && this.detectPinnedStatus(node);
+    return `data-${node.id}-${node.type}-${contentHash}-${groupInfo ? "grouped" : "ungrouped"}-${isPinned ? "pinned" : "unpinned"}-${timestamp}`;
+  }
+  // 🚨 新增：生成精确缓存键（用于关键渲染）
+  generatePreciseCacheKey(node) {
+    const baseKey = this.generateDataCacheKey(node);
+    const renderContext = {
+      currentView: this.currentView,
+      groupView: this.currentGroupView,
+      searchQuery: this.searchQuery,
+      colorFilter: this.activeColorFilter
+    };
+    const contextHash = JSON.stringify(renderContext);
+    return `${baseKey}-ctx:${this.simpleHash(contextHash)}`;
   }
   // 🎯 新增：获取节点内容哈希
   getNodeContentHash(node) {
@@ -24174,6 +24716,13 @@ var CanvasGridPlugin = class extends import_obsidian12.Plugin {
     this.registerObsidianProtocolHandler("canvasgrid-transit", this.handleObsidianProtocol.bind(this));
     MemoryManager.startPeriodicCleanup();
     this.tempFileManager = TempFileManager.getInstance(this.app);
+    this.persistentFileManager = PersistentFileManager.getInstance(this.app);
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized in plugin");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager in plugin:", error);
+    }
     await this.tempFileManager.recoverFromException();
     this.loadDragSystemStyles();
     this.registerView(
@@ -24252,10 +24801,14 @@ var CanvasGridPlugin = class extends import_obsidian12.Plugin {
     this.addCanvasViewButtons();
     DebugManager.log("\u{1F3A8} Canvasgrid Transit Plugin loaded - \u70ED\u91CD\u8F7D\u6D4B\u8BD5\u6210\u529F!");
   }
-  onunload() {
+  async onunload() {
     if (this.editorStateCoordinator) {
       this.editorStateCoordinator.destroy();
     }
+    if (this.persistentFileManager) {
+      await this.persistentFileManager.cleanup();
+    }
+    await PersistentFileManager.destroy();
     if (this.tempFileManager) {
       this.tempFileManager.forceCleanup();
     }
@@ -24263,7 +24816,7 @@ var CanvasGridPlugin = class extends import_obsidian12.Plugin {
     MemoryManager.cleanup();
     this.removeAllCanvasViewButtons();
     this.cleanupAllDynamicStyles();
-    DebugManager.log("Plugin unloaded with enhanced cleanup and style leak fix");
+    DebugManager.log("Plugin unloaded with enhanced cleanup including persistent file manager");
   }
   /**
    * 处理Obsidian协议请求 - 使用增强的ProtocolHandler

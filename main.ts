@@ -23,6 +23,7 @@ import { MemoryBufferManager, SaveTrigger } from './src/managers/MemoryBufferMan
 import { SaveTriggerManager } from './src/managers/SaveTriggerManager';
 import { ConflictResolver } from './src/managers/ConflictResolver';
 import { TempFileManager } from './src/managers/TempFileManager';
+import { PersistentFileManager } from './src/managers/PersistentFileManager';
 import { HiddenEditorManager } from './src/managers/HiddenEditorManager';
 import { EditorStateCoordinator } from './src/managers/EditorStateCoordinator';
 import { ObsidianRenderManager } from './src/managers/ObsidianRenderManager';
@@ -1367,7 +1368,7 @@ class IncrementalRenderer {
 		return this.simpleHash(content).toString();
 	}
 
-	// 简单哈希函数
+	// 🚨 统一：简单哈希函数 - 用于生成精确缓存键
 	private simpleHash(str: string): number {
 		let hash = 0;
 		for (let i = 0; i < str.length; i++) {
@@ -1375,7 +1376,7 @@ class IncrementalRenderer {
 			hash = ((hash << 5) - hash) + char;
 			hash = hash & hash; // 转换为32位整数
 		}
-		return hash;
+		return Math.abs(hash); // 🚨 返回绝对值确保一致性
 	}
 
 	// 更新渲染状态
@@ -2142,6 +2143,9 @@ export class CanvasGridView extends ItemView {
 	// 🎯 修复：DOM状态监控器
 	private domStateMonitor: DOMStateMonitor | null = null;
 
+	// 🚨 新增：DOM一致性检查标志
+	private isDOMValidationInProgress: boolean = false;
+
 	// 编辑状态管理
 	private currentEditingCard: HTMLElement | null = null;
 	private currentEditingNode: CanvasNode | null = null;
@@ -2551,6 +2555,9 @@ export class CanvasGridView extends ItemView {
 		// 开始监控
 		this.domStateMonitor.startMonitoring();
 
+		// 🚨 新增：启动定期DOM一致性检查
+		this.startPeriodicDOMValidation();
+
 		DebugManager.log('✅ 数据一致性组件完整初始化完成');
 	}
 
@@ -2570,6 +2577,22 @@ export class CanvasGridView extends ItemView {
 					});
 			}
 		}
+	}
+
+	// 🚨 新增：启动定期DOM一致性检查
+	private startPeriodicDOMValidation(): void {
+		// 每30秒进行一次DOM一致性检查
+		setInterval(async () => {
+			if (!this.isDOMValidationInProgress && this.gridContainer && this.canvasData) {
+				try {
+					await this.validateDOMConsistency();
+				} catch (error) {
+					DebugManager.error('定期DOM验证失败:', error);
+				}
+			}
+		}, 30000); // 30秒间隔
+
+		DebugManager.log('✅ 定期DOM一致性检查已启动 (30秒间隔)');
 	}
 
 	// 🎯 新增：彻底清理方法
@@ -2786,6 +2809,14 @@ export class CanvasGridView extends ItemView {
 		// 应用默认排序
 		this.applySortAndFilter();
 	}
+
+
+
+
+
+
+
+
 
 	// 创建新的工具栏布局
 	createToolbar(container: Element) {
@@ -3643,6 +3674,8 @@ export class CanvasGridView extends ItemView {
 		// 导航部分
 		this.createNavigationSection(container);
 	}
+
+
 
 	// 创建关联管理部分
 	private createLinkManagementSection(container: Element): void {
@@ -5628,6 +5661,9 @@ export class CanvasGridView extends ItemView {
 
 		DebugManager.log('🎯 开始渲染网格 (增量更新模式)');
 
+		// 🚨 新增：DOM一致性检查 - 防止假数据问题
+		await this.validateDOMConsistency();
+
 		// 如果在分组视图中，只渲染分组成员
 		if (this.currentGroupView) {
 			await this.renderGroupMembers();
@@ -6026,6 +6062,105 @@ export class CanvasGridView extends ItemView {
 
 	// ==================== 渲染相关方法 ====================
 
+	// 🚨 新增：DOM一致性验证方法 - 防止假数据问题
+	private async validateDOMConsistency(): Promise<void> {
+		if (this.isDOMValidationInProgress) {
+			DebugManager.log('⏳ DOM验证已在进行中，跳过重复验证');
+			return;
+		}
+
+		this.isDOMValidationInProgress = true;
+
+		try {
+			const existingCards = this.gridContainer.querySelectorAll('[data-node-id]');
+			const nodeIds = new Set<string>();
+			const duplicates: string[] = [];
+			const orphanElements: HTMLElement[] = [];
+
+			DebugManager.log('🔍 开始DOM一致性检查', {
+				existingCardsCount: existingCards.length,
+				canvasNodesCount: this.canvasData?.nodes.length || 0
+			});
+
+			// 检查重复的DOM元素
+			existingCards.forEach(card => {
+				const nodeId = card.getAttribute('data-node-id');
+				if (nodeId) {
+					if (nodeIds.has(nodeId)) {
+						duplicates.push(nodeId);
+						DebugManager.warn('🚨 发现重复DOM元素:', nodeId);
+					}
+					nodeIds.add(nodeId);
+
+					// 检查孤立元素（数据中不存在的DOM元素）
+					const nodeExists = this.canvasData?.nodes.some(n => n.id === nodeId);
+					if (!nodeExists) {
+						orphanElements.push(card as HTMLElement);
+						DebugManager.warn('🚨 发现孤立DOM元素:', nodeId);
+					}
+				}
+			});
+
+			// 强制清理重复和孤立元素
+			if (duplicates.length > 0 || orphanElements.length > 0) {
+				DebugManager.error('🚨 检测到DOM不一致问题', {
+					duplicates: duplicates.length,
+					orphans: orphanElements.length
+				});
+
+				await this.forceClearInconsistentElements(duplicates, orphanElements);
+			} else {
+				DebugManager.log('✅ DOM一致性检查通过');
+			}
+
+		} catch (error) {
+			DebugManager.error('❌ DOM一致性检查失败:', error);
+		} finally {
+			this.isDOMValidationInProgress = false;
+		}
+	}
+
+	// 🚨 新增：强制清理不一致的DOM元素
+	private async forceClearInconsistentElements(duplicates: string[], orphanElements: HTMLElement[]): Promise<void> {
+		let cleanedCount = 0;
+
+		// 清理重复元素（保留第一个，删除其余）
+		duplicates.forEach(nodeId => {
+			const elements = this.gridContainer.querySelectorAll(`[data-node-id="${nodeId}"]`);
+			for (let i = 1; i < elements.length; i++) {
+				elements[i].remove();
+				cleanedCount++;
+				DebugManager.log('🧹 清理重复DOM元素:', nodeId, `(第${i+1}个)`);
+			}
+		});
+
+		// 清理孤立元素
+		orphanElements.forEach(element => {
+			const nodeId = element.getAttribute('data-node-id');
+			element.remove();
+			cleanedCount++;
+			DebugManager.log('🧹 清理孤立DOM元素:', nodeId);
+		});
+
+		// 清理DOM元素注册表中的对应记录
+		duplicates.concat(orphanElements.map(el => el.getAttribute('data-node-id')).filter(Boolean) as string[])
+			.forEach(nodeId => {
+				this.domElementRegistry.removeElement(nodeId);
+			});
+
+		DebugManager.log(`✅ DOM清理完成，共清理 ${cleanedCount} 个问题元素`);
+
+		// 清理后重新验证
+		if (cleanedCount > 0) {
+			await new Promise(resolve => setTimeout(resolve, 50)); // 短暂延迟确保DOM更新
+			const remainingIssues = this.gridContainer.querySelectorAll('[data-node-id]');
+			DebugManager.log('🔍 清理后DOM状态:', {
+				remainingElements: remainingIssues.length,
+				expectedElements: this.canvasData?.nodes.length || 0
+			});
+		}
+	}
+
 	// 立即渲染（小量数据）
 	private async renderGridImmediate(nodes: CanvasNode[]): Promise<void> {
 		// 使用DocumentFragment批量添加DOM元素，提升性能
@@ -6128,16 +6263,26 @@ export class CanvasGridView extends ItemView {
 
 	// 🎯 修复：创建单个卡片 - 使用DOM元素注册表和数据缓存
 	async createCard(node: CanvasNode): Promise<HTMLElement> {
+		// 🚨 强化：检查是否已存在相同节点的DOM元素
+		const existingElement = this.domElementRegistry.getElement(node.id);
+		if (existingElement && existingElement.parentNode) {
+			DebugManager.warn('🚨 检测到重复创建卡片，移除旧元素:', node.id);
+			existingElement.remove();
+			this.domElementRegistry.removeElement(node.id);
+		}
+
 		// 🎯 修复：使用DOM元素注册表确保唯一性
 		const card = this.domElementRegistry.createUniqueElement(node.id, 'div');
 		card.className = 'canvas-grid-card';
 
-		// 设置基本属性
+		// 设置基本属性和唯一标识
 		card.style.minHeight = `${CARD_CONSTANTS.height}px`;
 		card.dataset.nodeType = node.type;
+		card.dataset.nodeId = node.id; // 🚨 确保设置唯一标识
+		card.dataset.createdAt = Date.now().toString(); // 🚨 添加创建时间戳
 
 		// 🎯 修复：不再使用DOM缓存，而是数据缓存
-		const cacheKey = this.generateDataCacheKey(node);
+		const cacheKey = this.generatePreciseCacheKey(node); // 🚨 使用精确缓存键
 		const cachedData = this.getDataCacheItem(cacheKey);
 
 		if (cachedData && this.isDataCacheValid(cachedData, node)) {
@@ -6238,7 +6383,7 @@ export class CanvasGridView extends ItemView {
 		return JSON.stringify(keyData);
 	}
 
-	// 简单哈希函数
+	// 🚨 新增：简单哈希函数（用于精确缓存键生成）
 	private simpleHash(str: string): number {
 		let hash = 0;
 		for (let i = 0; i < str.length; i++) {
@@ -6246,7 +6391,7 @@ export class CanvasGridView extends ItemView {
 			hash = ((hash << 5) - hash) + char;
 			hash = hash & hash; // 转换为32位整数
 		}
-		return hash;
+		return Math.abs(hash);
 	}
 
 	// 🎯 修复：获取数据缓存项（替代DOM缓存）
@@ -6264,10 +6409,30 @@ export class CanvasGridView extends ItemView {
 		this.dataCache.clear();
 	}
 
-	// 🎯 新增：生成数据缓存键（替代DOM缓存键）
+	// 🎯 新增：生成数据缓存键（替代DOM缓存键）- 增强精确性防止假数据
 	private generateDataCacheKey(node: CanvasNode): string {
-		return `data-${node.id}-${node.type}-${this.getNodeContentHash(node)}`;
+		const contentHash = this.getNodeContentHash(node);
+		const timestamp = Date.now();
+		const groupInfo = this.getNodeGroupInfo(node.id);
+		const isPinned = this.settings.enablePinnedCards && this.detectPinnedStatus(node);
+
+		return `data-${node.id}-${node.type}-${contentHash}-${groupInfo ? 'grouped' : 'ungrouped'}-${isPinned ? 'pinned' : 'unpinned'}-${timestamp}`;
 	}
+
+	// 🚨 新增：生成精确缓存键（用于关键渲染）
+	private generatePreciseCacheKey(node: CanvasNode): string {
+		const baseKey = this.generateDataCacheKey(node);
+		const renderContext = {
+			currentView: this.currentView,
+			groupView: this.currentGroupView,
+			searchQuery: this.searchQuery,
+			colorFilter: this.activeColorFilter
+		};
+		const contextHash = JSON.stringify(renderContext);
+		return `${baseKey}-ctx:${this.simpleHash(contextHash)}`;
+	}
+
+
 
 	// 🎯 新增：获取节点内容哈希
 	private getNodeContentHash(node: CanvasNode): string {
@@ -16573,8 +16738,9 @@ export default class CanvasGridPlugin extends Plugin {
 	settings!: CanvasGridSettings;
 	private canvasViewButtons: Map<HTMLElement, HTMLElement> = new Map();
 
-	// 新增：临时文件和编辑器管理器（插件级别）
-	private tempFileManager?: TempFileManager;
+	// 新增：文件管理器和编辑器管理器（插件级别）
+	private tempFileManager?: TempFileManager; // 保留作为后备方案
+	private persistentFileManager?: PersistentFileManager;
 	private editorStateCoordinator?: EditorStateCoordinator;
 	private protocolHandler?: ProtocolHandler;
 
@@ -16595,8 +16761,17 @@ export default class CanvasGridPlugin extends Plugin {
 
 		// 初始化插件级别的管理器
 		this.tempFileManager = TempFileManager.getInstance(this.app);
+		this.persistentFileManager = PersistentFileManager.getInstance(this.app);
 
-		// 启动临时文件异常恢复
+		// 初始化持久化文件管理器
+		try {
+			await this.persistentFileManager.initialize();
+			DebugManager.log('Persistent file manager initialized in plugin');
+		} catch (error) {
+			DebugManager.error('Failed to initialize persistent file manager in plugin:', error);
+		}
+
+		// 启动临时文件异常恢复（作为后备）
 		await this.tempFileManager.recoverFromException();
 
 		// 加载拖拽系统样式
@@ -16709,13 +16884,21 @@ export default class CanvasGridPlugin extends Plugin {
 		DebugManager.log('🎨 Canvasgrid Transit Plugin loaded - 热重载测试成功!');
 	}
 
-	onunload() {
+	async onunload() {
 		// 清理新的编辑器管理器
 		if (this.editorStateCoordinator) {
 			this.editorStateCoordinator.destroy();
 		}
 
-		// 清理临时文件管理器
+		// 清理持久化文件管理器
+		if (this.persistentFileManager) {
+			await this.persistentFileManager.cleanup();
+		}
+
+		// 销毁持久化文件管理器单例
+		await PersistentFileManager.destroy();
+
+		// 清理临时文件管理器（作为后备）
 		if (this.tempFileManager) {
 			this.tempFileManager.forceCleanup();
 		}
@@ -16732,7 +16915,7 @@ export default class CanvasGridPlugin extends Plugin {
 		// 🎯 修复样式泄露：清理所有动态注入的样式
 		this.cleanupAllDynamicStyles();
 
-		DebugManager.log('Plugin unloaded with enhanced cleanup and style leak fix');
+		DebugManager.log('Plugin unloaded with enhanced cleanup including persistent file manager');
 	}
 
 	/**

@@ -1,6 +1,7 @@
 import { App, TFile, WorkspaceLeaf, MarkdownView, Editor } from 'obsidian';
 import { DebugManager } from '../utils/DebugManager';
 import { TempFileManager } from './TempFileManager';
+import { PersistentFileManager } from './PersistentFileManager';
 
 /**
  * 隐藏编辑器配置
@@ -19,7 +20,7 @@ export interface EditorInstance {
     editor: Editor;
     markdownView: MarkdownView;
     leaf: WorkspaceLeaf;
-    tempFile: TFile;
+    workspaceFile: TFile;
     container: HTMLElement;
     createdAt: number;
 }
@@ -27,17 +28,22 @@ export interface EditorInstance {
 /**
  * 隐藏编辑器管理器
  * 负责创建和管理隐藏的Obsidian编辑器实例，避免在主工作区显示标签页
+ *
+ * 更新说明：现在使用持久化文件管理器替代临时文件方案
  */
 export class HiddenEditorManager {
     private app: App;
-    private tempFileManager: TempFileManager;
+    private tempFileManager: TempFileManager; // 保留作为后备方案
+    private persistentFileManager: PersistentFileManager;
     private config: HiddenEditorConfig;
     private currentEditor: EditorInstance | null = null;
     private hiddenContainer: HTMLElement | null = null;
+    private usePersistentFile: boolean = true; // 默认使用持久化文件
 
     constructor(app: App, config?: Partial<HiddenEditorConfig>) {
         this.app = app;
         this.tempFileManager = TempFileManager.getInstance(app);
+        this.persistentFileManager = PersistentFileManager.getInstance(app);
         this.config = {
             enableSyntaxHighlight: true,
             enableAutoComplete: true,
@@ -47,7 +53,21 @@ export class HiddenEditorManager {
         };
 
         this.initializeHiddenContainer();
-        DebugManager.log('HiddenEditorManager initialized');
+        this.initializePersistentFileManager();
+        DebugManager.log('HiddenEditorManager initialized with persistent file support');
+    }
+
+    /**
+     * 初始化持久化文件管理器
+     */
+    private async initializePersistentFileManager(): Promise<void> {
+        try {
+            await this.persistentFileManager.initialize();
+            DebugManager.log('Persistent file manager initialized successfully');
+        } catch (error) {
+            DebugManager.error('Failed to initialize persistent file manager, falling back to temp files:', error);
+            this.usePersistentFile = false;
+        }
     }
 
     /**
@@ -60,12 +80,23 @@ export class HiddenEditorManager {
                 await this.cleanupCurrentEditor();
             }
 
-            // 创建临时文件
-            const tempFile = await this.tempFileManager.createTempFile(content);
-            const leaf = this.tempFileManager.getCurrentLeaf();
+            let workspaceFile: TFile;
+            let leaf: WorkspaceLeaf | null;
+
+            if (this.usePersistentFile) {
+                // 使用持久化文件方案
+                workspaceFile = await this.persistentFileManager.prepareEditorFile(content);
+                leaf = this.persistentFileManager.getCurrentLeaf();
+                DebugManager.log('Using persistent file for editor');
+            } else {
+                // 回退到临时文件方案
+                workspaceFile = await this.tempFileManager.createTempFile(content);
+                leaf = this.tempFileManager.getCurrentLeaf();
+                DebugManager.log('Using temporary file for editor (fallback)');
+            }
 
             if (!leaf) {
-                throw new Error('无法获取临时文件的leaf');
+                throw new Error('无法获取工作文件的leaf');
             }
 
             // 获取MarkdownView和Editor
@@ -91,16 +122,25 @@ export class HiddenEditorManager {
                 editor,
                 markdownView,
                 leaf,
-                tempFile,
+                workspaceFile,
                 container,
                 createdAt: Date.now()
             };
 
-            DebugManager.log('Created hidden editor successfully');
+            DebugManager.log('Created hidden editor successfully using',
+                this.usePersistentFile ? 'persistent file' : 'temporary file');
             return container;
 
         } catch (error) {
             DebugManager.error('Failed to create hidden editor:', error);
+
+            // 如果持久化文件方案失败，尝试回退到临时文件
+            if (this.usePersistentFile && !this.currentEditor) {
+                DebugManager.warn('Persistent file failed, falling back to temporary file');
+                this.usePersistentFile = false;
+                return this.createHiddenEditor(content);
+            }
+
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`隐藏编辑器创建失败: ${errorMessage}`);
         }
@@ -234,8 +274,16 @@ export class HiddenEditorManager {
                 container.removeEventListener('keydown', keyHandler);
             }
 
-            // 清理临时文件
-            await this.tempFileManager.cleanupCurrentTempFile();
+            // 根据使用的文件类型进行清理
+            if (this.usePersistentFile) {
+                // 恢复持久化文件到默认状态
+                await this.persistentFileManager.restoreDefaultContent();
+                DebugManager.log('Restored persistent file to default content');
+            } else {
+                // 清理临时文件
+                await this.tempFileManager.cleanupCurrentTempFile();
+                DebugManager.log('Cleaned up temporary file');
+            }
 
             // 清理容器
             if (container.parentNode) {
@@ -372,12 +420,64 @@ export class HiddenEditorManager {
     }
 
     /**
+     * 更新编辑器内容（支持持久化文件）
+     */
+    async updateEditorContent(content: string): Promise<void> {
+        if (!this.currentEditor) {
+            throw new Error('没有活跃的编辑器可以更新');
+        }
+
+        try {
+            if (this.usePersistentFile) {
+                await this.persistentFileManager.updateEditorFile(content);
+            } else {
+                await this.tempFileManager.updateTempFile(content);
+            }
+            DebugManager.log('Editor content updated');
+        } catch (error) {
+            DebugManager.error('Failed to update editor content:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 切换文件管理模式
+     */
+    setPersistentFileMode(enabled: boolean): void {
+        this.usePersistentFile = enabled;
+        DebugManager.log('Persistent file mode set to:', enabled);
+    }
+
+    /**
+     * 获取当前文件管理模式
+     */
+    isPersistentFileMode(): boolean {
+        return this.usePersistentFile;
+    }
+
+    /**
+     * 获取文件状态信息
+     */
+    getFileStatus(): any {
+        if (this.usePersistentFile) {
+            return this.persistentFileManager.getFileStatus();
+        } else {
+            return this.tempFileManager.getTempFileStatus();
+        }
+    }
+
+    /**
      * 强制清理所有资源
      */
     async forceCleanup(): Promise<void> {
         try {
             await this.cleanupCurrentEditor();
-            
+
+            // 清理持久化文件管理器
+            if (this.usePersistentFile) {
+                await this.persistentFileManager.cleanup();
+            }
+
             if (this.hiddenContainer && this.hiddenContainer.parentNode) {
                 this.hiddenContainer.parentNode.removeChild(this.hiddenContainer);
                 this.hiddenContainer = null;

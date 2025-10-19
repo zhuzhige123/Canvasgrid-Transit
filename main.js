@@ -2360,10 +2360,264 @@ __export(main_exports, {
   default: () => CanvasGridPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian10 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/managers/UIComponentManager.ts
+var import_obsidian2 = require("obsidian");
+
+// src/utils/SafeDOMUtils.ts
 var import_obsidian = require("obsidian");
+var SafeDOMUtils = class {
+  /**
+   * 安全地设置元素的文本内容
+   */
+  static setTextContent(element, content) {
+    element.textContent = content;
+  }
+  /**
+   * 安全地设置HTML内容，仅允许特定的安全标签
+   */
+  static setSafeHTML(element, content, allowedTags = ["strong", "em", "code", "br"]) {
+    element.empty();
+    if (!content.includes("<")) {
+      element.textContent = content;
+      return;
+    }
+    const cleanContent = this.sanitizeHTML(content, allowedTags);
+    this.appendSafeHTML(element, cleanContent);
+  }
+  /**
+   * 创建安全的SVG图标元素
+   */
+  static createSVGIcon(iconName, size = 16) {
+    const container = document.createElement("span");
+    container.className = "svg-icon";
+    try {
+      (0, import_obsidian.setIcon)(container, iconName);
+    } catch (error) {
+      container.textContent = "\u{1F4C4}";
+    }
+    return container;
+  }
+  /**
+   * 创建带有图标的元素
+   */
+  static createIconElement(iconName, text, className) {
+    const container = document.createElement("span");
+    if (className) {
+      container.className = className;
+    }
+    const iconEl = this.createSVGIcon(iconName);
+    container.appendChild(iconEl);
+    if (text) {
+      const textEl = document.createElement("span");
+      textEl.textContent = text;
+      container.appendChild(textEl);
+    }
+    return container;
+  }
+  /**
+   * 安全地添加CSS类
+   */
+  static addClasses(element, ...classNames) {
+    classNames.forEach((className) => {
+      if (className && typeof className === "string") {
+        element.addClass(className);
+      }
+    });
+  }
+  /**
+   * 安全地移除CSS类
+   */
+  static removeClasses(element, ...classNames) {
+    classNames.forEach((className) => {
+      if (className && typeof className === "string") {
+        element.removeClass(className);
+      }
+    });
+  }
+  /**
+   * 安全地切换CSS类
+   */
+  static toggleClass(element, className, force) {
+    if (className && typeof className === "string") {
+      if (force !== void 0) {
+        element.toggleClass(className, force);
+      } else {
+        const hasClass = element.hasClass(className);
+        element.toggleClass(className, !hasClass);
+      }
+    }
+  }
+  /**
+   * 创建安全的链接元素
+   */
+  static createSafeLink(href, text, target) {
+    const link = document.createElement("a");
+    if (this.isValidURL(href)) {
+      link.href = href;
+    } else {
+      link.textContent = `[Invalid URL: ${text}]`;
+      return link;
+    }
+    link.textContent = text;
+    if (target) {
+      link.target = target;
+      if (target === "_blank") {
+        link.rel = "noopener noreferrer";
+      }
+    }
+    return link;
+  }
+  /**
+   * 验证URL是否安全
+   */
+  static isValidURL(url) {
+    try {
+      const urlObj = new URL(url);
+      const allowedProtocols = ["http:", "https:", "obsidian:", "file:"];
+      return allowedProtocols.includes(urlObj.protocol);
+    } catch {
+      return false;
+    }
+  }
+  /**
+   * 清理HTML内容，移除不安全的标签和属性
+   */
+  static sanitizeHTML(html, allowedTags) {
+    const tempDiv = document.createElement("div");
+    tempDiv.textContent = html;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(tempDiv.textContent || "", "text/html");
+    this.cleanElement(doc.body, allowedTags);
+    return doc.body.innerHTML;
+  }
+  /**
+   * 递归清理DOM元素
+   */
+  static cleanElement(element, allowedTags) {
+    const children = Array.from(element.children);
+    children.forEach((child) => {
+      const tagName = child.tagName.toLowerCase();
+      if (!allowedTags.includes(tagName)) {
+        const textNode = document.createTextNode(child.textContent || "");
+        child.parentNode?.replaceChild(textNode, child);
+      } else {
+        this.cleanAttributes(child);
+        this.cleanElement(child, allowedTags);
+      }
+    });
+  }
+  /**
+   * 清理元素属性，只保留安全的属性
+   */
+  static cleanAttributes(element) {
+    const allowedAttributes = ["class", "id", "title", "alt"];
+    const attributes = Array.from(element.attributes);
+    attributes.forEach((attr) => {
+      if (!allowedAttributes.includes(attr.name.toLowerCase())) {
+        element.removeAttribute(attr.name);
+      }
+    });
+  }
+  /**
+   * 安全地添加HTML内容到元素
+   */
+  static appendSafeHTML(element, html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    Array.from(doc.body.childNodes).forEach((node) => {
+      element.appendChild(node.cloneNode(true));
+    });
+  }
+  /**
+   * 创建安全的代码块元素
+   */
+  static createCodeBlock(code, language) {
+    const pre = document.createElement("pre");
+    const codeEl = document.createElement("code");
+    if (language) {
+      codeEl.className = `language-${language}`;
+    }
+    codeEl.textContent = code;
+    pre.appendChild(codeEl);
+    return pre;
+  }
+  /**
+   * 创建安全的列表元素
+   */
+  static createList(items, ordered = false) {
+    const list = document.createElement(ordered ? "ol" : "ul");
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    return list;
+  }
+  /**
+   * 安全地设置元素属性
+   */
+  static setSafeAttribute(element, name, value) {
+    const allowedAttributes = [
+      "class",
+      "id",
+      "title",
+      "alt",
+      "data-*",
+      "aria-*",
+      "role",
+      "href",
+      "target",
+      "rel",
+      "type",
+      "value",
+      "placeholder"
+    ];
+    const isAllowed = allowedAttributes.some((allowed) => {
+      if (allowed.endsWith("*")) {
+        return name.startsWith(allowed.slice(0, -1));
+      }
+      return name === allowed;
+    });
+    if (isAllowed) {
+      element.setAttribute(name, value);
+    }
+  }
+  /**
+   * 创建安全的表格元素
+   */
+  static createTable(headers, rows) {
+    const table = document.createElement("table");
+    if (headers.length > 0) {
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      headers.forEach((header) => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+    }
+    if (rows.length > 0) {
+      const tbody = document.createElement("tbody");
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        row.forEach((cell) => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+    }
+    return table;
+  }
+};
+
+// src/managers/UIComponentManager.ts
 var ToolbarManager = class {
   constructor(app, config) {
     this.container = null;
@@ -2406,11 +2660,7 @@ var ToolbarManager = class {
       cls: "canvas-grid-button main-menu-button",
       attr: { "aria-label": "\u4E3B\u83DC\u5355" }
     });
-    button.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M2 4h12v1H2V4zm0 3h12v1H2V7zm0 3h12v1H2v-1z"/>
-			</svg>
-		`;
+    (0, import_obsidian2.setIcon)(button, "menu");
     button.addEventListener("click", (e) => {
       this.showMainMenu(e);
     });
@@ -2424,12 +2674,7 @@ var ToolbarManager = class {
       cls: "canvas-grid-button time-capsule-button",
       attr: { "aria-label": "\u65F6\u95F4\u80F6\u56CA" }
     });
-    button.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/>
-				<path d="M8 3v5l3 2-1 1-3-2V3h1z"/>
-			</svg>
-		`;
+    (0, import_obsidian2.setIcon)(button, "clock");
     button.addEventListener("click", () => {
       this.toggleTimeCapsule();
     });
@@ -2451,11 +2696,7 @@ var ToolbarManager = class {
     const searchIcon = searchContainer.createEl("div", {
       cls: "search-icon"
     });
-    searchIcon.innerHTML = `
-			<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-				<path d="M10.5 9.5L13 12l-1 1-2.5-2.5A5.5 5.5 0 1 1 10.5 9.5zM6 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
-			</svg>
-		`;
+    (0, import_obsidian2.setIcon)(searchIcon, "search");
     let searchTimeout;
     searchInput.addEventListener("input", (e) => {
       clearTimeout(searchTimeout);
@@ -2475,11 +2716,7 @@ var ToolbarManager = class {
       cls: "canvas-grid-button color-filter-button",
       attr: { "aria-label": "\u989C\u8272\u7B5B\u9009" }
     });
-    filterButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M2 2h12l-5 6v4l-2 1V8L2 2z"/>
-			</svg>
-		`;
+    (0, import_obsidian2.setIcon)(filterButton, "filter");
     filterButton.addEventListener("click", () => {
       this.showColorFilterMenu(filterButton);
     });
@@ -2494,11 +2731,7 @@ var ToolbarManager = class {
       cls: "canvas-grid-button sort-button",
       attr: { "aria-label": "\u6392\u5E8F\u9009\u9879" }
     });
-    sortButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M3 3h10v1H3V3zm0 3h8v1H3V6zm0 3h6v1H3V9zm0 3h4v1H3v-1z"/>
-			</svg>
-		`;
+    (0, import_obsidian2.setIcon)(sortButton, "arrow-up-down");
     sortButton.addEventListener("click", () => {
       this.showSortMenu(sortButton);
     });
@@ -2513,15 +2746,10 @@ var ToolbarManager = class {
       cls: "toolbar-button mod-cta anki-sync-btn",
       attr: { "aria-label": "Anki\u540C\u6B65" }
     });
-    syncButton.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M8 1a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V1z"/>
-				<path d="M1 8a7 7 0 0 0 7 7v-2a5 5 0 0 1-5-5H1z"/>
-				<path d="M8 3v2l3-3-3-3v2z"/>
-				<path d="M8 13v-2l-3 3 3 3v-2z"/>
-			</svg>
-			<span style="margin-left: 6px;">Anki\u540C\u6B65</span>
-		`;
+    (0, import_obsidian2.setIcon)(syncButton, "refresh-cw");
+    const textSpan = syncButton.createSpan();
+    SafeDOMUtils.setTextContent(textSpan, "Anki\u540C\u6B65");
+    SafeDOMUtils.addClasses(textSpan, "anki-sync-text");
     syncButton.addEventListener("click", async () => {
       await this.handleAnkiSync();
     });
@@ -2531,7 +2759,50 @@ var ToolbarManager = class {
    * 显示主菜单
    */
   showMainMenu(event) {
-    console.log("\u663E\u793A\u4E3B\u83DC\u5355");
+    const button = event.target;
+    const existingMenu = document.querySelector(".canvas-grid-main-dropdown");
+    if (existingMenu) {
+      existingMenu.remove();
+      return;
+    }
+    const dropdown = document.createElement("div");
+    dropdown.className = "canvas-grid-main-dropdown";
+    const basicSection = dropdown.createDiv("canvas-grid-menu-section");
+    const infoItem = this.createMenuItem("\u7F51\u683C\u89C6\u56FE", "grid", () => {
+      console.log("\u7F51\u683C\u89C6\u56FE\u4FE1\u606F");
+      dropdown.remove();
+    });
+    basicSection.appendChild(infoItem);
+    const buttonRect = button.getBoundingClientRect();
+    dropdown.style.position = "absolute";
+    dropdown.style.top = `${buttonRect.bottom + 4}px`;
+    dropdown.style.left = `${buttonRect.left}px`;
+    dropdown.style.zIndex = "1000";
+    document.body.appendChild(dropdown);
+    const closeMenu = (e) => {
+      if (!dropdown.contains(e.target)) {
+        dropdown.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", closeMenu), 0);
+  }
+  /**
+   * 创建菜单项
+   */
+  createMenuItem(text, iconName, onClick) {
+    const item = document.createElement("div");
+    item.className = "canvas-grid-menu-item";
+    const icon = document.createElement("span");
+    icon.className = "menu-icon";
+    (0, import_obsidian2.setIcon)(icon, iconName);
+    item.appendChild(icon);
+    const label = document.createElement("span");
+    label.className = "menu-label";
+    label.textContent = text;
+    item.appendChild(label);
+    item.addEventListener("click", onClick);
+    return item;
   }
   /**
    * 处理Anki同步
@@ -2541,7 +2812,7 @@ var ToolbarManager = class {
       console.log("Anki\u540C\u6B65\u529F\u80FD - \u57FA\u7840\u5B9E\u73B0");
     } catch (error) {
       console.error("Anki\u540C\u6B65\u5931\u8D25:", error);
-      new import_obsidian.Notice("Anki\u540C\u6B65\u5931\u8D25: " + (error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF"));
+      new import_obsidian2.Notice("Anki\u540C\u6B65\u5931\u8D25: " + (error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF"));
     }
   }
   /**
@@ -2599,8 +2870,10 @@ var CardRendererManager = class {
   renderTextCard(node, container) {
     const card = container.createDiv("canvas-card text-card");
     const header = card.createDiv("card-header");
-    header.createSpan("card-type-icon").innerHTML = "\u{1F4DD}";
-    header.createSpan("card-title").textContent = "\u6587\u672C\u5361\u7247";
+    const typeIcon = header.createSpan("card-type-icon");
+    SafeDOMUtils.setTextContent(typeIcon, "\u{1F4DD}");
+    const title = header.createSpan("card-title");
+    SafeDOMUtils.setTextContent(title, "\u6587\u672C\u5361\u7247");
     const content = card.createDiv("card-content");
     const text = node.text || "";
     const preview = text.length > this.config.maxPreviewLength ? text.substring(0, this.config.maxPreviewLength) + "..." : text;
@@ -2619,9 +2892,11 @@ var CardRendererManager = class {
   renderFileCard(node, container) {
     const card = container.createDiv("canvas-card file-card");
     const header = card.createDiv("card-header");
-    header.createSpan("card-type-icon").innerHTML = "\u{1F4C4}";
+    const typeIcon = header.createSpan("card-type-icon");
+    SafeDOMUtils.setTextContent(typeIcon, "\u{1F4C4}");
     const fileName = node.file || "Unknown File";
-    header.createSpan("card-title").textContent = fileName;
+    const title = header.createSpan("card-title");
+    SafeDOMUtils.setTextContent(title, fileName);
     const content = card.createDiv("card-content");
     content.createDiv("file-info").textContent = `\u6587\u4EF6: ${fileName}`;
     if (this.config.showMetadata) {
@@ -2638,8 +2913,10 @@ var CardRendererManager = class {
   renderLinkCard(node, container) {
     const card = container.createDiv("canvas-card link-card");
     const header = card.createDiv("card-header");
-    header.createSpan("card-type-icon").innerHTML = "\u{1F517}";
-    header.createSpan("card-title").textContent = "\u94FE\u63A5\u5361\u7247";
+    const typeIcon = header.createSpan("card-type-icon");
+    SafeDOMUtils.setTextContent(typeIcon, "\u{1F517}");
+    const title = header.createSpan("card-title");
+    SafeDOMUtils.setTextContent(title, "\u94FE\u63A5\u5361\u7247");
     const content = card.createDiv("card-content");
     const url = node.url || "";
     content.createDiv("link-url").textContent = url;
@@ -2660,19 +2937,19 @@ var CardRendererManager = class {
       cls: "card-action-btn edit-btn",
       attr: { "aria-label": "\u7F16\u8F91" }
     });
-    editBtn.innerHTML = "\u270F\uFE0F";
+    (0, import_obsidian2.setIcon)(editBtn, "edit");
     editBtn.addEventListener("click", () => this.editCard(node));
     const deleteBtn = toolbar.createEl("button", {
       cls: "card-action-btn delete-btn",
       attr: { "aria-label": "\u5220\u9664" }
     });
-    deleteBtn.innerHTML = "\u{1F5D1}\uFE0F";
+    (0, import_obsidian2.setIcon)(deleteBtn, "trash");
     deleteBtn.addEventListener("click", () => this.deleteCard(node));
     const copyBtn = toolbar.createEl("button", {
       cls: "card-action-btn copy-btn",
       attr: { "aria-label": "\u590D\u5236" }
     });
-    copyBtn.innerHTML = "\u{1F4CB}";
+    (0, import_obsidian2.setIcon)(copyBtn, "copy");
     copyBtn.addEventListener("click", () => this.copyCard(node));
   }
   /**
@@ -2766,7 +3043,7 @@ var ModalManager = class {
    * 创建新建卡片模态窗
    */
   createNewCardModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -2802,7 +3079,7 @@ var ModalManager = class {
             content: contentInput.value.trim()
           };
           if (!result.content) {
-            new import_obsidian.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
+            new import_obsidian2.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
             return;
           }
           resolve(result);
@@ -2824,7 +3101,7 @@ var ModalManager = class {
    * 创建编辑卡片模态窗
    */
   createEditCardModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -2855,7 +3132,7 @@ var ModalManager = class {
             content: contentInput.value.trim()
           };
           if (!result.content) {
-            new import_obsidian.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
+            new import_obsidian2.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
             return;
           }
           resolve(result);
@@ -2878,7 +3155,7 @@ var ModalManager = class {
    * 创建确认对话框
    */
   createConfirmDialog(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -2916,7 +3193,7 @@ var ModalManager = class {
    * 创建设置模态窗
    */
   createSettingsModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -2946,7 +3223,7 @@ var ModalManager = class {
    * 创建帮助模态窗
    */
   createHelpModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -2955,15 +3232,16 @@ var ModalManager = class {
         contentEl.empty();
         contentEl.createEl("h2", { text: options.title || "\u5E2E\u52A9" });
         const helpContent = contentEl.createDiv("help-content");
-        helpContent.innerHTML = `
-					<h3>Canvasgrid Transit \u4F7F\u7528\u6307\u5357</h3>
-					<ul>
-						<li>\u62D6\u62FD\u6587\u672C\u5230\u754C\u9762\u521B\u5EFA\u5361\u7247</li>
-						<li>\u4F7F\u7528\u641C\u7D22\u6846\u67E5\u627E\u5361\u7247</li>
-						<li>\u70B9\u51FB\u989C\u8272\u7B5B\u9009\u5668\u6309\u989C\u8272\u8FC7\u6EE4</li>
-						<li>\u4F7F\u7528\u6392\u5E8F\u9009\u9879\u91CD\u65B0\u6392\u5217\u5361\u7247</li>
-					</ul>
-				`;
+        const title = helpContent.createEl("h3");
+        SafeDOMUtils.setTextContent(title, "Canvasgrid Transit \u4F7F\u7528\u6307\u5357");
+        const guideItems = [
+          "\u62D6\u62FD\u6587\u672C\u5230\u754C\u9762\u521B\u5EFA\u5361\u7247",
+          "\u4F7F\u7528\u641C\u7D22\u6846\u67E5\u627E\u5361\u7247",
+          "\u70B9\u51FB\u989C\u8272\u7B5B\u9009\u5668\u6309\u989C\u8272\u8FC7\u6EE4",
+          "\u4F7F\u7528\u6392\u5E8F\u9009\u9879\u91CD\u65B0\u6392\u5217\u5361\u7247"
+        ];
+        const guideList = SafeDOMUtils.createList(guideItems, false);
+        helpContent.appendChild(guideList);
         const buttonContainer = contentEl.createDiv("modal-buttons");
         const closeBtn = buttonContainer.createEl("button", {
           cls: "mod-cta",
@@ -2984,7 +3262,7 @@ var ModalManager = class {
    * 创建Anki同步模态窗
    */
   createAnkiSyncModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
         this.colorFilterEnabled = true;
@@ -3058,7 +3336,7 @@ var ModalManager = class {
           text: "\u2699\uFE0F \u914D\u7F6E"
         });
         configBtn.onclick = () => {
-          new import_obsidian.Notice("Anki\u914D\u7F6E\u529F\u80FD - \u57FA\u7840\u5B9E\u73B0");
+          new import_obsidian2.Notice("Anki\u914D\u7F6E\u529F\u80FD - \u57FA\u7840\u5B9E\u73B0");
         };
         const filterSwitchContainer = buttonContainer.createDiv("filter-switch-container");
         filterSwitchContainer.style.cssText = `
@@ -3191,36 +3469,39 @@ var ModalManager = class {
         const totalCards = options.data?.totalCards || 0;
         const selectedColorsCount = this.colorFilterEnabled ? this.selectedColors.length : 0;
         const estimatedCards = this.colorFilterEnabled ? Math.floor(totalCards * (selectedColorsCount / 7)) : totalCards;
-        this.statsSection.innerHTML = `
-					<h4 style="margin: 0 0 8px 0; color: var(--text-normal);">\u540C\u6B65\u7EDF\u8BA1:</h4>
-					<div style="display: flex; flex-direction: column; gap: 4px; font-size: 14px;">
-						<div style="color: var(--text-muted);">
-							<span>\u540C\u6B65\u6A21\u5F0F:</span>
-							<span style="color: var(--text-normal); font-weight: 500;">
-								${this.colorFilterEnabled ? "\u989C\u8272\u7B5B\u9009" : "\u5168\u91CF\u540C\u6B65"}
-							</span>
-						</div>
-						<div style="color: var(--text-muted);">
-							<span>\u603B\u5361\u7247\u6570:</span>
-							<span style="color: var(--text-normal); font-weight: 500;">${totalCards}</span>
-						</div>
-						${this.colorFilterEnabled ? `
-						<div style="color: var(--text-muted);">
-							<span>\u5DF2\u9009\u989C\u8272:</span>
-							<span style="color: var(--interactive-accent); font-weight: 500;">${selectedColorsCount}/7</span>
-						</div>
-						<div style="color: var(--text-muted);">
-							<span>\u9884\u8BA1\u540C\u6B65:</span>
-							<span style="color: var(--text-success); font-weight: 500;">${estimatedCards} \u5F20\u5361\u7247</span>
-						</div>
-						` : `
-						<div style="color: var(--text-muted);">
-							<span>\u5C06\u540C\u6B65:</span>
-							<span style="color: var(--text-success); font-weight: 500;">\u6240\u6709 ${totalCards} \u5F20\u5361\u7247</span>
-						</div>
-						`}
-					</div>
-				`;
+        this.statsSection.empty();
+        const title = this.statsSection.createEl("h4");
+        SafeDOMUtils.setTextContent(title, "\u540C\u6B65\u7EDF\u8BA1:");
+        SafeDOMUtils.addClasses(title, "anki-stats-title");
+        const statsContainer = this.statsSection.createDiv("anki-stats-container");
+        const modeRow = statsContainer.createDiv("anki-stats-row");
+        const modeLabel = modeRow.createSpan("anki-stats-label");
+        SafeDOMUtils.setTextContent(modeLabel, "\u540C\u6B65\u6A21\u5F0F:");
+        const modeValue = modeRow.createSpan("anki-stats-value");
+        SafeDOMUtils.setTextContent(modeValue, this.colorFilterEnabled ? "\u989C\u8272\u7B5B\u9009" : "\u5168\u91CF\u540C\u6B65");
+        const totalRow = statsContainer.createDiv("anki-stats-row");
+        const totalLabel = totalRow.createSpan("anki-stats-label");
+        SafeDOMUtils.setTextContent(totalLabel, "\u603B\u5361\u7247\u6570:");
+        const totalValue = totalRow.createSpan("anki-stats-value");
+        SafeDOMUtils.setTextContent(totalValue, totalCards.toString());
+        if (this.colorFilterEnabled) {
+          const colorRow = statsContainer.createDiv("anki-stats-row");
+          const colorLabel = colorRow.createSpan("anki-stats-label");
+          SafeDOMUtils.setTextContent(colorLabel, "\u5DF2\u9009\u989C\u8272:");
+          const colorValue = colorRow.createSpan("anki-stats-value anki-stats-accent");
+          SafeDOMUtils.setTextContent(colorValue, `${selectedColorsCount}/7`);
+          const estimateRow = statsContainer.createDiv("anki-stats-row");
+          const estimateLabel = estimateRow.createSpan("anki-stats-label");
+          SafeDOMUtils.setTextContent(estimateLabel, "\u9884\u8BA1\u540C\u6B65:");
+          const estimateValue = estimateRow.createSpan("anki-stats-value anki-stats-success");
+          SafeDOMUtils.setTextContent(estimateValue, `${estimatedCards} \u5F20\u5361\u7247`);
+        } else {
+          const syncRow = statsContainer.createDiv("anki-stats-row");
+          const syncLabel = syncRow.createSpan("anki-stats-label");
+          SafeDOMUtils.setTextContent(syncLabel, "\u5C06\u540C\u6B65:");
+          const syncValue = syncRow.createSpan("anki-stats-value anki-stats-success");
+          SafeDOMUtils.setTextContent(syncValue, `\u6240\u6709 ${totalCards} \u5F20\u5361\u7247`);
+        }
       }
       onClose() {
         const { contentEl } = this;
@@ -3232,7 +3513,7 @@ var ModalManager = class {
    * 创建Anki设置模态窗
    */
   createAnkiSettingsModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
       }
@@ -3312,7 +3593,7 @@ var ModalManager = class {
    * 创建Anki同步进度模态窗
    */
   createAnkiProgressModal(options, resolve, reject) {
-    return new class extends import_obsidian.Modal {
+    return new class extends import_obsidian2.Modal {
       constructor(app) {
         super(app);
         this.progressBar = null;
@@ -3582,6 +3863,110 @@ var UIComponentManager = class {
     };
   }
 };
+
+// src/utils/DebugManager.ts
+var import_obsidian3 = require("obsidian");
+var DebugManager = class {
+  // 可通过配置控制
+  /**
+   * 调试日志输出
+   */
+  static log(message, ...args) {
+    if (this.isDebugMode) {
+      console.log(`[CanvasGrid] ${message}`, ...args);
+    }
+  }
+  /**
+   * 警告日志输出
+   */
+  static warn(message, ...args) {
+    if (this.isDebugMode) {
+      console.warn(`[CanvasGrid] ${message}`, ...args);
+    }
+  }
+  /**
+   * 错误日志输出（生产环境也会输出）
+   */
+  static error(message, ...args) {
+    console.error(`[CanvasGrid] ${message}`, ...args);
+  }
+  /**
+   * 详细调试信息（仅在verbose模式下输出）
+   */
+  static verbose(message, ...args) {
+    if (this.isDebugMode && this.isVerboseMode) {
+      console.log(`[CanvasGrid:Verbose] ${message}`, ...args);
+    }
+  }
+  /**
+   * 性能计时开始
+   */
+  static timeStart(label) {
+    if (this.isDebugMode) {
+      console.time(`[CanvasGrid:Timer] ${label}`);
+    }
+  }
+  /**
+   * 性能计时结束
+   */
+  static timeEnd(label) {
+    if (this.isDebugMode) {
+      console.timeEnd(`[CanvasGrid:Timer] ${label}`);
+    }
+  }
+  /**
+   * 用户通知（开发环境显示详细信息）
+   */
+  static notify(message, duration = 3e3, debugInfo) {
+    if (this.isDebugMode && debugInfo) {
+      new import_obsidian3.Notice(`${message} (Debug: ${JSON.stringify(debugInfo)})`, duration);
+      this.log("User notification with debug info:", { message, debugInfo });
+    } else {
+      new import_obsidian3.Notice(message, duration);
+    }
+  }
+  /**
+   * 条件调试输出
+   */
+  static logIf(condition, message, ...args) {
+    if (condition && this.isDebugMode) {
+      this.log(message, ...args);
+    }
+  }
+  /**
+   * 对象深度检查（开发环境）
+   */
+  static inspect(obj, label) {
+    if (this.isDebugMode) {
+      const prefix = label ? `[${label}] ` : "";
+      console.log(`${prefix}Object inspection:`, {
+        type: typeof obj,
+        constructor: obj?.constructor?.name,
+        keys: obj && typeof obj === "object" ? Object.keys(obj) : "N/A",
+        value: obj
+      });
+    }
+  }
+  /**
+   * 函数执行追踪
+   */
+  static trace(functionName, args) {
+    if (this.isDebugMode) {
+      console.trace(`[CanvasGrid:Trace] ${functionName}`, args);
+    }
+  }
+  /**
+   * 断言检查（开发环境）
+   */
+  static assert(condition, message) {
+    if (this.isDebugMode && !condition) {
+      console.assert(condition, `[CanvasGrid:Assert] ${message}`);
+      throw new Error(`Assertion failed: ${message}`);
+    }
+  }
+};
+DebugManager.isDebugMode = true;
+DebugManager.isVerboseMode = false;
 
 // src/managers/SearchAndFilterManager.ts
 var BasicSearchStrategy = class {
@@ -3980,7 +4365,7 @@ var SearchAndFilterManager = class {
         query
       };
     } catch (error) {
-      console.error("Search error:", error);
+      DebugManager.error("Search error:", error);
       return {
         nodes: [],
         totalCount: nodes.length,
@@ -4113,7 +4498,7 @@ var SearchAndFilterManager = class {
 };
 
 // src/managers/DragDropManager.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 var TextDragStrategy = class {
   constructor(app, onCreateCard) {
     this.name = "text";
@@ -4471,7 +4856,7 @@ var DragDropManager = class {
       return;
     const target = event.target;
     if (!this.isValidDropTarget(target)) {
-      new import_obsidian2.Notice("\u65E0\u6548\u7684\u653E\u7F6E\u76EE\u6807");
+      new import_obsidian4.Notice("\u65E0\u6548\u7684\u653E\u7F6E\u76EE\u6807");
       return;
     }
     const position = {
@@ -4483,16 +4868,16 @@ var DragDropManager = class {
       try {
         const result = await strategy.handleDrop(this.currentDragData, target, position);
         if (result.success) {
-          new import_obsidian2.Notice("\u6210\u529F\u521B\u5EFA\u5361\u7247");
+          new import_obsidian4.Notice("\u6210\u529F\u521B\u5EFA\u5361\u7247");
         } else {
-          new import_obsidian2.Notice(`\u521B\u5EFA\u5931\u8D25: ${result.error}`);
+          new import_obsidian4.Notice(`\u521B\u5EFA\u5931\u8D25: ${result.error}`);
         }
       } catch (error) {
         console.error("Drop handling error:", error);
-        new import_obsidian2.Notice("\u5904\u7406\u62D6\u62FD\u5931\u8D25");
+        new import_obsidian4.Notice("\u5904\u7406\u62D6\u62FD\u5931\u8D25");
       }
     } else {
-      new import_obsidian2.Notice("\u4E0D\u652F\u6301\u7684\u62D6\u62FD\u7C7B\u578B");
+      new import_obsidian4.Notice("\u4E0D\u652F\u6301\u7684\u62D6\u62FD\u7C7B\u578B");
     }
   }
   /**
@@ -5113,7 +5498,7 @@ var CanvasAPIManager = class {
 };
 
 // src/managers/FileSystemManager.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var TextFileStrategy = class {
   constructor(app) {
     this.name = "text";
@@ -5135,7 +5520,7 @@ var TextFileStrategy = class {
       await this.app.vault.modify(file, content);
       return true;
     } catch (error) {
-      console.error("Failed to write text file:", error);
+      DebugManager.error("Failed to write text file:", error);
       return false;
     }
   }
@@ -5375,7 +5760,7 @@ var FileSystemManager = class {
     const startTime = Date.now();
     try {
       if (this.config.enableTrash) {
-        await this.app.vault.trash(file, false);
+        await this.app.fileManager.trashFile(file);
       } else {
         await this.app.vault.delete(file);
       }
@@ -5516,7 +5901,7 @@ var FileSystemManager = class {
       return;
     }
     this.app.vault.on("create", (file) => {
-      if (file instanceof import_obsidian3.TFile) {
+      if (file instanceof import_obsidian5.TFile) {
         this.recordFileChange({
           type: "created",
           file,
@@ -5525,7 +5910,7 @@ var FileSystemManager = class {
       }
     });
     this.app.vault.on("modify", (file) => {
-      if (file instanceof import_obsidian3.TFile) {
+      if (file instanceof import_obsidian5.TFile) {
         this.recordFileChange({
           type: "modified",
           file,
@@ -5534,7 +5919,7 @@ var FileSystemManager = class {
       }
     });
     this.app.vault.on("delete", (file) => {
-      if (file instanceof import_obsidian3.TFile) {
+      if (file instanceof import_obsidian5.TFile) {
         this.recordFileChange({
           type: "deleted",
           file,
@@ -5543,7 +5928,7 @@ var FileSystemManager = class {
       }
     });
     this.app.vault.on("rename", (file, oldPath) => {
-      if (file instanceof import_obsidian3.TFile) {
+      if (file instanceof import_obsidian5.TFile) {
         this.recordFileChange({
           type: "renamed",
           file,
@@ -6065,7 +6450,7 @@ var ThemeManager = class {
 };
 
 // src/managers/TimeCapsuleManager.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var TextTimeCapsuleStrategy = class {
   constructor(app) {
     this.name = "text";
@@ -6107,10 +6492,10 @@ ${capsule.content}`;
       const tempFile = await this.app.vault.create(tempFileName, tempContent);
       const leaf = this.app.workspace.getUnpinnedLeaf();
       await leaf.openFile(tempFile);
-      new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00`);
+      new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00`);
     } catch (error) {
       console.error("Failed to open text capsule:", error);
-      new import_obsidian4.Notice("\u6253\u5F00\u65F6\u95F4\u80F6\u56CA\u5931\u8D25");
+      new import_obsidian6.Notice("\u6253\u5F00\u65F6\u95F4\u80F6\u56CA\u5931\u8D25");
     }
   }
   validateCapsule(capsule) {
@@ -6151,10 +6536,10 @@ var FileTimeCapsuleStrategy = class {
     try {
       if (capsule.metadata?.sourceFile) {
         const file = this.app.vault.getAbstractFileByPath(capsule.metadata.sourceFile);
-        if (file instanceof import_obsidian4.TFile) {
+        if (file instanceof import_obsidian6.TFile) {
           const leaf2 = this.app.workspace.getUnpinnedLeaf();
           await leaf2.openFile(file);
-          new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00\u539F\u6587\u4EF6`);
+          new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00\u539F\u6587\u4EF6`);
           return;
         }
       }
@@ -6162,10 +6547,10 @@ var FileTimeCapsuleStrategy = class {
       const tempFile = await this.app.vault.create(tempFileName, capsule.content);
       const leaf = this.app.workspace.getUnpinnedLeaf();
       await leaf.openFile(tempFile);
-      new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00`);
+      new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u6253\u5F00`);
     } catch (error) {
       console.error("Failed to open file capsule:", error);
-      new import_obsidian4.Notice("\u6253\u5F00\u65F6\u95F4\u80F6\u56CA\u5931\u8D25");
+      new import_obsidian6.Notice("\u6253\u5F00\u65F6\u95F4\u80F6\u56CA\u5931\u8D25");
     }
   }
   validateCapsule(capsule) {
@@ -6240,7 +6625,7 @@ var TimeCapsuleManager = class {
         timestamp: Date.now()
       });
       if (this.config.showNotifications) {
-        new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u521B\u5EFA\uFF0C\u5C06\u5728${Math.round((capsule.expiresAt - capsule.createdAt) / 6e4)}\u5206\u949F\u540E\u5230\u671F`);
+        new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u521B\u5EFA\uFF0C\u5C06\u5728${Math.round((capsule.expiresAt - capsule.createdAt) / 6e4)}\u5206\u949F\u540E\u5230\u671F`);
       }
       return {
         success: true,
@@ -6328,7 +6713,7 @@ var TimeCapsuleManager = class {
         timestamp: Date.now()
       });
       if (this.config.showNotifications) {
-        new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u5220\u9664`);
+        new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u5220\u9664`);
       }
       return {
         success: true,
@@ -6404,7 +6789,7 @@ var TimeCapsuleManager = class {
           timestamp: now
         });
         if (this.config.showNotifications) {
-          new import_obsidian4.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u5230\u671F`);
+          new import_obsidian6.Notice(`\u65F6\u95F4\u80F6\u56CA"${capsule.title}"\u5DF2\u5230\u671F`);
         }
       }
       if (capsule.isOpened && capsule.openedAt && now - capsule.openedAt > 7 * 24 * 60 * 60 * 1e3) {
@@ -6455,7 +6840,7 @@ var TimeCapsuleManager = class {
       const content = JSON.stringify(data, null, 2);
       const storageFile = this.config.storageLocation || "time-capsules.json";
       const file = this.app.vault.getAbstractFileByPath(storageFile);
-      if (file instanceof import_obsidian4.TFile) {
+      if (file instanceof import_obsidian6.TFile) {
         await this.app.vault.modify(file, content);
       } else {
         await this.app.vault.create(storageFile, content);
@@ -6471,7 +6856,7 @@ var TimeCapsuleManager = class {
     try {
       const storageFile = this.config.storageLocation || "time-capsules.json";
       const file = this.app.vault.getAbstractFileByPath(storageFile);
-      if (file instanceof import_obsidian4.TFile) {
+      if (file instanceof import_obsidian6.TFile) {
         const content = await this.app.vault.read(file);
         const data = JSON.parse(content);
         this.capsules.clear();
@@ -6551,7 +6936,7 @@ var TimeCapsuleManager = class {
 };
 
 // src/managers/NavigationManager.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var FileNavigationStrategy = class {
   constructor(app) {
     this.name = "file";
@@ -6564,7 +6949,7 @@ var FileNavigationStrategy = class {
     const startTime = Date.now();
     try {
       const file = this.app.vault.getAbstractFileByPath(destination);
-      if (!file || !(file instanceof import_obsidian5.TFile)) {
+      if (!file || !(file instanceof import_obsidian7.TFile)) {
         return {
           success: false,
           error: `\u6587\u4EF6\u4E0D\u5B58\u5728: ${destination}`,
@@ -6580,7 +6965,7 @@ var FileNavigationStrategy = class {
         leaf = this.app.workspace.getUnpinnedLeaf();
       }
       await leaf.openFile(file);
-      if (options.position && leaf.view instanceof import_obsidian5.MarkdownView) {
+      if (options.position && leaf.view instanceof import_obsidian7.MarkdownView) {
         const editor = leaf.view.editor;
         editor.setCursor(options.position);
         editor.scrollIntoView({
@@ -6668,7 +7053,7 @@ var BlockReferenceNavigationStrategy = class {
       }
       const [, filePath, blockId] = match;
       const file = this.app.vault.getAbstractFileByPath(filePath + ".md") || this.app.vault.getAbstractFileByPath(filePath);
-      if (!file || !(file instanceof import_obsidian5.TFile)) {
+      if (!file || !(file instanceof import_obsidian7.TFile)) {
         return {
           success: false,
           error: `\u6587\u4EF6\u4E0D\u5B58\u5728: ${filePath}`,
@@ -6677,7 +7062,7 @@ var BlockReferenceNavigationStrategy = class {
       }
       const leaf = options.newTab ? this.app.workspace.getLeaf("tab") : this.app.workspace.getUnpinnedLeaf();
       await leaf.openFile(file);
-      if (leaf.view instanceof import_obsidian5.MarkdownView) {
+      if (leaf.view instanceof import_obsidian7.MarkdownView) {
         const content = await this.app.vault.read(file);
         const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
@@ -6945,110 +7330,6 @@ var NavigationManager = class {
     this.currentIndex = -1;
   }
 };
-
-// src/utils/DebugManager.ts
-var import_obsidian6 = require("obsidian");
-var DebugManager = class {
-  // 可通过配置控制
-  /**
-   * 调试日志输出
-   */
-  static log(message, ...args) {
-    if (this.isDebugMode) {
-      console.log(`[CanvasGrid] ${message}`, ...args);
-    }
-  }
-  /**
-   * 警告日志输出
-   */
-  static warn(message, ...args) {
-    if (this.isDebugMode) {
-      console.warn(`[CanvasGrid] ${message}`, ...args);
-    }
-  }
-  /**
-   * 错误日志输出（生产环境也会输出）
-   */
-  static error(message, ...args) {
-    console.error(`[CanvasGrid] ${message}`, ...args);
-  }
-  /**
-   * 详细调试信息（仅在verbose模式下输出）
-   */
-  static verbose(message, ...args) {
-    if (this.isDebugMode && this.isVerboseMode) {
-      console.log(`[CanvasGrid:Verbose] ${message}`, ...args);
-    }
-  }
-  /**
-   * 性能计时开始
-   */
-  static timeStart(label) {
-    if (this.isDebugMode) {
-      console.time(`[CanvasGrid:Timer] ${label}`);
-    }
-  }
-  /**
-   * 性能计时结束
-   */
-  static timeEnd(label) {
-    if (this.isDebugMode) {
-      console.timeEnd(`[CanvasGrid:Timer] ${label}`);
-    }
-  }
-  /**
-   * 用户通知（开发环境显示详细信息）
-   */
-  static notify(message, duration = 3e3, debugInfo) {
-    if (this.isDebugMode && debugInfo) {
-      new import_obsidian6.Notice(`${message} (Debug: ${JSON.stringify(debugInfo)})`, duration);
-      this.log("User notification with debug info:", { message, debugInfo });
-    } else {
-      new import_obsidian6.Notice(message, duration);
-    }
-  }
-  /**
-   * 条件调试输出
-   */
-  static logIf(condition, message, ...args) {
-    if (condition && this.isDebugMode) {
-      this.log(message, ...args);
-    }
-  }
-  /**
-   * 对象深度检查（开发环境）
-   */
-  static inspect(obj, label) {
-    if (this.isDebugMode) {
-      const prefix = label ? `[${label}] ` : "";
-      console.log(`${prefix}Object inspection:`, {
-        type: typeof obj,
-        constructor: obj?.constructor?.name,
-        keys: obj && typeof obj === "object" ? Object.keys(obj) : "N/A",
-        value: obj
-      });
-    }
-  }
-  /**
-   * 函数执行追踪
-   */
-  static trace(functionName, args) {
-    if (this.isDebugMode) {
-      console.trace(`[CanvasGrid:Trace] ${functionName}`, args);
-    }
-  }
-  /**
-   * 断言检查（开发环境）
-   */
-  static assert(condition, message) {
-    if (this.isDebugMode && !condition) {
-      console.assert(condition, `[CanvasGrid:Assert] ${message}`);
-      throw new Error(`Assertion failed: ${message}`);
-    }
-  }
-};
-DebugManager.isDebugMode = true;
-DebugManager.isVerboseMode = false;
 
 // src/managers/EditorStateManager.ts
 var EditorStateManager = class {
@@ -7549,7 +7830,7 @@ var MemoryBufferManager = class {
 };
 
 // src/managers/ConflictResolver.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var ConflictResolver = class {
   constructor(app) {
     this.app = app;
@@ -7687,7 +7968,7 @@ var ConflictResolver = class {
     }
   }
 };
-var ConflictResolutionModal = class extends import_obsidian7.Modal {
+var ConflictResolutionModal = class extends import_obsidian8.Modal {
   constructor(app, conflictInfo, onResolve) {
     super(app);
     this.conflictInfo = conflictInfo;
@@ -7704,7 +7985,7 @@ var ConflictResolutionModal = class extends import_obsidian7.Modal {
       text: "\u8BF7\u9009\u62E9\u5982\u4F55\u5904\u7406\u8FD9\u4E2A\u51B2\u7A81\uFF1A"
     });
     const optionsContainer = contentEl.createDiv("conflict-resolution-options");
-    new import_obsidian7.Setting(optionsContainer).setName("\u4FDD\u7559\u6211\u7684\u66F4\u6539").setDesc("\u5FFD\u7565\u5916\u90E8\u66F4\u6539\uFF0C\u4FDD\u5B58\u60A8\u7684\u672C\u5730\u4FEE\u6539").addButton(
+    new import_obsidian8.Setting(optionsContainer).setName("\u4FDD\u7559\u6211\u7684\u66F4\u6539").setDesc("\u5FFD\u7565\u5916\u90E8\u66F4\u6539\uFF0C\u4FDD\u5B58\u60A8\u7684\u672C\u5730\u4FEE\u6539").addButton(
       (btn) => btn.setButtonText("\u4FDD\u7559\u672C\u5730").setCta().onClick(() => {
         this.resolve({
           strategy: "keep-local",
@@ -7712,7 +7993,7 @@ var ConflictResolutionModal = class extends import_obsidian7.Modal {
         });
       })
     );
-    new import_obsidian7.Setting(optionsContainer).setName("\u4F7F\u7528\u5916\u90E8\u66F4\u6539").setDesc("\u4E22\u5F03\u60A8\u7684\u672C\u5730\u4FEE\u6539\uFF0C\u4F7F\u7528\u5916\u90E8\u7248\u672C").addButton(
+    new import_obsidian8.Setting(optionsContainer).setName("\u4F7F\u7528\u5916\u90E8\u66F4\u6539").setDesc("\u4E22\u5F03\u60A8\u7684\u672C\u5730\u4FEE\u6539\uFF0C\u4F7F\u7528\u5916\u90E8\u7248\u672C").addButton(
       (btn) => btn.setButtonText("\u4F7F\u7528\u5916\u90E8").setWarning().onClick(() => {
         this.resolve({
           strategy: "use-remote",
@@ -7720,7 +8001,7 @@ var ConflictResolutionModal = class extends import_obsidian7.Modal {
         });
       })
     );
-    new import_obsidian7.Setting(optionsContainer).addButton(
+    new import_obsidian8.Setting(optionsContainer).addButton(
       (btn) => btn.setButtonText("\u53D6\u6D88").onClick(() => {
         this.resolve({
           strategy: "keep-local",
@@ -8086,7 +8367,7 @@ var _TempFileManager = class _TempFileManager {
         leaf.detach();
       }
       if (await this.app.vault.adapter.exists(file.path)) {
-        await this.app.vault.delete(file);
+        await this.app.fileManager.trashFile(file);
       }
       this.currentTempFile = null;
       DebugManager.log("Cleaned up temp file:", file.path);
@@ -8128,7 +8409,7 @@ var _TempFileManager = class _TempFileManager {
       );
       for (const file of tempFiles) {
         try {
-          await this.app.vault.delete(file);
+          await this.app.fileManager.trashFile(file);
           DebugManager.log("Recovered temp file:", file.path);
         } catch (error) {
           DebugManager.error("Failed to recover temp file:", file.path, error);
@@ -8224,13 +8505,286 @@ var _TempFileManager = class _TempFileManager {
 _TempFileManager.instance = null;
 var TempFileManager = _TempFileManager;
 
+// src/managers/PersistentFileManager.ts
+var _PersistentFileManager = class _PersistentFileManager {
+  constructor(app, config) {
+    this.persistentFile = null;
+    this.isInitialized = false;
+    this.app = app;
+    this.config = {
+      fileName: ".canvasgrid-editor-workspace.md",
+      defaultContent: this.generateDefaultContent(),
+      hiddenDirectory: ".obsidian/plugins/canvasgrid-transit",
+      enableFileHiding: true,
+      ...config
+    };
+    DebugManager.log("PersistentFileManager initialized with config:", this.config);
+  }
+  /**
+   * 获取单例实例
+   */
+  static getInstance(app, config) {
+    if (!_PersistentFileManager.instance) {
+      _PersistentFileManager.instance = new _PersistentFileManager(app, config);
+    }
+    return _PersistentFileManager.instance;
+  }
+  /**
+   * 初始化持久化文件
+   */
+  async initialize() {
+    if (this.isInitialized) {
+      return;
+    }
+    try {
+      await this.ensurePersistentFile();
+      this.isInitialized = true;
+      DebugManager.log("PersistentFileManager initialized successfully");
+    } catch (error) {
+      DebugManager.error("Failed to initialize PersistentFileManager:", error);
+      throw new Error(`\u6301\u4E45\u5316\u6587\u4EF6\u7BA1\u7406\u5668\u521D\u59CB\u5316\u5931\u8D25: ${error}`);
+    }
+  }
+  /**
+   * 准备编辑器文件（清空内容并填充卡片数据）
+   */
+  async prepareEditorFile(content) {
+    try {
+      await this.ensureInitialized();
+      if (!this.persistentFile) {
+        throw new Error("\u6301\u4E45\u5316\u6587\u4EF6\u672A\u6B63\u786E\u521D\u59CB\u5316");
+      }
+      await this.app.vault.modify(this.persistentFile.file, content);
+      this.persistentFile.isInUse = true;
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Prepared editor file with content length:", content.length);
+      return this.persistentFile.file;
+    } catch (error) {
+      DebugManager.error("Failed to prepare editor file:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`\u7F16\u8F91\u5668\u6587\u4EF6\u51C6\u5907\u5931\u8D25: ${errorMessage}`);
+    }
+  }
+  /**
+   * 更新编辑器文件内容
+   */
+  async updateEditorFile(content) {
+    if (!this.persistentFile || !this.persistentFile.isInUse) {
+      throw new Error("\u6CA1\u6709\u6D3B\u8DC3\u7684\u7F16\u8F91\u5668\u6587\u4EF6\u53EF\u4EE5\u66F4\u65B0");
+    }
+    try {
+      await this.app.vault.modify(this.persistentFile.file, content);
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Updated editor file content");
+    } catch (error) {
+      DebugManager.error("Failed to update editor file:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`\u7F16\u8F91\u5668\u6587\u4EF6\u66F4\u65B0\u5931\u8D25: ${errorMessage}`);
+    }
+  }
+  /**
+   * 恢复文件到默认状态（结束编辑时调用）
+   */
+  async restoreDefaultContent() {
+    if (!this.persistentFile) {
+      return;
+    }
+    try {
+      await this.app.vault.modify(this.persistentFile.file, this.config.defaultContent);
+      this.persistentFile.isInUse = false;
+      this.persistentFile.lastAccessed = Date.now();
+      DebugManager.log("Restored file to default content");
+    } catch (error) {
+      DebugManager.error("Failed to restore default content:", error);
+    }
+  }
+  /**
+   * 获取当前的leaf实例
+   */
+  getCurrentLeaf() {
+    return this.persistentFile?.leaf || null;
+  }
+  /**
+   * 检查是否有活跃的编辑器文件
+   */
+  hasActiveEditorFile() {
+    return this.persistentFile?.isInUse || false;
+  }
+  /**
+   * 获取文件状态信息
+   */
+  getFileStatus() {
+    if (!this.persistentFile) {
+      return { hasFile: false, isInUse: false };
+    }
+    const now = Date.now();
+    return {
+      hasFile: true,
+      isInUse: this.persistentFile.isInUse,
+      fileName: this.persistentFile.file.name,
+      age: now - this.persistentFile.createdAt,
+      lastAccessed: now - this.persistentFile.lastAccessed
+    };
+  }
+  /**
+   * 确保持久化文件存在
+   */
+  async ensurePersistentFile() {
+    const filePath = this.getFilePath();
+    let existingFile = this.app.vault.getAbstractFileByPath(filePath);
+    if (!existingFile) {
+      await this.ensureDirectory();
+      existingFile = await this.app.vault.create(filePath, this.config.defaultContent);
+      DebugManager.log("Created persistent file:", filePath);
+    }
+    const leaf = await this.createHiddenLeaf(existingFile);
+    this.persistentFile = {
+      file: existingFile,
+      leaf,
+      createdAt: Date.now(),
+      lastAccessed: Date.now(),
+      isInUse: false
+    };
+    if (this.config.enableFileHiding) {
+      this.hideFileFromExplorer();
+    }
+  }
+  /**
+   * 确保目录存在
+   */
+  async ensureDirectory() {
+    const dirPath = this.config.hiddenDirectory;
+    try {
+      const dirExists = await this.app.vault.adapter.exists(dirPath);
+      if (!dirExists) {
+        await this.app.vault.createFolder(dirPath);
+        DebugManager.log("Created directory:", dirPath);
+      }
+    } catch (error) {
+      DebugManager.warn("Failed to create directory, using root:", error);
+      this.config.hiddenDirectory = "";
+    }
+  }
+  /**
+   * 获取完整文件路径
+   */
+  getFilePath() {
+    if (this.config.hiddenDirectory) {
+      return `${this.config.hiddenDirectory}/${this.config.fileName}`;
+    }
+    return this.config.fileName;
+  }
+  /**
+   * 生成默认文件内容
+   */
+  generateDefaultContent() {
+    return `<!-- 
+Canvasgrid Transit \u7F16\u8F91\u5668\u5DE5\u4F5C\u6587\u4EF6
+\u6B64\u6587\u4EF6\u7531\u63D2\u4EF6\u81EA\u52A8\u7BA1\u7406\uFF0C\u8BF7\u52FF\u624B\u52A8\u7F16\u8F91
+
+Editor Workspace File for Canvasgrid Transit Plugin
+This file is automatically managed by the plugin, please do not edit manually
+
+\u521B\u5EFA\u65F6\u95F4 / Created: ${(/* @__PURE__ */ new Date()).toISOString()}
+-->
+
+<!-- \u63D2\u4EF6\u5DE5\u4F5C\u533A\u57DF - Plugin Workspace -->
+`;
+  }
+  /**
+   * 创建隐藏的leaf
+   */
+  async createHiddenLeaf(file) {
+    const hiddenContainer = document.createElement("div");
+    hiddenContainer.style.display = "none";
+    hiddenContainer.style.position = "absolute";
+    hiddenContainer.style.top = "-9999px";
+    hiddenContainer.style.left = "-9999px";
+    document.body.appendChild(hiddenContainer);
+    const leaf = this.app.workspace.createLeafInParent(
+      this.app.workspace.rootSplit,
+      0
+    );
+    if (leaf.containerEl) {
+      hiddenContainer.appendChild(leaf.containerEl);
+    }
+    await leaf.openFile(file);
+    return leaf;
+  }
+  /**
+   * 从文件浏览器隐藏文件
+   */
+  hideFileFromExplorer() {
+    if (!this.persistentFile)
+      return;
+    const fileName = this.persistentFile.file.name;
+    const filePath = this.persistentFile.file.path;
+    const style = document.createElement("style");
+    style.id = "canvasgrid-hide-workspace-file";
+    style.textContent = `
+            .nav-file-title[data-path="${filePath}"] {
+                display: none !important;
+            }
+            .nav-file-title[data-path*="${fileName}"] {
+                display: none !important;
+            }
+        `;
+    const existingStyle = document.getElementById("canvasgrid-hide-workspace-file");
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    document.head.appendChild(style);
+    DebugManager.log("Hidden file from explorer:", fileName);
+  }
+  /**
+   * 确保已初始化
+   */
+  async ensureInitialized() {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+  }
+  /**
+   * 清理资源
+   */
+  async cleanup() {
+    try {
+      await this.restoreDefaultContent();
+      if (this.persistentFile?.leaf && !this.persistentFile.leaf.isDeferred) {
+        this.persistentFile.leaf.detach();
+      }
+      const style = document.getElementById("canvasgrid-hide-workspace-file");
+      if (style) {
+        style.remove();
+      }
+      DebugManager.log("PersistentFileManager cleanup completed");
+    } catch (error) {
+      DebugManager.error("Failed to cleanup PersistentFileManager:", error);
+    }
+  }
+  /**
+   * 销毁管理器实例
+   */
+  static async destroy() {
+    if (_PersistentFileManager.instance) {
+      await _PersistentFileManager.instance.cleanup();
+      _PersistentFileManager.instance = null;
+    }
+  }
+};
+_PersistentFileManager.instance = null;
+var PersistentFileManager = _PersistentFileManager;
+
 // src/managers/HiddenEditorManager.ts
 var HiddenEditorManager = class {
+  // 默认使用持久化文件
   constructor(app, config) {
     this.currentEditor = null;
     this.hiddenContainer = null;
+    this.usePersistentFile = true;
     this.app = app;
     this.tempFileManager = TempFileManager.getInstance(app);
+    this.persistentFileManager = PersistentFileManager.getInstance(app);
     this.config = {
       enableSyntaxHighlight: true,
       enableAutoComplete: true,
@@ -8239,7 +8793,20 @@ var HiddenEditorManager = class {
       ...config
     };
     this.initializeHiddenContainer();
-    DebugManager.log("HiddenEditorManager initialized");
+    this.initializePersistentFileManager();
+    DebugManager.log("HiddenEditorManager initialized with persistent file support");
+  }
+  /**
+   * 初始化持久化文件管理器
+   */
+  async initializePersistentFileManager() {
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized successfully");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager, falling back to temp files:", error);
+      this.usePersistentFile = false;
+    }
   }
   /**
    * 创建隐藏编辑器
@@ -8249,10 +8816,19 @@ var HiddenEditorManager = class {
       if (this.currentEditor) {
         await this.cleanupCurrentEditor();
       }
-      const tempFile = await this.tempFileManager.createTempFile(content);
-      const leaf = this.tempFileManager.getCurrentLeaf();
+      let workspaceFile;
+      let leaf;
+      if (this.usePersistentFile) {
+        workspaceFile = await this.persistentFileManager.prepareEditorFile(content);
+        leaf = this.persistentFileManager.getCurrentLeaf();
+        DebugManager.log("Using persistent file for editor");
+      } else {
+        workspaceFile = await this.tempFileManager.createTempFile(content);
+        leaf = this.tempFileManager.getCurrentLeaf();
+        DebugManager.log("Using temporary file for editor (fallback)");
+      }
       if (!leaf) {
-        throw new Error("\u65E0\u6CD5\u83B7\u53D6\u4E34\u65F6\u6587\u4EF6\u7684leaf");
+        throw new Error("\u65E0\u6CD5\u83B7\u53D6\u5DE5\u4F5C\u6587\u4EF6\u7684leaf");
       }
       const markdownView = leaf.view;
       if (!markdownView || !markdownView.editor) {
@@ -8267,14 +8843,22 @@ var HiddenEditorManager = class {
         editor,
         markdownView,
         leaf,
-        tempFile,
+        workspaceFile,
         container,
         createdAt: Date.now()
       };
-      DebugManager.log("Created hidden editor successfully");
+      DebugManager.log(
+        "Created hidden editor successfully using",
+        this.usePersistentFile ? "persistent file" : "temporary file"
+      );
       return container;
     } catch (error) {
       DebugManager.error("Failed to create hidden editor:", error);
+      if (this.usePersistentFile && !this.currentEditor) {
+        DebugManager.warn("Persistent file failed, falling back to temporary file");
+        this.usePersistentFile = false;
+        return this.createHiddenEditor(content);
+      }
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`\u9690\u85CF\u7F16\u8F91\u5668\u521B\u5EFA\u5931\u8D25: ${errorMessage}`);
     }
@@ -8377,7 +8961,13 @@ var HiddenEditorManager = class {
       if (keyHandler) {
         container.removeEventListener("keydown", keyHandler);
       }
-      await this.tempFileManager.cleanupCurrentTempFile();
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.restoreDefaultContent();
+        DebugManager.log("Restored persistent file to default content");
+      } else {
+        await this.tempFileManager.cleanupCurrentTempFile();
+        DebugManager.log("Cleaned up temporary file");
+      }
       if (container.parentNode) {
         container.parentNode.removeChild(container);
       }
@@ -8486,11 +9076,56 @@ var HiddenEditorManager = class {
     };
   }
   /**
+   * 更新编辑器内容（支持持久化文件）
+   */
+  async updateEditorContent(content) {
+    if (!this.currentEditor) {
+      throw new Error("\u6CA1\u6709\u6D3B\u8DC3\u7684\u7F16\u8F91\u5668\u53EF\u4EE5\u66F4\u65B0");
+    }
+    try {
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.updateEditorFile(content);
+      } else {
+        await this.tempFileManager.updateTempFile(content);
+      }
+      DebugManager.log("Editor content updated");
+    } catch (error) {
+      DebugManager.error("Failed to update editor content:", error);
+      throw error;
+    }
+  }
+  /**
+   * 切换文件管理模式
+   */
+  setPersistentFileMode(enabled) {
+    this.usePersistentFile = enabled;
+    DebugManager.log("Persistent file mode set to:", enabled);
+  }
+  /**
+   * 获取当前文件管理模式
+   */
+  isPersistentFileMode() {
+    return this.usePersistentFile;
+  }
+  /**
+   * 获取文件状态信息
+   */
+  getFileStatus() {
+    if (this.usePersistentFile) {
+      return this.persistentFileManager.getFileStatus();
+    } else {
+      return this.tempFileManager.getTempFileStatus();
+    }
+  }
+  /**
    * 强制清理所有资源
    */
   async forceCleanup() {
     try {
       await this.cleanupCurrentEditor();
+      if (this.usePersistentFile) {
+        await this.persistentFileManager.cleanup();
+      }
       if (this.hiddenContainer && this.hiddenContainer.parentNode) {
         this.hiddenContainer.parentNode.removeChild(this.hiddenContainer);
         this.hiddenContainer = null;
@@ -8509,9 +9144,22 @@ var EditorStateCoordinator = class {
     this.app = app;
     this.editorStateManager = editorStateManager;
     this.tempFileManager = TempFileManager.getInstance(app);
+    this.persistentFileManager = PersistentFileManager.getInstance(app);
     this.hiddenEditorManager = new HiddenEditorManager(app);
     this.tempFileManager.startPeriodicCleanup();
-    DebugManager.log("EditorStateCoordinator initialized");
+    this.initializePersistentFileManager();
+    DebugManager.log("EditorStateCoordinator initialized with persistent file support");
+  }
+  /**
+   * 初始化持久化文件管理器
+   */
+  async initializePersistentFileManager() {
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized in coordinator");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager in coordinator:", error);
+    }
   }
   /**
    * 创建简化的编辑器实例（官方Canvas风格）
@@ -8701,11 +9349,13 @@ var EditorStateCoordinator = class {
    * 获取编辑器状态信息
    */
   getEditorStatusInfo() {
+    const isPersistentMode = this.hiddenEditorManager.isPersistentFileMode();
     return {
       hasActiveEditor: this.activeEditorNodeId !== null,
       activeNodeId: this.activeEditorNodeId,
       editorStatus: this.hiddenEditorManager.getEditorStatus(),
-      tempFileStatus: this.tempFileManager.getTempFileStatus(),
+      fileStatus: isPersistentMode ? this.persistentFileManager.getFileStatus() : this.tempFileManager.getTempFileStatus(),
+      fileMode: isPersistentMode ? "persistent" : "temporary",
       stateManagerStatus: {
         hasActiveEditors: this.editorStateManager.hasActiveEditors(),
         hasUnsavedChanges: this.editorStateManager.hasUnsavedChanges(),
@@ -8720,7 +9370,13 @@ var EditorStateCoordinator = class {
     try {
       DebugManager.log("Starting editor coordinator exception recovery...");
       await this.cleanupAllEditors();
-      await this.tempFileManager.recoverFromException();
+      if (this.hiddenEditorManager.isPersistentFileMode()) {
+        await this.persistentFileManager.cleanup();
+        DebugManager.log("Persistent file manager recovered");
+      } else {
+        await this.tempFileManager.recoverFromException();
+        DebugManager.log("Temporary file manager recovered");
+      }
       this.activeEditorNodeId = null;
       DebugManager.log("Editor coordinator exception recovery completed");
     } catch (error) {
@@ -8734,10 +9390,16 @@ var EditorStateCoordinator = class {
     const issues = [];
     const recommendations = [];
     const hasActiveEditor = this.hiddenEditorManager.hasActiveEditor();
-    const hasActiveTempFile = this.tempFileManager.hasActiveTempFile();
     const hasActiveStateManager = this.editorStateManager.hasActiveEditors();
-    if (hasActiveEditor !== hasActiveTempFile) {
-      issues.push("\u7F16\u8F91\u5668\u548C\u4E34\u65F6\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4");
+    let hasActiveFile = false;
+    if (this.hiddenEditorManager.isPersistentFileMode()) {
+      hasActiveFile = this.persistentFileManager.hasActiveEditorFile();
+    } else {
+      hasActiveFile = this.tempFileManager.hasActiveTempFile();
+    }
+    if (hasActiveEditor !== hasActiveFile) {
+      const fileType = this.hiddenEditorManager.isPersistentFileMode() ? "\u6301\u4E45\u5316\u6587\u4EF6" : "\u4E34\u65F6\u6587\u4EF6";
+      issues.push(`\u7F16\u8F91\u5668\u548C${fileType}\u72B6\u6001\u4E0D\u4E00\u81F4`);
       recommendations.push("\u6267\u884C\u5F02\u5E38\u6062\u590D");
     }
     if (hasActiveEditor !== hasActiveStateManager) {
@@ -8770,7 +9432,7 @@ var EditorStateCoordinator = class {
 };
 
 // src/managers/ObsidianRenderManager.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var ObsidianRenderManager = class {
   constructor(app, config) {
     this.componentPool = [];
@@ -8853,7 +9515,7 @@ var ObsidianRenderManager = class {
   async renderWithObsidianEngine(content, container, sourcePath, nodeId) {
     const component = this.getOrCreateComponent();
     try {
-      await import_obsidian8.MarkdownRenderer.renderMarkdown(
+      await import_obsidian9.MarkdownRenderer.renderMarkdown(
         content,
         container,
         sourcePath,
@@ -8932,7 +9594,7 @@ var ObsidianRenderManager = class {
   getOrCreateComponent() {
     let component = this.componentPool.pop();
     if (!component) {
-      component = new import_obsidian8.Component();
+      component = new import_obsidian9.Component();
     }
     this.activeComponents.add(component);
     return component;
@@ -9157,11 +9819,12 @@ var DiagnosticsManager = class {
   checkEditorHealth() {
     const issues = [];
     const editorStatus = this.editorStateCoordinator.getEditorStatusInfo();
-    if (editorStatus.hasActiveEditor !== editorStatus.tempFileStatus.hasActive) {
+    const fileHasActive = editorStatus.fileMode === "persistent" ? editorStatus.fileStatus.isInUse : editorStatus.fileStatus.hasActive;
+    if (editorStatus.hasActiveEditor !== fileHasActive) {
       issues.push({
         severity: "high",
         category: "state",
-        description: "\u7F16\u8F91\u5668\u548C\u4E34\u65F6\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4",
+        description: `\u7F16\u8F91\u5668\u548C${editorStatus.fileMode === "persistent" ? "\u6301\u4E45\u5316" : "\u4E34\u65F6"}\u6587\u4EF6\u72B6\u6001\u4E0D\u4E00\u81F4`,
         details: editorStatus
       });
     }
@@ -9382,8 +10045,1073 @@ var DiagnosticsManager = class {
   }
 };
 
+// src/managers/ProtocolHandler.ts
+var import_obsidian10 = require("obsidian");
+
+// src/adapters/CanvasAPIAdapter.ts
+var CanvasAPIAdapter = class {
+  constructor(leaf) {
+    this.debugMode = true;
+    this.leaf = leaf;
+    this.canvas = this.getCanvasAPI(leaf);
+  }
+  /**
+   * 获取Canvas API实例
+   */
+  getCanvasAPI(leaf) {
+    try {
+      const view = leaf.view;
+      if (view?.canvas) {
+        this.log("Canvas API found via view.canvas");
+        return view.canvas;
+      }
+      if (view?.canvasView?.canvas) {
+        this.log("Canvas API found via view.canvasView.canvas");
+        return view.canvasView.canvas;
+      }
+      if (view?.renderer?.canvas) {
+        this.log("Canvas API found via view.renderer.canvas");
+        return view.renderer.canvas;
+      }
+      this.log("Canvas API not found");
+      return null;
+    } catch (error) {
+      this.log("Error getting Canvas API:", error);
+      return null;
+    }
+  }
+  /**
+   * 检查Canvas API是否可用
+   */
+  isAvailable() {
+    return !!(this.canvas && typeof this.canvas === "object");
+  }
+  /**
+   * 获取Canvas版本信息
+   */
+  getVersion() {
+    try {
+      if (this.canvas?.version) {
+        return this.canvas.version;
+      }
+      const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(this.canvas) || {});
+      if (methods.includes("zoomToBbox")) {
+        return "modern";
+      } else if (methods.includes("zoomToSelection")) {
+        return "legacy";
+      }
+      return "unknown";
+    } catch (error) {
+      return "error";
+    }
+  }
+  /**
+   * 聚焦到指定节点
+   */
+  async focusNode(nodeId, options = {}) {
+    const startTime = Date.now();
+    const defaultOptions = {
+      highlight: true,
+      animation: true,
+      padding: 100,
+      retryAttempts: 3,
+      retryDelay: 500,
+      ...options
+    };
+    this.log(`Focusing node: ${nodeId}`, defaultOptions);
+    if (!this.isAvailable()) {
+      return {
+        success: false,
+        method: "fallback",
+        error: "Canvas API not available",
+        nodeFound: false,
+        canvasLoaded: false,
+        executionTime: Date.now() - startTime
+      };
+    }
+    const strategies = [
+      () => this.focusWithZoomToBbox(nodeId, defaultOptions),
+      () => this.focusWithPanTo(nodeId, defaultOptions),
+      () => this.focusWithZoomToSelection(nodeId, defaultOptions),
+      () => this.focusWithViewport(nodeId, defaultOptions),
+      () => this.focusWithScroll(nodeId, defaultOptions)
+    ];
+    for (let i = 0; i < strategies.length; i++) {
+      try {
+        const result = await strategies[i]();
+        if (result.success) {
+          if (defaultOptions.highlight) {
+            await this.highlightNode(nodeId, 2e3);
+          }
+          result.executionTime = Date.now() - startTime;
+          this.log(`Focus successful with strategy ${i + 1}: ${result.method}`);
+          return result;
+        }
+      } catch (error) {
+        this.log(`Strategy ${i + 1} failed:`, error);
+        continue;
+      }
+    }
+    return {
+      success: false,
+      method: "fallback",
+      error: "All focus strategies failed",
+      nodeFound: this.findCanvasNode(nodeId) !== null,
+      canvasLoaded: true,
+      executionTime: Date.now() - startTime
+    };
+  }
+  /**
+   * 策略1: 使用zoomToBbox方法 - 基于成功实现
+   */
+  async focusWithZoomToBbox(nodeId, options) {
+    try {
+      if (!this.canvas?.zoomToBbox) {
+        throw new Error("zoomToBbox method not available");
+      }
+      const nodeData = await this.findCanvasNodeData(nodeId);
+      if (!nodeData) {
+        return {
+          success: false,
+          method: "zoomToBbox",
+          error: "Node not found",
+          nodeFound: false,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      }
+      this.log("Found node data:", nodeData);
+      if (this.canvas.deselectAll) {
+        this.log("Clearing selection...");
+        this.canvas.deselectAll();
+      }
+      if (this.canvas.selectNode) {
+        this.log("Selecting node:", nodeId);
+        try {
+          this.canvas.selectNode(nodeId);
+        } catch (error) {
+          this.log("selectNode failed:", error);
+        }
+      }
+      const bbox = this.calculateOptimalBbox(nodeData, options.padding);
+      this.log("Calculated bbox:", bbox);
+      this.log("Zooming to bbox...");
+      this.canvas.zoomToBbox(bbox);
+      return {
+        success: true,
+        method: "zoomToBbox",
+        nodeFound: true,
+        canvasLoaded: true,
+        executionTime: 0
+      };
+    } catch (error) {
+      this.log("zoomToBbox strategy failed:", error);
+      throw error;
+    }
+  }
+  /**
+   * 策略2: 使用panTo方法 - 基于成功实现
+   */
+  async focusWithPanTo(nodeId, options) {
+    try {
+      if (!this.canvas?.panTo) {
+        throw new Error("panTo method not available");
+      }
+      const nodeData = await this.findCanvasNodeData(nodeId);
+      if (!nodeData) {
+        return {
+          success: false,
+          method: "viewport",
+          error: "Node not found",
+          nodeFound: false,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      }
+      this.log("Using panTo as fallback...");
+      const centerX = nodeData.x + nodeData.width / 2;
+      const centerY = nodeData.y + nodeData.height / 2;
+      try {
+        this.canvas.panTo(centerX, centerY);
+        return {
+          success: true,
+          method: "viewport",
+          nodeFound: true,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      } catch (error) {
+        this.log("panTo failed:", error);
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  /**
+   * 策略3: 使用zoomToSelection方法
+   */
+  async focusWithZoomToSelection(nodeId, options) {
+    try {
+      if (!this.canvas.zoomToSelection) {
+        throw new Error("zoomToSelection method not available");
+      }
+      const node = this.findCanvasNode(nodeId);
+      if (!node) {
+        return {
+          success: false,
+          method: "zoomToSelection",
+          error: "Node not found",
+          nodeFound: false,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      }
+      if (this.canvas.deselectAll) {
+        this.canvas.deselectAll();
+      }
+      if (this.canvas.addToSelection) {
+        this.canvas.addToSelection(node);
+      } else if (this.canvas.selectNode) {
+        this.canvas.selectNode(nodeId);
+      }
+      this.canvas.zoomToSelection();
+      return {
+        success: true,
+        method: "zoomToSelection",
+        nodeFound: true,
+        canvasLoaded: true,
+        executionTime: 0
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  /**
+   * 策略3: 直接操作viewport
+   */
+  async focusWithViewport(nodeId, options) {
+    try {
+      const node = this.findCanvasNode(nodeId);
+      if (!node) {
+        return {
+          success: false,
+          method: "viewport",
+          error: "Node not found",
+          nodeFound: false,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      }
+      const viewport = this.canvas.viewport || this.canvas.view;
+      if (!viewport) {
+        throw new Error("Viewport not available");
+      }
+      const centerX = node.x + node.width / 2;
+      const centerY = node.y + node.height / 2;
+      if (viewport.setCenter) {
+        viewport.setCenter(centerX, centerY);
+      } else if (viewport.panTo) {
+        viewport.panTo(centerX, centerY);
+      } else if (typeof viewport.x !== "undefined" && typeof viewport.y !== "undefined") {
+        viewport.x = -centerX + (viewport.width || 800) / 2;
+        viewport.y = -centerY + (viewport.height || 600) / 2;
+      } else {
+        throw new Error("No viewport manipulation method available");
+      }
+      return {
+        success: true,
+        method: "viewport",
+        nodeFound: true,
+        canvasLoaded: true,
+        executionTime: 0
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  /**
+   * 策略4: DOM滚动方法
+   */
+  async focusWithScroll(nodeId, options) {
+    try {
+      const nodeElement = this.findNodeElement(nodeId);
+      if (!nodeElement) {
+        return {
+          success: false,
+          method: "scroll",
+          error: "Node element not found",
+          nodeFound: false,
+          canvasLoaded: true,
+          executionTime: 0
+        };
+      }
+      nodeElement.scrollIntoView({
+        behavior: options.animation ? "smooth" : "auto",
+        block: "center",
+        inline: "center"
+      });
+      nodeElement.click();
+      return {
+        success: true,
+        method: "scroll",
+        nodeFound: true,
+        canvasLoaded: true,
+        executionTime: 0
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  /**
+   * 选择节点
+   */
+  async selectNode(nodeId) {
+    try {
+      if (this.canvas.selectNode) {
+        this.canvas.selectNode(nodeId);
+        return true;
+      }
+      const node = this.findCanvasNode(nodeId);
+      if (node && this.canvas.addToSelection) {
+        this.canvas.addToSelection(node);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      this.log("Select node failed:", error);
+      return false;
+    }
+  }
+  /**
+   * 缩放到节点
+   */
+  async zoomToNode(nodeId, padding = 100) {
+    try {
+      const node = this.findCanvasNode(nodeId);
+      if (!node)
+        return false;
+      const bbox = this.calculateNodeBbox(node, padding);
+      if (this.canvas.zoomToBbox) {
+        this.canvas.zoomToBbox(bbox);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      this.log("Zoom to node failed:", error);
+      return false;
+    }
+  }
+  /**
+   * 高亮节点
+   */
+  async highlightNode(nodeId, duration = 2e3) {
+    try {
+      const nodeElement = this.findNodeElement(nodeId);
+      if (!nodeElement)
+        return;
+      const originalOutline = nodeElement.style.outline;
+      const originalBoxShadow = nodeElement.style.boxShadow;
+      nodeElement.style.outline = "3px solid var(--interactive-accent)";
+      nodeElement.style.boxShadow = "0 0 20px var(--interactive-accent)";
+      nodeElement.style.transition = "all 0.3s ease";
+      setTimeout(() => {
+        if (nodeElement) {
+          nodeElement.style.outline = originalOutline;
+          nodeElement.style.boxShadow = originalBoxShadow;
+          nodeElement.style.transition = "";
+        }
+      }, duration);
+    } catch (error) {
+      this.log("Highlight node failed:", error);
+    }
+  }
+  /**
+   * 查找Canvas节点对象
+   */
+  findCanvasNode(nodeId) {
+    try {
+      if (this.canvas.nodes && this.canvas.nodes.get) {
+        return this.canvas.nodes.get(nodeId);
+      }
+      if (this.canvas.nodes && Array.isArray(this.canvas.nodes)) {
+        return this.canvas.nodes.find((node) => node.id === nodeId);
+      }
+      return null;
+    } catch (error) {
+      this.log("Find canvas node failed:", error);
+      return null;
+    }
+  }
+  /**
+   * 查找节点DOM元素
+   */
+  findNodeElement(nodeId) {
+    try {
+      const container = this.leaf.containerEl || this.leaf.view?.containerEl;
+      const selectors = [
+        `[data-node-id="${nodeId}"]`,
+        `[data-id="${nodeId}"]`,
+        `.canvas-node[data-node-id="${nodeId}"]`,
+        `.canvas-node[data-id="${nodeId}"]`
+      ];
+      for (const selector of selectors) {
+        const element = container.querySelector(selector);
+        if (element)
+          return element;
+      }
+      return null;
+    } catch (error) {
+      this.log("Find node element failed:", error);
+      return null;
+    }
+  }
+  /**
+   * 计算节点边界框
+   */
+  calculateNodeBbox(node, padding) {
+    return {
+      minX: node.x - padding,
+      minY: node.y - padding,
+      maxX: node.x + node.width + padding,
+      maxY: node.y + node.height + padding
+    };
+  }
+  /**
+   * 计算最佳聚焦边界框 - 基于成功实现
+   */
+  calculateOptimalBbox(node, padding = 100) {
+    return {
+      minX: node.x - padding,
+      minY: node.y - padding,
+      maxX: node.x + node.width + padding,
+      maxY: node.y + node.height + padding
+    };
+  }
+  /**
+   * 查找Canvas节点数据 - 增强版本
+   */
+  async findCanvasNodeData(nodeId) {
+    try {
+      const canvasNode = this.findCanvasNode(nodeId);
+      if (canvasNode) {
+        this.log("Found node via Canvas API");
+        return canvasNode;
+      }
+      const canvasData = await this.getCanvasFileData();
+      if (canvasData?.nodes) {
+        for (const node of canvasData.nodes) {
+          if (node.id === nodeId) {
+            this.log("Found node via file data");
+            return node;
+          }
+        }
+      }
+      this.log("Node not found:", nodeId);
+      return null;
+    } catch (error) {
+      this.log("Error finding node data:", error);
+      return null;
+    }
+  }
+  /**
+   * 获取Canvas文件数据
+   */
+  async getCanvasFileData() {
+    try {
+      const view = this.leaf.view;
+      const file = view?.file;
+      if (!file) {
+        this.log("No file found in view");
+        return null;
+      }
+      const content = await this.leaf.view.app.vault.read(file);
+      const canvasData = JSON.parse(content);
+      this.log("Canvas file data loaded");
+      return canvasData;
+    } catch (error) {
+      this.log("Error loading canvas file data:", error);
+      return null;
+    }
+  }
+  /**
+   * 调试日志
+   */
+  log(message, data) {
+    if (this.debugMode) {
+      console.log(`[CanvasAPIAdapter] ${message}`, data || "");
+    }
+  }
+  /**
+   * 设置调试模式
+   */
+  setDebugMode(enabled) {
+    this.debugMode = enabled;
+  }
+};
+
+// src/managers/ProtocolHandler.ts
+var ProtocolHandler = class {
+  constructor(app) {
+    this.debugMode = true;
+    this.app = app;
+  }
+  /**
+   * 处理协议请求的主入口
+   */
+  async handleProtocolRequest(params) {
+    const startTime = Date.now();
+    try {
+      this.log("=== Protocol Request Started ===", params);
+      const validatedParams = this.validateAndParseParams(params);
+      if (!validatedParams) {
+        new import_obsidian10.Notice("\u534F\u8BAE\u53C2\u6570\u65E0\u6548");
+        return;
+      }
+      switch (validatedParams.action) {
+        case "focus-node":
+          await this.handleFocusNode(validatedParams);
+          break;
+        case "open-canvas":
+          await this.handleOpenCanvas(validatedParams);
+          break;
+        default:
+          new import_obsidian10.Notice(`\u4E0D\u652F\u6301\u7684\u64CD\u4F5C: ${validatedParams.action}`);
+      }
+      this.log(`Protocol request completed in ${Date.now() - startTime}ms`);
+    } catch (error) {
+      console.error("Protocol handler error:", error);
+      new import_obsidian10.Notice("\u534F\u8BAE\u5904\u7406\u5931\u8D25: " + (error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF"));
+    }
+  }
+  /**
+   * 验证和解析协议参数
+   */
+  validateAndParseParams(params) {
+    try {
+      const { file, nodeId, x, y, vault, fallback, highlight, animation } = params;
+      if (!file) {
+        this.log("Missing required parameter: file");
+        return null;
+      }
+      const action = nodeId ? "focus-node" : "open-canvas";
+      const validatedParams = {
+        action,
+        file: decodeURIComponent(file),
+        nodeId: nodeId ? decodeURIComponent(nodeId) : void 0,
+        x: x || void 0,
+        y: y || void 0,
+        vault: vault ? decodeURIComponent(vault) : void 0,
+        fallback: fallback || "true",
+        highlight: highlight || "true",
+        animation: animation || "true"
+      };
+      this.log("Validated params:", validatedParams);
+      return validatedParams;
+    } catch (error) {
+      this.log("Parameter validation failed:", error);
+      return null;
+    }
+  }
+  /**
+   * 处理节点聚焦请求
+   */
+  async handleFocusNode(params) {
+    if (!params.nodeId) {
+      new import_obsidian10.Notice("\u7F3A\u5C11\u8282\u70B9ID\u53C2\u6570");
+      return;
+    }
+    const startTime = Date.now();
+    new import_obsidian10.Notice("\u6B63\u5728\u5B9A\u4F4D\u8282\u70B9...", 2e3);
+    try {
+      const canvasFile = this.findCanvasFile(params.file);
+      if (!canvasFile) {
+        new import_obsidian10.Notice(`\u627E\u4E0D\u5230Canvas\u6587\u4EF6: ${params.file}`);
+        return;
+      }
+      const leaf = await this.openCanvasFile(canvasFile);
+      if (!leaf) {
+        new import_obsidian10.Notice("\u65E0\u6CD5\u6253\u5F00Canvas\u6587\u4EF6");
+        return;
+      }
+      const canvasReady = await this.waitForCanvasReady(leaf);
+      if (!canvasReady) {
+        new import_obsidian10.Notice("Canvas\u52A0\u8F7D\u8D85\u65F6");
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const focusOptions = {
+        highlight: params.highlight === "true",
+        animation: params.animation === "true",
+        padding: 100,
+        retryAttempts: 3,
+        retryDelay: 500
+      };
+      const result = await this.focusCanvasNode(leaf, params.nodeId, focusOptions);
+      if (result.success) {
+        new import_obsidian10.Notice(`\u5DF2\u805A\u7126\u5230\u8282\u70B9 (${result.method})`, 3e3);
+        this.log(`Focus successful: ${result.method} in ${result.executionTime}ms`);
+      } else {
+        if (params.fallback === "true") {
+          new import_obsidian10.Notice("\u805A\u7126\u5931\u8D25\uFF0C\u5DF2\u6253\u5F00Canvas\u6587\u4EF6", 3e3);
+        } else {
+          new import_obsidian10.Notice("\u8282\u70B9\u805A\u7126\u5931\u8D25: " + (result.error || "\u672A\u77E5\u9519\u8BEF"));
+        }
+      }
+    } catch (error) {
+      console.error("Focus node failed:", error);
+      new import_obsidian10.Notice("\u8282\u70B9\u805A\u7126\u5931\u8D25");
+    }
+  }
+  /**
+   * 处理打开Canvas请求
+   */
+  async handleOpenCanvas(params) {
+    try {
+      const canvasFile = this.findCanvasFile(params.file);
+      if (!canvasFile) {
+        new import_obsidian10.Notice(`\u627E\u4E0D\u5230Canvas\u6587\u4EF6: ${params.file}`);
+        return;
+      }
+      await this.openCanvasFile(canvasFile);
+      new import_obsidian10.Notice(`\u5DF2\u6253\u5F00Canvas\u6587\u4EF6: ${canvasFile.basename}`);
+    } catch (error) {
+      console.error("Open canvas failed:", error);
+      new import_obsidian10.Notice("\u6253\u5F00Canvas\u6587\u4EF6\u5931\u8D25");
+    }
+  }
+  /**
+   * 查找Canvas文件
+   */
+  findCanvasFile(filePath) {
+    try {
+      let file = this.app.vault.getAbstractFileByPath(filePath);
+      if (file && file instanceof import_obsidian10.TFile) {
+        return file;
+      }
+      if (!filePath.endsWith(".canvas")) {
+        file = this.app.vault.getAbstractFileByPath(filePath + ".canvas");
+        if (file && file instanceof import_obsidian10.TFile) {
+          return file;
+        }
+      }
+      const canvasFiles = this.app.vault.getFiles().filter((f) => f.extension === "canvas");
+      const matchingFile = canvasFiles.find(
+        (f) => f.path === filePath || f.path.endsWith("/" + filePath) || f.basename === filePath.replace(".canvas", "")
+      );
+      return matchingFile || null;
+    } catch (error) {
+      this.log("Find canvas file failed:", error);
+      return null;
+    }
+  }
+  /**
+   * 打开Canvas文件
+   */
+  async openCanvasFile(file) {
+    try {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      return leaf;
+    } catch (error) {
+      this.log("Open canvas file failed:", error);
+      return null;
+    }
+  }
+  /**
+   * 等待Canvas准备就绪
+   */
+  async waitForCanvasReady(leaf, timeout = 5e3) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        const view = leaf.view;
+        if (view && view.canvas && view.canvas.nodes) {
+          this.log("Canvas is ready");
+          return true;
+        }
+      } catch (error) {
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    this.log("Canvas ready timeout");
+    return false;
+  }
+  /**
+   * 聚焦Canvas节点 - 使用CanvasAPIAdapter实现
+   */
+  async focusCanvasNode(leaf, nodeId, options) {
+    try {
+      const adapter = new CanvasAPIAdapter(leaf);
+      if (!adapter.isAvailable()) {
+        this.log("Canvas API not available");
+        return {
+          success: false,
+          method: "fallback",
+          error: "Canvas API not available",
+          nodeFound: false,
+          canvasLoaded: false,
+          executionTime: 0
+        };
+      }
+      this.log(`Using Canvas API version: ${adapter.getVersion()}`);
+      const result = await adapter.focusNode(nodeId, options);
+      this.log("Focus result:", result);
+      return result;
+    } catch (error) {
+      this.log("Focus canvas node failed:", error);
+      return {
+        success: false,
+        method: "fallback",
+        error: error instanceof Error ? error.message : "Unknown error",
+        nodeFound: false,
+        canvasLoaded: true,
+        executionTime: 0
+      };
+    }
+  }
+  /**
+   * 调试日志
+   */
+  log(message, data) {
+    if (this.debugMode) {
+      DebugManager.log(`[ProtocolHandler] ${message}`, data || "");
+    }
+  }
+  /**
+   * 设置调试模式
+   */
+  setDebugMode(enabled) {
+    this.debugMode = enabled;
+  }
+};
+
+// src/utils/CanvasDebugger.ts
+var CanvasDebugger = class {
+  constructor(leaf) {
+    this.leaf = leaf;
+    this.canvas = this.getCanvasAPI(leaf);
+  }
+  /**
+   * 获取Canvas API实例
+   */
+  getCanvasAPI(leaf) {
+    try {
+      const view = leaf.view;
+      if (view && "canvas" in view) {
+        return view.canvas;
+      }
+      if (view && "canvasView" in view && view.canvasView?.canvas) {
+        return view.canvasView.canvas;
+      }
+      if (view && "renderer" in view && view.renderer?.canvas) {
+        return view.renderer.canvas;
+      }
+      return null;
+    } catch (error) {
+      DebugManager.error("Error getting Canvas API:", error);
+      return null;
+    }
+  }
+  /**
+   * 完整的Canvas诊断报告
+   */
+  async generateDiagnosticReport(nodeId) {
+    const report = [];
+    report.push("=== Canvas \u8BCA\u65AD\u62A5\u544A ===");
+    report.push(`\u65F6\u95F4: ${(/* @__PURE__ */ new Date()).toLocaleString()}`);
+    report.push("");
+    report.push("1. \u57FA\u7840\u4FE1\u606F:");
+    report.push(`   - Leaf\u7C7B\u578B: ${this.leaf.view?.getViewType() || "unknown"}`);
+    report.push(`   - View\u7C7B\u578B: ${this.leaf.view?.constructor?.name || "Unknown"}`);
+    report.push(`   - Canvas API\u53EF\u7528: ${this.canvas ? "\u662F" : "\u5426"}`);
+    report.push("");
+    if (this.canvas) {
+      report.push("2. Canvas API\u5206\u6790:");
+      const methods = this.analyzeCanvasAPI();
+      methods.forEach((method) => {
+        report.push(`   - ${method}`);
+      });
+      report.push("");
+      const nodeInfo = await this.analyzeNodes();
+      report.push("3. \u8282\u70B9\u4FE1\u606F:");
+      report.push(`   - \u603B\u8282\u70B9\u6570: ${nodeInfo.totalNodes}`);
+      report.push(`   - \u8282\u70B9\u83B7\u53D6\u65B9\u5F0F: ${nodeInfo.method}`);
+      if (nodeId) {
+        const specificNode = await this.analyzeSpecificNode(nodeId);
+        report.push(`   - \u76EE\u6807\u8282\u70B9 ${nodeId}:`);
+        if (specificNode) {
+          report.push(`     * \u627E\u5230: \u662F`);
+          report.push(`     * \u4F4D\u7F6E: (${specificNode.x}, ${specificNode.y})`);
+          report.push(`     * \u5C3A\u5BF8: ${specificNode.width} x ${specificNode.height}`);
+          report.push(`     * \u7C7B\u578B: ${specificNode.type}`);
+        } else {
+          report.push(`     * \u627E\u5230: \u5426`);
+        }
+      }
+      report.push("");
+      const viewportInfo = this.analyzeViewport();
+      report.push("4. \u89C6\u53E3\u4FE1\u606F:");
+      Object.entries(viewportInfo).forEach(([key, value]) => {
+        report.push(`   - ${key}: ${value}`);
+      });
+      report.push("");
+    }
+    const fileInfo = await this.analyzeCanvasFile();
+    report.push("5. Canvas\u6587\u4EF6\u4FE1\u606F:");
+    Object.entries(fileInfo).forEach(([key, value]) => {
+      report.push(`   - ${key}: ${value}`);
+    });
+    return report.join("\n");
+  }
+  /**
+   * 分析Canvas API可用方法
+   */
+  analyzeCanvasAPI() {
+    if (!this.canvas)
+      return ["Canvas API\u4E0D\u53EF\u7528"];
+    const methods = [];
+    const apiMethods = [
+      "zoomToBbox",
+      "zoomToSelection",
+      "panTo",
+      "setViewport",
+      "deselectAll",
+      "selectNode",
+      "addToSelection",
+      "nodes",
+      "viewport",
+      "view"
+    ];
+    apiMethods.forEach((method) => {
+      const available = typeof this.canvas[method] !== "undefined";
+      const type = typeof this.canvas[method];
+      methods.push(`${method}: ${available ? `\u53EF\u7528 (${type})` : "\u4E0D\u53EF\u7528"}`);
+    });
+    return methods;
+  }
+  /**
+   * 分析节点信息
+   */
+  async analyzeNodes() {
+    let totalNodes = 0;
+    let method = "\u672A\u77E5";
+    try {
+      if (this.canvas?.nodes) {
+        if (this.canvas.nodes.size !== void 0) {
+          totalNodes = this.canvas.nodes.size;
+          method = "Canvas API (Map)";
+        } else if (Array.isArray(this.canvas.nodes)) {
+          totalNodes = this.canvas.nodes.length;
+          method = "Canvas API (Array)";
+        } else if (typeof this.canvas.nodes.get === "function") {
+          let count = 0;
+          try {
+            this.canvas.nodes.forEach(() => count++);
+            totalNodes = count;
+            method = "Canvas API (Map\u904D\u5386)";
+          } catch (e) {
+            method = "Canvas API (\u65E0\u6CD5\u904D\u5386)";
+          }
+        }
+      }
+      if (totalNodes === 0) {
+        const fileData = await this.getCanvasFileData();
+        if (fileData?.nodes) {
+          totalNodes = fileData.nodes.length;
+          method = "\u6587\u4EF6\u6570\u636E";
+        }
+      }
+    } catch (error) {
+      method = `\u9519\u8BEF: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    return { totalNodes, method };
+  }
+  /**
+   * 分析特定节点
+   */
+  async analyzeSpecificNode(nodeId) {
+    try {
+      if (this.canvas?.nodes?.get) {
+        const node = this.canvas.nodes.get(nodeId);
+        if (node)
+          return node;
+      }
+      const fileData = await this.getCanvasFileData();
+      if (fileData?.nodes) {
+        return fileData.nodes.find((node) => node.id === nodeId);
+      }
+      return null;
+    } catch (error) {
+      DebugManager.error("Error analyzing specific node:", error);
+      return null;
+    }
+  }
+  /**
+   * 分析视口信息
+   */
+  analyzeViewport() {
+    const info = {};
+    try {
+      if (this.canvas?.viewport) {
+        const viewport = this.canvas.viewport;
+        info["viewport\u5BF9\u8C61"] = "\u5B58\u5728";
+        info["viewport.x"] = viewport.x || "undefined";
+        info["viewport.y"] = viewport.y || "undefined";
+        info["viewport.zoom"] = viewport.zoom || "undefined";
+        info["viewport.width"] = viewport.width || "undefined";
+        info["viewport.height"] = viewport.height || "undefined";
+      } else {
+        info["viewport\u5BF9\u8C61"] = "\u4E0D\u5B58\u5728";
+      }
+      if (this.canvas?.view) {
+        info["view\u5BF9\u8C61"] = "\u5B58\u5728";
+      } else {
+        info["view\u5BF9\u8C61"] = "\u4E0D\u5B58\u5728";
+      }
+    } catch (error) {
+      info["\u9519\u8BEF"] = error instanceof Error ? error.message : String(error);
+    }
+    return info;
+  }
+  /**
+   * 分析Canvas文件
+   */
+  async analyzeCanvasFile() {
+    const info = {};
+    try {
+      const view = this.leaf.view;
+      if (view && "file" in view) {
+        const file = view.file;
+        if (file) {
+          info["\u6587\u4EF6\u540D"] = file.name;
+          info["\u6587\u4EF6\u8DEF\u5F84"] = file.path;
+          info["\u6587\u4EF6\u5927\u5C0F"] = file.stat.size + " bytes";
+          const content = await this.leaf.view.app.vault.read(file);
+          const data = JSON.parse(content);
+          info["\u8282\u70B9\u6570\u91CF"] = data.nodes?.length || 0;
+          info["\u8FB9\u6570\u91CF"] = data.edges?.length || 0;
+          info["\u6570\u636E\u7ED3\u6784"] = Object.keys(data).join(", ");
+        } else {
+          info["\u6587\u4EF6"] = "\u672A\u627E\u5230";
+        }
+      } else {
+        info["\u6587\u4EF6"] = "\u89C6\u56FE\u4E0D\u652F\u6301\u6587\u4EF6\u8BBF\u95EE";
+      }
+    } catch (error) {
+      info["\u9519\u8BEF"] = error instanceof Error ? error.message : String(error);
+    }
+    return info;
+  }
+  /**
+   * 获取Canvas文件数据
+   */
+  async getCanvasFileData() {
+    try {
+      const view = this.leaf.view;
+      if (view && "file" in view) {
+        const file = view.file;
+        if (!file)
+          return null;
+        const content = await this.leaf.view.app.vault.read(file);
+        return JSON.parse(content);
+      }
+      return null;
+    } catch (error) {
+      DebugManager.error("Error loading canvas file data:", error);
+      return null;
+    }
+  }
+  /**
+   * 测试聚焦功能
+   */
+  async testFocusCapabilities(nodeId) {
+    const results = [];
+    if (!this.canvas) {
+      results.push("\u274C Canvas API\u4E0D\u53EF\u7528");
+      return results;
+    }
+    const node = await this.analyzeSpecificNode(nodeId);
+    if (!node) {
+      results.push("\u274C \u8282\u70B9\u672A\u627E\u5230");
+      return results;
+    }
+    results.push("\u2705 \u8282\u70B9\u5DF2\u627E\u5230");
+    const tests = [
+      {
+        name: "zoomToBbox",
+        test: () => {
+          if (this.canvas.zoomToBbox) {
+            const bbox = {
+              minX: node.x - 100,
+              minY: node.y - 100,
+              maxX: node.x + node.width + 100,
+              maxY: node.y + node.height + 100
+            };
+            this.canvas.zoomToBbox(bbox);
+            return true;
+          }
+          return false;
+        }
+      },
+      {
+        name: "panTo",
+        test: () => {
+          if (this.canvas.panTo) {
+            const centerX = node.x + node.width / 2;
+            const centerY = node.y + node.height / 2;
+            this.canvas.panTo(centerX, centerY);
+            return true;
+          }
+          return false;
+        }
+      },
+      {
+        name: "zoomToSelection",
+        test: () => {
+          if (this.canvas.zoomToSelection && this.canvas.addToSelection) {
+            if (this.canvas.deselectAll)
+              this.canvas.deselectAll();
+            this.canvas.addToSelection(node);
+            this.canvas.zoomToSelection();
+            return true;
+          }
+          return false;
+        }
+      }
+    ];
+    for (const test of tests) {
+      try {
+        const success = test.test();
+        results.push(success ? `\u2705 ${test.name} \u6210\u529F` : `\u274C ${test.name} \u4E0D\u53EF\u7528`);
+        if (success) {
+          await new Promise((resolve) => setTimeout(resolve, 1e3));
+        }
+      } catch (error) {
+        results.push(`\u274C ${test.name} \u5931\u8D25: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    return results;
+  }
+};
+window.debugCanvas = async (nodeId) => {
+  const activeLeaf = window.app?.workspace?.getMostRecentLeaf();
+  if (!activeLeaf || activeLeaf.view.getViewType() !== "canvas") {
+    DebugManager.log("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2ACanvas\u6587\u4EF6");
+    return;
+  }
+  const canvasDebugger = new CanvasDebugger(activeLeaf);
+  const report = await canvasDebugger.generateDiagnosticReport(nodeId);
+  DebugManager.log(report);
+  if (nodeId) {
+    DebugManager.log("\n=== \u805A\u7126\u6D4B\u8BD5 ===");
+    const testResults = await canvasDebugger.testFocusCapabilities(nodeId);
+    testResults.forEach((result) => DebugManager.log(result));
+  }
+};
+
 // src/utils/DataValidator.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 var DataValidator = class {
   constructor(options) {
     this.repairOptions = {
@@ -9672,15 +11400,15 @@ var DataValidator = class {
     const highErrors = result.errors.filter((e) => e.severity === "high");
     const warnings = result.warnings;
     if (criticalErrors.length > 0) {
-      new import_obsidian9.Notice(`\u53D1\u73B0 ${criticalErrors.length} \u4E2A\u4E25\u91CD\u9519\u8BEF\uFF0C\u6570\u636E\u53EF\u80FD\u65E0\u6CD5\u6B63\u5E38\u4F7F\u7528`, 5e3);
-      console.error("\u274C Critical validation errors:", criticalErrors);
+      new import_obsidian11.Notice(`\u53D1\u73B0 ${criticalErrors.length} \u4E2A\u4E25\u91CD\u9519\u8BEF\uFF0C\u6570\u636E\u53EF\u80FD\u65E0\u6CD5\u6B63\u5E38\u4F7F\u7528`, 5e3);
+      DebugManager.error("\u274C Critical validation errors:", criticalErrors);
     }
     if (highErrors.length > 0) {
-      new import_obsidian9.Notice(`\u53D1\u73B0 ${highErrors.length} \u4E2A\u91CD\u8981\u9519\u8BEF\uFF0C\u5DF2\u5C1D\u8BD5\u81EA\u52A8\u4FEE\u590D`, 3e3);
-      console.warn("\u26A0\uFE0F High priority validation errors:", highErrors);
+      new import_obsidian11.Notice(`\u53D1\u73B0 ${highErrors.length} \u4E2A\u91CD\u8981\u9519\u8BEF\uFF0C\u5DF2\u5C1D\u8BD5\u81EA\u52A8\u4FEE\u590D`, 3e3);
+      DebugManager.warn("\u26A0\uFE0F High priority validation errors:", highErrors);
     }
     if (warnings.length > 0) {
-      console.warn("\u26A0\uFE0F Validation warnings:", warnings);
+      DebugManager.warn("\u26A0\uFE0F Validation warnings:", warnings);
     }
     if (result.isValid && criticalErrors.length === 0 && highErrors.length === 0) {
       console.log("\u2705 Data validation passed");
@@ -10450,7 +12178,7 @@ var PerformanceMonitor = class {
         navigationObserver.observe({ entryTypes: ["navigation"] });
         this.observers.push(navigationObserver);
       } catch (error) {
-        console.warn("Navigation performance observer not supported:", error);
+        DebugManager.warn("Navigation performance observer not supported:", error);
       }
       try {
         const resourceObserver = new PerformanceObserver((list) => {
@@ -10461,7 +12189,7 @@ var PerformanceMonitor = class {
         resourceObserver.observe({ entryTypes: ["resource"] });
         this.observers.push(resourceObserver);
       } catch (error) {
-        console.warn("Resource performance observer not supported:", error);
+        DebugManager.warn("Resource performance observer not supported:", error);
       }
       try {
         const measureObserver = new PerformanceObserver((list) => {
@@ -10472,7 +12200,7 @@ var PerformanceMonitor = class {
         measureObserver.observe({ entryTypes: ["measure"] });
         this.observers.push(measureObserver);
       } catch (error) {
-        console.warn("Measure performance observer not supported:", error);
+        DebugManager.warn("Measure performance observer not supported:", error);
       }
     }
   }
@@ -10574,7 +12302,7 @@ var PerformanceProfiler = class {
    */
   start(name) {
     if (this.activeProfiles.has(name)) {
-      console.warn(`Profile ${name} is already active`);
+      DebugManager.warn(`Profile ${name} is already active`);
       return;
     }
     this.activeProfiles.add(name);
@@ -10768,7 +12496,7 @@ var PerformanceManager = class {
     if (this.alerts.length > 100) {
       this.alerts = this.alerts.slice(-100);
     }
-    console.warn(`Performance Alert [${type}]: ${message}`, alert);
+    DebugManager.warn(`Performance Alert [${type}]: ${message}`, alert);
   }
   /**
    * 开始性能分析
@@ -11122,7 +12850,7 @@ var ErrorHandler = class _ErrorHandler {
   showUserFriendlyError(error, context) {
     const userMessage = this.getUserFriendlyMessage(error, context);
     if (window.app) {
-      new import_obsidian10.Notice(userMessage, NOTIFICATION_CONSTANTS.LONG_DURATION);
+      new import_obsidian12.Notice(userMessage, NOTIFICATION_CONSTANTS.LONG_DURATION);
     }
   }
   /**
@@ -11796,7 +13524,7 @@ var IncrementalRenderer = class {
     });
     return this.simpleHash(content).toString();
   }
-  // 简单哈希函数
+  // 🚨 统一：简单哈希函数 - 用于生成精确缓存键
   simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -11804,7 +13532,7 @@ var IncrementalRenderer = class {
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-    return hash;
+    return Math.abs(hash);
   }
   // 更新渲染状态
   updateRenderState(changes) {
@@ -11942,7 +13670,7 @@ var LinkedTabManager = class {
       return;
     DebugManager.log("Registering file watchers for:", this.linkedCanvasFile.path);
     const modifyRef = this.app.vault.on("modify", (file) => {
-      if (file.path === this.linkedCanvasFile?.path && this.gridView && file instanceof import_obsidian10.TFile) {
+      if (file.path === this.linkedCanvasFile?.path && this.gridView && file instanceof import_obsidian12.TFile) {
         this.gridView.onLinkedFileModified(file);
       }
     });
@@ -11975,7 +13703,7 @@ var LinkedTabManager = class {
     }
   }
 };
-var GroupRenameModal = class extends import_obsidian10.Modal {
+var GroupRenameModal = class extends import_obsidian12.Modal {
   constructor(app, currentName, onRename) {
     super(app);
     this.inputEl = null;
@@ -12024,7 +13752,7 @@ var GroupRenameModal = class extends import_obsidian10.Modal {
       return;
     const newName = this.inputEl.value.trim();
     if (!newName) {
-      new import_obsidian10.Notice("\u5206\u7EC4\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
+      new import_obsidian12.Notice("\u5206\u7EC4\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
       return;
     }
     if (newName === this.currentName) {
@@ -12035,7 +13763,7 @@ var GroupRenameModal = class extends import_obsidian10.Modal {
     this.close();
   }
 };
-var CanvasSelectionModal = class extends import_obsidian10.Modal {
+var CanvasSelectionModal = class extends import_obsidian12.Modal {
   constructor(app, gridView, onSelect) {
     super(app);
     this.allCanvasFiles = [];
@@ -12177,14 +13905,14 @@ var CanvasSelectionModal = class extends import_obsidian10.Modal {
       );
       this.onSelect(newFile);
       this.close();
-      new import_obsidian10.Notice(`\u5DF2\u521B\u5EFA\u65B0Canvas\u6587\u4EF6: ${newFile.basename}`);
+      new import_obsidian12.Notice(`\u5DF2\u521B\u5EFA\u65B0Canvas\u6587\u4EF6: ${newFile.basename}`);
     } catch (error) {
-      new import_obsidian10.Notice("\u521B\u5EFACanvas\u6587\u4EF6\u5931\u8D25");
+      new import_obsidian12.Notice("\u521B\u5EFACanvas\u6587\u4EF6\u5931\u8D25");
       DebugManager.error("Failed to create canvas file:", error);
     }
   }
 };
-var CanvasGridView = class extends import_obsidian10.ItemView {
+var CanvasGridView = class extends import_obsidian12.ItemView {
   // 当前查看的分组ID
   constructor(leaf, plugin) {
     super(leaf);
@@ -12266,6 +13994,8 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     this.incrementalRenderer = null;
     // 🎯 修复：DOM状态监控器
     this.domStateMonitor = null;
+    // 🚨 新增：DOM一致性检查标志
+    this.isDOMValidationInProgress = false;
     // 编辑状态管理
     this.currentEditingCard = null;
     this.currentEditingNode = null;
@@ -12801,6 +14531,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
     );
     this.domStateMonitor.startMonitoring();
+    this.startPeriodicDOMValidation();
     DebugManager.log("\u2705 \u6570\u636E\u4E00\u81F4\u6027\u7EC4\u4EF6\u5B8C\u6574\u521D\u59CB\u5316\u5B8C\u6210");
   }
   // 🎯 新增：处理DOM状态问题
@@ -12818,6 +14549,19 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         });
       }
     }
+  }
+  // 🚨 新增：启动定期DOM一致性检查
+  startPeriodicDOMValidation() {
+    setInterval(async () => {
+      if (!this.isDOMValidationInProgress && this.gridContainer && this.canvasData) {
+        try {
+          await this.validateDOMConsistency();
+        } catch (error) {
+          DebugManager.error("\u5B9A\u671FDOM\u9A8C\u8BC1\u5931\u8D25:", error);
+        }
+      }
+    }, 3e4);
+    DebugManager.log("\u2705 \u5B9A\u671FDOM\u4E00\u81F4\u6027\u68C0\u67E5\u5DF2\u542F\u52A8 (30\u79D2\u95F4\u9694)");
   }
   // 🎯 新增：彻底清理方法
   async thoroughCleanup() {
@@ -13399,11 +15143,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   async startDirectSync() {
     try {
       if (!this.settings.ankiConnect.enabled) {
-        new import_obsidian10.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u5728\u8BBE\u7F6E\u4E2D\u542F\u7528Anki Connect" : "Please enable Anki Connect in settings first");
+        new import_obsidian12.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u5728\u8BBE\u7F6E\u4E2D\u542F\u7528Anki Connect" : "Please enable Anki Connect in settings first");
         return;
       }
       if (this.settings.ankiConnect.syncColors.length === 0) {
-        new import_obsidian10.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u9009\u62E9\u8981\u540C\u6B65\u7684\u989C\u8272" : "Please select colors to sync first");
+        new import_obsidian12.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u9009\u62E9\u8981\u540C\u6B65\u7684\u989C\u8272" : "Please select colors to sync first");
         return;
       }
       await this.syncAllSelectedColorCards();
@@ -13416,7 +15160,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
     } catch (error) {
       console.error("\u76F4\u63A5\u540C\u6B65\u5931\u8D25:", error);
-      new import_obsidian10.Notice(this.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5Anki Connect\u8FDE\u63A5" : "Sync failed, please check Anki Connect connection");
+      new import_obsidian12.Notice(this.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5Anki Connect\u8FDE\u63A5" : "Sync failed, please check Anki Connect connection");
     }
   }
   // 打开Anki同步模态窗
@@ -13461,11 +15205,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 处理创建新卡片
   async handleCreateNewCard(type, content) {
     if (!content.trim()) {
-      new import_obsidian10.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
+      new import_obsidian12.Notice("\u8BF7\u8F93\u5165\u5361\u7247\u5185\u5BB9");
       return;
     }
     if (!this.canvasData) {
-      new import_obsidian10.Notice("\u65E0\u6CD5\u521B\u5EFA\u5361\u7247\uFF1ACanvas\u6570\u636E\u4E0D\u5B58\u5728");
+      new import_obsidian12.Notice("\u65E0\u6CD5\u521B\u5EFA\u5361\u7247\uFF1ACanvas\u6570\u636E\u4E0D\u5B58\u5728");
       return;
     }
     try {
@@ -13484,14 +15228,14 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       await this.saveCanvasData();
       await this.renderGrid();
       this.closeDynamicContent();
-      new import_obsidian10.Notice(`\u5DF2\u521B\u5EFA${type === "text" ? "\u6587\u672C" : "\u94FE\u63A5"}\u5361\u7247`);
+      new import_obsidian12.Notice(`\u5DF2\u521B\u5EFA${type === "text" ? "\u6587\u672C" : "\u94FE\u63A5"}\u5361\u7247`);
       const contentInput = this.containerEl.querySelector(".card-content-input");
       if (contentInput) {
         contentInput.value = "";
       }
     } catch (error) {
       DebugManager.error("\u521B\u5EFA\u5361\u7247\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25");
+      new import_obsidian12.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25");
     }
   }
   // 计算新卡片位置
@@ -13602,7 +15346,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       this.linkedCanvasFile = null;
       this.canvasData = null;
       this.renderGrid();
-      new import_obsidian10.Notice("\u5DF2\u89E3\u9664Canvas\u6587\u4EF6\u5173\u8054");
+      new import_obsidian12.Notice("\u5DF2\u89E3\u9664Canvas\u6587\u4EF6\u5173\u8054");
       this.hideAllDropdowns();
     });
   }
@@ -13807,10 +15551,10 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         edges: []
       }));
       await this.setLinkedCanvas(newFile);
-      new import_obsidian10.Notice(`\u5DF2\u521B\u5EFA\u5E76\u5173\u8054\u65B0Canvas\u6587\u4EF6: ${newFile.basename}`);
+      new import_obsidian12.Notice(`\u5DF2\u521B\u5EFA\u5E76\u5173\u8054\u65B0Canvas\u6587\u4EF6: ${newFile.basename}`);
     } catch (error) {
       DebugManager.error("Failed to create new canvas file:", error);
-      new import_obsidian10.Notice("\u521B\u5EFACanvas\u6587\u4EF6\u5931\u8D25");
+      new import_obsidian12.Notice("\u521B\u5EFACanvas\u6587\u4EF6\u5931\u8D25");
     }
   }
   // 同步Canvas数据（合并刷新和同步功能）
@@ -13819,15 +15563,15 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       if (this.linkedCanvasFile) {
         await this.loadCanvasDataFromOfficialView(this.linkedCanvasFile);
         this.notifyCanvasViewRefresh();
-        new import_obsidian10.Notice("Canvas\u6570\u636E\u5DF2\u540C\u6B65");
+        new import_obsidian12.Notice("Canvas\u6570\u636E\u5DF2\u540C\u6B65");
       } else {
         await this.loadActiveCanvas();
-        new import_obsidian10.Notice("Canvas\u6570\u636E\u5DF2\u5237\u65B0");
+        new import_obsidian12.Notice("Canvas\u6570\u636E\u5DF2\u5237\u65B0");
       }
     } catch (error) {
       DebugManager.error("Failed to sync canvas data:", error);
       const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
-      new import_obsidian10.Notice(`\u540C\u6B65\u6570\u636E\u5931\u8D25: ${errorMessage}`);
+      new import_obsidian12.Notice(`\u540C\u6B65\u6570\u636E\u5931\u8D25: ${errorMessage}`);
       this.showErrorState(`\u540C\u6B65\u5931\u8D25: ${errorMessage}`);
     }
   }
@@ -13841,7 +15585,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       if (canvasLeaves.length > 0) {
         this.app.workspace.setActiveLeaf(canvasLeaves[0]);
       } else {
-        new import_obsidian10.Notice("\u6CA1\u6709\u627E\u5230\u53EF\u8FD4\u56DE\u7684Canvas\u6587\u4EF6");
+        new import_obsidian12.Notice("\u6CA1\u6709\u627E\u5230\u53EF\u8FD4\u56DE\u7684Canvas\u6587\u4EF6");
       }
     }
   }
@@ -14060,7 +15804,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     this.renderGrid().catch((error) => {
       DebugManager.error("Failed to render grid after starting time capsule:", error);
     });
-    new import_obsidian10.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u542F\u52A8\uFF01\u6536\u96C6\u65F6\u957F\uFF1A${Math.floor(duration / 6e4)}\u5206\u949F`);
+    new import_obsidian12.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u542F\u52A8\uFF01\u6536\u96C6\u65F6\u957F\uFF1A${Math.floor(duration / 6e4)}\u5206\u949F`);
     DebugManager.log("\u65F6\u95F4\u80F6\u56CA\u5DF2\u542F\u52A8\uFF0C\u7F51\u683C\u89C6\u56FE\u5DF2\u5237\u65B0:", this.timeCapsuleState);
   }
   // 停止时间胶囊
@@ -14088,7 +15832,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     this.renderGrid().catch((error) => {
       DebugManager.error("Failed to render grid after ending time capsule:", error);
     });
-    new import_obsidian10.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u7ED3\u675F\uFF01\u5171\u6536\u96C6\u4E86 ${collectedCount} \u4E2A\u9879\u76EE`);
+    new import_obsidian12.Notice(`\u65F6\u95F4\u80F6\u56CA\u5DF2\u7ED3\u675F\uFF01\u5171\u6536\u96C6\u4E86 ${collectedCount} \u4E2A\u9879\u76EE`);
     DebugManager.log("\u65F6\u95F4\u80F6\u56CA\u5DF2\u505C\u6B62\uFF0C\u7F51\u683C\u89C6\u56FE\u5DF2\u5237\u65B0");
   }
   // 开始倒计时定时器
@@ -14286,7 +16030,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       item.onclick = () => {
         this.timeCapsuleState.duration = duration.value;
         menu.remove();
-        new import_obsidian10.Notice(`\u65F6\u95F4\u80F6\u56CA\u65F6\u957F\u8BBE\u7F6E\u4E3A\uFF1A${duration.label}`);
+        new import_obsidian12.Notice(`\u65F6\u95F4\u80F6\u56CA\u65F6\u957F\u8BBE\u7F6E\u4E3A\uFF1A${duration.label}`);
       };
     });
     const buttonRect = this.timeCapsuleButton.getBoundingClientRect();
@@ -14361,7 +16105,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         });
       }
       this.updateTimeCapsuleGroupDisplay();
-      new import_obsidian10.Notice(`\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA (${this.timeCapsuleState.collectedItems.length}/${this.getMaxCollectionCount()})`);
+      new import_obsidian12.Notice(`\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA (${this.timeCapsuleState.collectedItems.length}/${this.getMaxCollectionCount()})`);
       DebugManager.log("\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA:", nodeId);
     }
   }
@@ -15012,6 +16756,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     if (!this.gridContainer)
       return;
     DebugManager.log("\u{1F3AF} \u5F00\u59CB\u6E32\u67D3\u7F51\u683C (\u589E\u91CF\u66F4\u65B0\u6A21\u5F0F)");
+    await this.validateDOMConsistency();
     if (this.currentGroupView) {
       await this.renderGroupMembers();
       return;
@@ -15170,11 +16915,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     if (isPinned) {
       newContent = this.removePinnedTag(node.text);
       newStatus = false;
-      new import_obsidian10.Notice("\u5DF2\u53D6\u6D88\u7F6E\u9876");
+      new import_obsidian12.Notice("\u5DF2\u53D6\u6D88\u7F6E\u9876");
     } else {
       newContent = this.addPinnedTag(node.text);
       newStatus = true;
-      new import_obsidian10.Notice("\u5DF2\u7F6E\u9876");
+      new import_obsidian12.Notice("\u5DF2\u7F6E\u9876");
     }
     node.text = newContent;
     node.isPinned = newStatus;
@@ -15302,6 +17047,82 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     });
   }
   // ==================== 渲染相关方法 ====================
+  // 🚨 新增：DOM一致性验证方法 - 防止假数据问题
+  async validateDOMConsistency() {
+    if (this.isDOMValidationInProgress) {
+      DebugManager.log("\u23F3 DOM\u9A8C\u8BC1\u5DF2\u5728\u8FDB\u884C\u4E2D\uFF0C\u8DF3\u8FC7\u91CD\u590D\u9A8C\u8BC1");
+      return;
+    }
+    this.isDOMValidationInProgress = true;
+    try {
+      const existingCards = this.gridContainer.querySelectorAll("[data-node-id]");
+      const nodeIds = /* @__PURE__ */ new Set();
+      const duplicates = [];
+      const orphanElements = [];
+      DebugManager.log("\u{1F50D} \u5F00\u59CBDOM\u4E00\u81F4\u6027\u68C0\u67E5", {
+        existingCardsCount: existingCards.length,
+        canvasNodesCount: this.canvasData?.nodes.length || 0
+      });
+      existingCards.forEach((card) => {
+        const nodeId = card.getAttribute("data-node-id");
+        if (nodeId) {
+          if (nodeIds.has(nodeId)) {
+            duplicates.push(nodeId);
+            DebugManager.warn("\u{1F6A8} \u53D1\u73B0\u91CD\u590DDOM\u5143\u7D20:", nodeId);
+          }
+          nodeIds.add(nodeId);
+          const nodeExists = this.canvasData?.nodes.some((n) => n.id === nodeId);
+          if (!nodeExists) {
+            orphanElements.push(card);
+            DebugManager.warn("\u{1F6A8} \u53D1\u73B0\u5B64\u7ACBDOM\u5143\u7D20:", nodeId);
+          }
+        }
+      });
+      if (duplicates.length > 0 || orphanElements.length > 0) {
+        DebugManager.error("\u{1F6A8} \u68C0\u6D4B\u5230DOM\u4E0D\u4E00\u81F4\u95EE\u9898", {
+          duplicates: duplicates.length,
+          orphans: orphanElements.length
+        });
+        await this.forceClearInconsistentElements(duplicates, orphanElements);
+      } else {
+        DebugManager.log("\u2705 DOM\u4E00\u81F4\u6027\u68C0\u67E5\u901A\u8FC7");
+      }
+    } catch (error) {
+      DebugManager.error("\u274C DOM\u4E00\u81F4\u6027\u68C0\u67E5\u5931\u8D25:", error);
+    } finally {
+      this.isDOMValidationInProgress = false;
+    }
+  }
+  // 🚨 新增：强制清理不一致的DOM元素
+  async forceClearInconsistentElements(duplicates, orphanElements) {
+    let cleanedCount = 0;
+    duplicates.forEach((nodeId) => {
+      const elements = this.gridContainer.querySelectorAll(`[data-node-id="${nodeId}"]`);
+      for (let i = 1; i < elements.length; i++) {
+        elements[i].remove();
+        cleanedCount++;
+        DebugManager.log("\u{1F9F9} \u6E05\u7406\u91CD\u590DDOM\u5143\u7D20:", nodeId, `(\u7B2C${i + 1}\u4E2A)`);
+      }
+    });
+    orphanElements.forEach((element) => {
+      const nodeId = element.getAttribute("data-node-id");
+      element.remove();
+      cleanedCount++;
+      DebugManager.log("\u{1F9F9} \u6E05\u7406\u5B64\u7ACBDOM\u5143\u7D20:", nodeId);
+    });
+    duplicates.concat(orphanElements.map((el) => el.getAttribute("data-node-id")).filter(Boolean)).forEach((nodeId) => {
+      this.domElementRegistry.removeElement(nodeId);
+    });
+    DebugManager.log(`\u2705 DOM\u6E05\u7406\u5B8C\u6210\uFF0C\u5171\u6E05\u7406 ${cleanedCount} \u4E2A\u95EE\u9898\u5143\u7D20`);
+    if (cleanedCount > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const remainingIssues = this.gridContainer.querySelectorAll("[data-node-id]");
+      DebugManager.log("\u{1F50D} \u6E05\u7406\u540EDOM\u72B6\u6001:", {
+        remainingElements: remainingIssues.length,
+        expectedElements: this.canvasData?.nodes.length || 0
+      });
+    }
+  }
   // 立即渲染（小量数据）
   async renderGridImmediate(nodes) {
     const fragment = document.createDocumentFragment();
@@ -15370,11 +17191,19 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   }
   // 🎯 修复：创建单个卡片 - 使用DOM元素注册表和数据缓存
   async createCard(node) {
+    const existingElement = this.domElementRegistry.getElement(node.id);
+    if (existingElement && existingElement.parentNode) {
+      DebugManager.warn("\u{1F6A8} \u68C0\u6D4B\u5230\u91CD\u590D\u521B\u5EFA\u5361\u7247\uFF0C\u79FB\u9664\u65E7\u5143\u7D20:", node.id);
+      existingElement.remove();
+      this.domElementRegistry.removeElement(node.id);
+    }
     const card = this.domElementRegistry.createUniqueElement(node.id, "div");
     card.className = "canvas-grid-card";
     card.style.minHeight = `${CARD_CONSTANTS.height}px`;
     card.dataset.nodeType = node.type;
-    const cacheKey = this.generateDataCacheKey(node);
+    card.dataset.nodeId = node.id;
+    card.dataset.createdAt = Date.now().toString();
+    const cacheKey = this.generatePreciseCacheKey(node);
     const cachedData = this.getDataCacheItem(cacheKey);
     if (cachedData && this.isDataCacheValid(cachedData, node)) {
       await this.renderCardFromCachedData(card, node, cachedData);
@@ -15440,7 +17269,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     };
     return JSON.stringify(keyData);
   }
-  // 简单哈希函数
+  // 🚨 新增：简单哈希函数（用于精确缓存键生成）
   simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -15448,7 +17277,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-    return hash;
+    return Math.abs(hash);
   }
   // 🎯 修复：获取数据缓存项（替代DOM缓存）
   getDataCacheItem(key) {
@@ -15462,9 +17291,25 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   clearDataCache() {
     this.dataCache.clear();
   }
-  // 🎯 新增：生成数据缓存键（替代DOM缓存键）
+  // 🎯 新增：生成数据缓存键（替代DOM缓存键）- 增强精确性防止假数据
   generateDataCacheKey(node) {
-    return `data-${node.id}-${node.type}-${this.getNodeContentHash(node)}`;
+    const contentHash = this.getNodeContentHash(node);
+    const timestamp = Date.now();
+    const groupInfo = this.getNodeGroupInfo(node.id);
+    const isPinned = this.settings.enablePinnedCards && this.detectPinnedStatus(node);
+    return `data-${node.id}-${node.type}-${contentHash}-${groupInfo ? "grouped" : "ungrouped"}-${isPinned ? "pinned" : "unpinned"}-${timestamp}`;
+  }
+  // 🚨 新增：生成精确缓存键（用于关键渲染）
+  generatePreciseCacheKey(node) {
+    const baseKey = this.generateDataCacheKey(node);
+    const renderContext = {
+      currentView: this.currentView,
+      groupView: this.currentGroupView,
+      searchQuery: this.searchQuery,
+      colorFilter: this.activeColorFilter
+    };
+    const contextHash = JSON.stringify(renderContext);
+    return `${baseKey}-ctx:${this.simpleHash(contextHash)}`;
   }
   // 🎯 新增：获取节点内容哈希
   getNodeContentHash(node) {
@@ -15611,7 +17456,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       DebugManager.log("\u5361\u7247\u5220\u9664\u5B8C\u6210\uFF0CUI\u5DF2\u66F4\u65B0");
     } catch (error) {
       DebugManager.error("\u5220\u9664\u5361\u7247\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u5220\u9664\u5361\u7247\u5931\u8D25");
+      new import_obsidian12.Notice("\u5220\u9664\u5361\u7247\u5931\u8D25");
     }
   }
   // 显示颜色选择器
@@ -15784,7 +17629,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     });
     const vault = this.app.vault;
     const file = vault.getAbstractFileByPath(node.file);
-    if (file instanceof import_obsidian10.TFile) {
+    if (file instanceof import_obsidian12.TFile) {
       img.src = this.app.vault.getResourcePath(file);
     } else {
       this.handleImageLoadError(imageContainer, fileName);
@@ -16576,7 +18421,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     try {
       this.registerEvent(
         this.app.vault.on("modify", (file) => {
-          if (file instanceof import_obsidian10.TFile && file.extension === "canvas" && file === this.linkedCanvasFile) {
+          if (file instanceof import_obsidian12.TFile && file.extension === "canvas" && file === this.linkedCanvasFile) {
             DebugManager.log("\u{1F504} Canvas\u6587\u4EF6\u53D8\u5316\uFF0C\u540C\u6B65\u6570\u636E:", file.path);
             this.syncCanvasDataFromFile(file);
           }
@@ -16595,7 +18440,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       );
       this.registerEvent(
         this.app.vault.on("delete", (file) => {
-          if (file instanceof import_obsidian10.TFile && file.extension === "canvas" && file === this.linkedCanvasFile) {
+          if (file instanceof import_obsidian12.TFile && file.extension === "canvas" && file === this.linkedCanvasFile) {
             DebugManager.log("\u{1F5D1}\uFE0F Canvas\u6587\u4EF6\u88AB\u5220\u9664\uFF0C\u6E05\u7406\u89C6\u56FE\u72B6\u6001");
             this.canvasData = null;
             this.filteredNodes = [];
@@ -16847,7 +18692,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     const groupInfo = this.groupAnalysis.get(groupId);
     if (!groupInfo) {
       DebugManager.error(`\u274C \u5206\u7EC4\u4FE1\u606F\u4E0D\u5B58\u5728: ${groupId}`);
-      new import_obsidian10.Notice(`\u5206\u7EC4\u4E0D\u5B58\u5728: ${groupId}`);
+      new import_obsidian12.Notice(`\u5206\u7EC4\u4E0D\u5B58\u5728: ${groupId}`);
       return;
     }
     DebugManager.log(`\u2705 \u627E\u5230\u5206\u7EC4\u4FE1\u606F:`, {
@@ -16860,7 +18705,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     DebugManager.log(`\u{1F3AF} \u8BBE\u7F6E\u5206\u7EC4\u89C6\u56FE\u7B5B\u9009\u8282\u70B9: ${this.filteredNodes.length} \u4E2A`);
     if (groupInfo.members.length === 0) {
       DebugManager.log(`\u26A0\uFE0F \u5206\u7EC4\u4E3A\u7A7A\uFF0C\u663E\u793A\u7A7A\u72B6\u6001\u63D0\u793A`);
-      new import_obsidian10.Notice(`\u5206\u7EC4 "${groupInfo.group.text || groupId}" \u6682\u65E0\u5185\u5BB9`);
+      new import_obsidian12.Notice(`\u5206\u7EC4 "${groupInfo.group.text || groupId}" \u6682\u65E0\u5185\u5BB9`);
     }
     this.renderGrid().catch((error) => {
       DebugManager.error("Failed to render grid in group view:", error);
@@ -17507,7 +19352,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     node.text = newText;
     await this.saveCanvasData();
     this.refreshCard(node);
-    new import_obsidian10.Notice("\u6587\u672C\u5DF2\u4FDD\u5B58");
+    new import_obsidian12.Notice("\u6587\u672C\u5DF2\u4FDD\u5B58");
   }
   // 保存链接节点
   async saveLinkNode(node, newUrl) {
@@ -17516,7 +19361,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     node.url = newUrl;
     await this.saveCanvasData();
     this.refreshCard(node);
-    new import_obsidian10.Notice("\u94FE\u63A5\u5DF2\u4FDD\u5B58");
+    new import_obsidian12.Notice("\u94FE\u63A5\u5DF2\u4FDD\u5B58");
   }
   // 🎯 修复：刷新单个卡片 - 使用统一数据访问
   async refreshCard(node) {
@@ -18020,7 +19865,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         targetFile = this.linkedCanvasFile;
         DebugManager.log("Using linked canvas file:", targetFile.path);
       } else {
-        new import_obsidian10.Notice("\u6CA1\u6709\u5173\u8054\u7684Canvas\u6587\u4EF6\uFF0C\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
+        new import_obsidian12.Notice("\u6CA1\u6709\u5173\u8054\u7684Canvas\u6587\u4EF6\uFF0C\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
         return;
       }
     }
@@ -18033,7 +19878,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         await this.openCanvasInMainWorkspace(targetFile);
       } catch (error) {
         DebugManager.error("Failed to open canvas file:", error);
-        new import_obsidian10.Notice("\u65E0\u6CD5\u6253\u5F00Canvas\u6587\u4EF6");
+        new import_obsidian12.Notice("\u65E0\u6CD5\u6253\u5F00Canvas\u6587\u4EF6");
       }
     }
   }
@@ -18260,7 +20105,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 🔧 新增：显示分组选择模态窗口
   async showGroupSelectionModal(node) {
     return new Promise((resolve) => {
-      const modal = new import_obsidian10.Modal(this.app);
+      const modal = new import_obsidian12.Modal(this.app);
       modal.titleEl.textContent = "\u79FB\u52A8\u5230\u5206\u7EC4";
       modal.containerEl.setAttribute("data-node-id", node.id);
       const content = modal.contentEl;
@@ -18544,23 +20389,23 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       const modal = document.querySelector(".modal-container");
       const nodeId = modal?.getAttribute("data-node-id");
       if (!nodeId) {
-        new import_obsidian10.Notice("\u672A\u627E\u5230\u8981\u79FB\u52A8\u7684\u8282\u70B9");
+        new import_obsidian12.Notice("\u672A\u627E\u5230\u8981\u79FB\u52A8\u7684\u8282\u70B9");
         return;
       }
       const node = this.canvasData?.nodes.find((n) => n.id === nodeId);
       if (!node) {
-        new import_obsidian10.Notice("\u8282\u70B9\u4E0D\u5B58\u5728");
+        new import_obsidian12.Notice("\u8282\u70B9\u4E0D\u5B58\u5728");
         return;
       }
       await this.moveNodeToSelectedGroup(node, group);
       if (modal) {
         modal.close?.();
       }
-      new import_obsidian10.Notice(`\u5DF2\u5C06\u8282\u70B9\u79FB\u52A8\u5230\u5206\u7EC4"${group.name}"`);
+      new import_obsidian12.Notice(`\u5DF2\u5C06\u8282\u70B9\u79FB\u52A8\u5230\u5206\u7EC4"${group.name}"`);
       await this.renderGrid();
     } catch (error) {
       DebugManager.error("Failed to move node to group:", error);
-      new import_obsidian10.Notice("\u79FB\u52A8\u8282\u70B9\u5931\u8D25");
+      new import_obsidian12.Notice("\u79FB\u52A8\u8282\u70B9\u5931\u8D25");
     }
   }
   // 🔧 新增：移动节点到选中的分组
@@ -18651,10 +20496,10 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   async handleBacklink(nodeId) {
     try {
       DebugManager.log("Handling backlink for node:", nodeId);
-      new import_obsidian10.Notice(`\u56DE\u94FE\u529F\u80FD\u5DF2\u89E6\u53D1\uFF0C\u8282\u70B9ID: ${nodeId}`);
+      new import_obsidian12.Notice(`\u56DE\u94FE\u529F\u80FD\u5DF2\u89E6\u53D1\uFF0C\u8282\u70B9ID: ${nodeId}`);
     } catch (error) {
       DebugManager.error("Failed to handle backlink:", error);
-      new import_obsidian10.Notice("\u56DE\u94FE\u529F\u80FD\u6267\u884C\u5931\u8D25");
+      new import_obsidian12.Notice("\u56DE\u94FE\u529F\u80FD\u6267\u884C\u5931\u8D25");
     }
   }
   // 智能处理回链导航（新版本）
@@ -18671,12 +20516,12 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
     } catch (error) {
       DebugManager.error("Failed to handle backlink navigation:", error);
-      new import_obsidian10.Notice("\u56DE\u94FE\u5BFC\u822A\u5931\u8D25");
+      new import_obsidian12.Notice("\u56DE\u94FE\u5BFC\u822A\u5931\u8D25");
     }
   }
   // 显示源信息替代选项（简化版本）
   async showBacklinkAlternatives(node) {
-    const modal = new import_obsidian10.Modal(this.app);
+    const modal = new import_obsidian12.Modal(this.app);
     modal.titleEl.setText("\u{1F517} \u56DE\u94FE\u9009\u9879");
     const content = modal.contentEl;
     content.empty();
@@ -18726,20 +20571,20 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       node.text ? `\u{1F4DD} \u6587\u672C\u957F\u5EA6: ${node.text.length} \u5B57\u7B26` : "\u{1F4DD} \u65E0\u6587\u672C\u5185\u5BB9",
       node.color ? `\u{1F3A8} \u989C\u8272: ${node.color}` : "\u{1F3A8} \u65E0\u989C\u8272\u8BBE\u7F6E"
     ];
-    new import_obsidian10.Notice(info.join("\n"), 6e3);
+    new import_obsidian12.Notice(info.join("\n"), 6e3);
     DebugManager.log("Node Info:", node);
     return Promise.resolve();
   }
   // 搜索相关文件
   async searchRelatedFiles(node) {
     if (node.type !== "text" || !node.text) {
-      new import_obsidian10.Notice(ERROR_MESSAGES.TEXT_NODE_ONLY);
+      new import_obsidian12.Notice(ERROR_MESSAGES.TEXT_NODE_ONLY);
       return;
     }
     try {
       const searchText = node.text.substring(0, SEARCH_CONSTANTS.MAX_SEARCH_TEXT_LENGTH).trim();
       if (!searchText) {
-        new import_obsidian10.Notice(ERROR_MESSAGES.EMPTY_NODE_TEXT);
+        new import_obsidian12.Notice(ERROR_MESSAGES.EMPTY_NODE_TEXT);
         return;
       }
       const searchPlugin = this.app.internalPlugins?.plugins?.["global-search"];
@@ -18749,18 +20594,18 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
           searchLeaf.view.setQuery(searchText);
           this.app.workspace.revealLeaf(searchLeaf);
           const truncatedText = searchText.substring(0, SEARCH_CONSTANTS.PRIMARY_SEARCH_LENGTH);
-          new import_obsidian10.Notice(`${INFO_MESSAGES.GLOBAL_SEARCH_STARTED}: "${truncatedText}..."`);
+          new import_obsidian12.Notice(`${INFO_MESSAGES.GLOBAL_SEARCH_STARTED}: "${truncatedText}..."`);
         } else {
           const truncatedText = searchText.substring(0, SEARCH_CONSTANTS.PRIMARY_SEARCH_LENGTH);
-          new import_obsidian10.Notice(`${INFO_MESSAGES.SEARCH_SUGGESTION}: "${truncatedText}..."`);
+          new import_obsidian12.Notice(`${INFO_MESSAGES.SEARCH_SUGGESTION}: "${truncatedText}..."`);
         }
       } else {
         const truncatedText = searchText.substring(0, SEARCH_CONSTANTS.PRIMARY_SEARCH_LENGTH);
-        new import_obsidian10.Notice(`${INFO_MESSAGES.SEARCH_SUGGESTION}: "${truncatedText}..."`);
+        new import_obsidian12.Notice(`${INFO_MESSAGES.SEARCH_SUGGESTION}: "${truncatedText}..."`);
       }
     } catch (error) {
       DebugManager.error("Failed to search related files:", error);
-      new import_obsidian10.Notice(ERROR_MESSAGES.SEARCH_FAILED);
+      new import_obsidian12.Notice(ERROR_MESSAGES.SEARCH_FAILED);
     }
   }
   // 智能块回链功能（合并了回链和定位原文功能）
@@ -18782,7 +20627,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
           if (searchResults.length === 1) {
             const result = searchResults[0];
             await this.openFileAndNavigate(result.file, result.line);
-            new import_obsidian10.Notice(`${SUCCESS_MESSAGES.LOCATION_FOUND}: ${result.file.basename} (\u7B2C${result.line + 1}\u884C)`);
+            new import_obsidian12.Notice(`${SUCCESS_MESSAGES.LOCATION_FOUND}: ${result.file.basename} (\u7B2C${result.line + 1}\u884C)`);
             return;
           } else if (searchResults.length > 1) {
             this.showLocationChoiceDialog(searchResults, cleanText);
@@ -18794,7 +20639,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       await this.showSmartBacklinkAlternatives(node);
     } catch (error) {
       DebugManager.error("Failed to handle smart block backlink:", error);
-      new import_obsidian10.Notice("\u5757\u56DE\u94FE\u529F\u80FD\u6267\u884C\u5931\u8D25");
+      new import_obsidian12.Notice("\u5757\u56DE\u94FE\u529F\u80FD\u6267\u884C\u5931\u8D25");
     }
   }
   // 显示块链接替代选项
@@ -18802,7 +20647,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     const node = this.canvasData?.nodes.find((n) => n.id === nodeId);
     if (!node)
       return;
-    const modal = new import_obsidian10.Modal(this.app);
+    const modal = new import_obsidian12.Modal(this.app);
     modal.titleEl.setText("\u{1F517} \u5757\u56DE\u94FE\u9009\u9879");
     const content = modal.contentEl;
     content.empty();
@@ -18848,7 +20693,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   }
   // 显示智能块回链替代选项
   async showSmartBacklinkAlternatives(node) {
-    const modal = new import_obsidian10.Modal(this.app);
+    const modal = new import_obsidian12.Modal(this.app);
     modal.titleEl.setText("\u{1F517} \u76F8\u4F3C\u5185\u5BB9\u9009\u9879");
     const content = modal.contentEl;
     content.empty();
@@ -18951,7 +20796,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   }
   // 显示位置选择对话框
   showLocationChoiceDialog(results, searchText) {
-    const modal = new import_obsidian10.Modal(this.app);
+    const modal = new import_obsidian12.Modal(this.app);
     modal.titleEl.setText("\u{1F3AF} \u9009\u62E9\u539F\u6587\u4F4D\u7F6E");
     const content = modal.contentEl;
     content.empty();
@@ -18999,7 +20844,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       resultItem.addEventListener("click", async () => {
         modal.close();
         await this.openFileAndNavigate(result.file, result.line);
-        new import_obsidian10.Notice(`\u2705 \u5DF2\u5B9A\u4F4D\u5230\u539F\u6587: ${result.file.basename} (\u7B2C${result.line + 1}\u884C)`);
+        new import_obsidian12.Notice(`\u2705 \u5DF2\u5B9A\u4F4D\u5230\u539F\u6587: ${result.file.basename} (\u7B2C${result.line + 1}\u884C)`);
       });
       if (index === 0) {
         const recommendBadge = resultItem.createDiv();
@@ -19033,7 +20878,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       return;
     const groupNode = this.canvasData.nodes.find((n) => n.id === groupId && n.type === "group");
     if (!groupNode) {
-      new import_obsidian10.Notice("\u672A\u627E\u5230\u5206\u7EC4\u8282\u70B9");
+      new import_obsidian12.Notice("\u672A\u627E\u5230\u5206\u7EC4\u8282\u70B9");
       return;
     }
     const currentName = groupNode.label || "\u672A\u547D\u540D\u5206\u7EC4";
@@ -19049,11 +20894,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
           DebugManager.error("Failed to render grid after renaming:", error);
         });
         this.notifyCanvasViewRefresh();
-        new import_obsidian10.Notice(`\u5206\u7EC4\u5DF2\u91CD\u547D\u540D\u4E3A: ${newName}`);
+        new import_obsidian12.Notice(`\u5206\u7EC4\u5DF2\u91CD\u547D\u540D\u4E3A: ${newName}`);
         DebugManager.log(`Group ${groupId} renamed to: ${newName}`);
       } catch (error) {
         DebugManager.error("Failed to rename group:", error);
-        new import_obsidian10.Notice("\u91CD\u547D\u540D\u5206\u7EC4\u5931\u8D25");
+        new import_obsidian12.Notice("\u91CD\u547D\u540D\u5206\u7EC4\u5931\u8D25");
       }
     });
     modal.open();
@@ -19096,10 +20941,10 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         nodeId,
         remainingNodes: this.filteredNodes.length
       });
-      new import_obsidian10.Notice("\u8282\u70B9\u5220\u9664\u6210\u529F");
+      new import_obsidian12.Notice("\u8282\u70B9\u5220\u9664\u6210\u529F");
     } catch (error) {
       DebugManager.error("\u274C \u5220\u9664\u5361\u7247\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u5220\u9664\u5361\u7247\u5931\u8D25");
+      new import_obsidian12.Notice("\u5220\u9664\u5361\u7247\u5931\u8D25");
     }
   }
   // 从Canvas数据中删除节点
@@ -19115,7 +20960,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     }
     if (!targetFile) {
       DebugManager.error("\u65E0\u6CD5\u786E\u5B9A\u76EE\u6807Canvas\u6587\u4EF6");
-      new import_obsidian10.Notice("\u5220\u9664\u5931\u8D25\uFF1A\u65E0\u6CD5\u786E\u5B9A\u76EE\u6807Canvas\u6587\u4EF6");
+      new import_obsidian12.Notice("\u5220\u9664\u5931\u8D25\uFF1A\u65E0\u6CD5\u786E\u5B9A\u76EE\u6807Canvas\u6587\u4EF6");
       return;
     }
     try {
@@ -19146,7 +20991,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       DebugManager.log("\u2705 \u8282\u70B9\u5220\u9664\u6210\u529F:", nodeId);
     } catch (error) {
       DebugManager.error("\u5220\u9664\u8282\u70B9\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u5220\u9664\u8282\u70B9\u5931\u8D25");
+      new import_obsidian12.Notice("\u5220\u9664\u8282\u70B9\u5931\u8D25");
       this.endSaveOperation();
     }
   }
@@ -19370,12 +21215,12 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   async focusNodeInCanvas(nodeId) {
     try {
       DebugManager.log("=== Starting focus operation for node:", nodeId);
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
       await this.ensureCanvasView();
       await this.waitForCanvasLoad();
       const canvasView = this.getActiveCanvasView();
       if (!canvasView) {
-        new import_obsidian10.Notice("\u65E0\u6CD5\u83B7\u53D6Canvas\u89C6\u56FE");
+        new import_obsidian12.Notice("\u65E0\u6CD5\u83B7\u53D6Canvas\u89C6\u56FE");
         return false;
       }
       DebugManager.log("Canvas view obtained, detecting API...");
@@ -19386,14 +21231,14 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
       const nodeData = this.canvasData?.nodes.find((n) => n.id === nodeId);
       if (!nodeData) {
-        new import_obsidian10.Notice("\u627E\u4E0D\u5230\u76EE\u6807\u8282\u70B9");
+        new import_obsidian12.Notice("\u627E\u4E0D\u5230\u76EE\u6807\u8282\u70B9");
         return false;
       }
       DebugManager.log("Node data found:", nodeData);
       DebugManager.log("Executing focus operations...");
       const success = await this.executeCanvasFocus(canvasAPI, nodeId, nodeData);
       if (success) {
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
         return true;
       } else {
         DebugManager.log("Canvas API focus failed, falling back to simulation");
@@ -19401,7 +21246,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
     } catch (error) {
       DebugManager.error("\u805A\u7126\u8282\u70B9\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u805A\u7126\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u5B9A\u4F4D");
+      new import_obsidian12.Notice("\u805A\u7126\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u5B9A\u4F4D");
       return false;
     }
   }
@@ -19409,7 +21254,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   async ensureCanvasView() {
     DebugManager.log("Ensuring canvas view...");
     if (!this.linkedCanvasFile) {
-      new import_obsidian10.Notice("\u6CA1\u6709\u5173\u8054\u7684Canvas\u6587\u4EF6\uFF0C\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
+      new import_obsidian12.Notice("\u6CA1\u6709\u5173\u8054\u7684Canvas\u6587\u4EF6\uFF0C\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
       throw new Error("No linked canvas file");
     }
     const targetLeaf = this.findExistingCanvasLeaf(this.linkedCanvasFile);
@@ -19421,7 +21266,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       });
       return;
     }
-    const activeLeaf = this.app.workspace.getActiveViewOfType(import_obsidian10.ItemView)?.leaf;
+    const activeLeaf = this.app.workspace.getActiveViewOfType(import_obsidian12.ItemView)?.leaf;
     if (activeLeaf && activeLeaf.view.getViewType() === "canvas") {
       const canvasView = activeLeaf.view;
       if (canvasView && canvasView.file && canvasView.file.path === this.linkedCanvasFile.path) {
@@ -19434,7 +21279,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     await new Promise((resolve) => {
       this.safeSetTimeout(() => resolve(void 0), 800);
     });
-    const newActiveLeaf = this.app.workspace.getActiveViewOfType(import_obsidian10.ItemView)?.leaf;
+    const newActiveLeaf = this.app.workspace.getActiveViewOfType(import_obsidian12.ItemView)?.leaf;
     if (newActiveLeaf && newActiveLeaf.view.getViewType() === "canvas") {
       DebugManager.log("Successfully switched to canvas view");
     } else {
@@ -19645,7 +21490,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 获取当前活动的Canvas视图
   getActiveCanvasView() {
     DebugManager.log("=== Getting Canvas View ===");
-    const activeLeaf = this.app.workspace.getActiveViewOfType(import_obsidian10.ItemView)?.leaf;
+    const activeLeaf = this.app.workspace.getActiveViewOfType(import_obsidian12.ItemView)?.leaf;
     DebugManager.log("Active leaf:", activeLeaf);
     DebugManager.log("Active leaf view type:", activeLeaf?.view?.getViewType());
     if (activeLeaf && activeLeaf.view.getViewType() === "canvas") {
@@ -19689,7 +21534,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       DebugManager.log("=== Starting simulation focus ===");
       const nodeData = this.canvasData?.nodes.find((n) => n.id === nodeId);
       if (!nodeData) {
-        new import_obsidian10.Notice("\u627E\u4E0D\u5230\u76EE\u6807\u8282\u70B9");
+        new import_obsidian12.Notice("\u627E\u4E0D\u5230\u76EE\u6807\u8282\u70B9");
         return false;
       }
       DebugManager.log("Node data for simulation:", nodeData);
@@ -19722,7 +21567,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         DebugManager.log("Trying direct canvas manipulation...");
         const success = await this.tryDirectCanvasManipulation(canvasView.canvas, nodeId, nodeData);
         if (success) {
-          new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+          new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
           return true;
         }
       }
@@ -19731,14 +21576,14 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         DebugManager.log("Found node element, simulating click...");
         nodeElement.scrollIntoView({ behavior: "smooth", block: "center" });
         nodeElement.click();
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
         return true;
       }
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
       return false;
     } catch (error) {
       DebugManager.error("\u6A21\u62DF\u805A\u7126\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u805A\u7126\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u5B9A\u4F4D");
+      new import_obsidian12.Notice("\u805A\u7126\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u5B9A\u4F4D");
       return false;
     }
   }
@@ -19945,17 +21790,17 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       const newNode = this.createCanvasNodeFromGridCard(node, canvasCoords);
       await this.addNodeToCanvas(newNode, canvasView);
       if (isCtrlDrag) {
-        new import_obsidian10.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
+        new import_obsidian12.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
         DebugManager.log("\u2705 Card copied to Canvas (Ctrl+drag)");
       } else {
         await this.removeNodeFromGrid(node.id);
-        new import_obsidian10.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
+        new import_obsidian12.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
         DebugManager.log("\u2705 Card moved to Canvas (normal drag)");
       }
       DebugManager.log("\u2705 Canvas drop completed successfully");
     } catch (error) {
       DebugManager.error("Failed to handle Canvas drop:", error);
-      new import_obsidian10.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
+      new import_obsidian12.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
     }
   }
   // 从拖拽事件获取Canvas坐标 - 使用Obsidian内置方法
@@ -20080,7 +21925,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       this.handleDropToCanvas(node, e, canvasView);
     } else {
       DebugManager.log("\u274C No Canvas view found under cursor");
-      new import_obsidian10.Notice("\u8BF7\u62D6\u62FD\u5230Canvas\u533A\u57DF");
+      new import_obsidian12.Notice("\u8BF7\u62D6\u62FD\u5230Canvas\u533A\u57DF");
     }
     DebugManager.log("\u{1F9F9} Cleaning up drag state...");
     this.resetCardDragState();
@@ -20228,13 +22073,13 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       await this.addNodeToCanvas(newNode, canvasView);
       if (e.ctrlKey) {
         await this.removeNodeFromGrid(node.id);
-        new import_obsidian10.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
+        new import_obsidian12.Notice("\u5361\u7247\u5DF2\u79FB\u52A8\u5230Canvas");
       } else {
-        new import_obsidian10.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
+        new import_obsidian12.Notice("\u5361\u7247\u5DF2\u590D\u5236\u5230Canvas");
       }
     } catch (error) {
       DebugManager.error("Failed to drop card to Canvas:", error);
-      new import_obsidian10.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
+      new import_obsidian12.Notice("\u62D6\u62FD\u5230Canvas\u5931\u8D25");
     }
   }
   // 获取Canvas坐标 - 改进版本，支持多种坐标转换方法
@@ -20365,7 +22210,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       if (!groupInfo || groupInfo.members.length === 0) {
         DebugManager.log("\u{1F4E4} Group is empty, returning to main view");
         this.exitGroupView();
-        new import_obsidian10.Notice("\u5206\u7EC4\u5DF2\u7A7A\uFF0C\u5DF2\u8FD4\u56DE\u4E3B\u89C6\u56FE");
+        new import_obsidian12.Notice("\u5206\u7EC4\u5DF2\u7A7A\uFF0C\u5DF2\u8FD4\u56DE\u4E3B\u89C6\u56FE");
         return;
       } else {
         this.filteredNodes = groupInfo.members;
@@ -20432,7 +22277,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 获取选中文本（使用Obsidian API）
   getSelectedText() {
     try {
-      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
       if (!activeView)
         return null;
       const editor = activeView.editor;
@@ -20447,7 +22292,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   getSourceFileInfo() {
     try {
       DebugManager.log("\u{1F4CD} === getSourceFileInfo DEBUG START ===");
-      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
       if (!activeView) {
         DebugManager.log("\u274C No active MarkdownView found");
         return { file: null, path: "", position: null, context: "" };
@@ -20688,7 +22533,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 显示移动到分组的确认弹窗
   async showMoveToGroupConfirmation(sourceNode, targetGroup, isCtrlDrag) {
     return new Promise((resolve) => {
-      const modal = new import_obsidian10.Modal(this.app);
+      const modal = new import_obsidian12.Modal(this.app);
       modal.titleEl.textContent = isCtrlDrag ? "\u786E\u8BA4\u590D\u5236\u5361\u7247" : "\u786E\u8BA4\u79FB\u52A8\u5361\u7247";
       const content = modal.contentEl;
       content.empty();
@@ -20750,15 +22595,15 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
     try {
       if (isCopy) {
         await this.copyNodeToGroup(sourceNode, targetGroup);
-        new import_obsidian10.Notice(`\u5361\u7247\u5DF2\u590D\u5236\u5230\u5206\u7EC4"${this.getNodeDisplayText(targetGroup)}"`);
+        new import_obsidian12.Notice(`\u5361\u7247\u5DF2\u590D\u5236\u5230\u5206\u7EC4"${this.getNodeDisplayText(targetGroup)}"`);
       } else {
         await this.moveNodeToGroup(sourceNode, targetGroup);
-        new import_obsidian10.Notice(`\u5361\u7247\u5DF2\u79FB\u52A8\u5230\u5206\u7EC4"${this.getNodeDisplayText(targetGroup)}"`);
+        new import_obsidian12.Notice(`\u5361\u7247\u5DF2\u79FB\u52A8\u5230\u5206\u7EC4"${this.getNodeDisplayText(targetGroup)}"`);
       }
       this.renderGrid();
     } catch (error) {
       DebugManager.error("Failed to execute move/copy operation:", error);
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
     }
   }
   // 复制节点到分组
@@ -20940,7 +22785,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       const droppedData = this.extractDroppedData(e);
       if (!droppedData) {
         DebugManager.warn("\u274C No valid drop data detected");
-        new import_obsidian10.Notice("\u6CA1\u6709\u68C0\u6D4B\u5230\u6709\u6548\u7684\u62D6\u62FD\u5185\u5BB9");
+        new import_obsidian12.Notice("\u6CA1\u6709\u68C0\u6D4B\u5230\u6709\u6548\u7684\u62D6\u62FD\u5185\u5BB9");
         return;
       }
       DebugManager.log("\u{1F4DD} Dropped data:", {
@@ -20961,15 +22806,15 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         DebugManager.warn("\u26A0\uFE0F No drag data available - backlink will not be created");
       }
       if (!this.linkedCanvasFile) {
-        new import_obsidian10.Notice("\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
+        new import_obsidian12.Notice("\u8BF7\u5148\u5173\u8054\u4E00\u4E2ACanvas\u6587\u4EF6");
         this.showCanvasSelectionDialog();
         return;
       }
       DebugManager.log("Processing drop with linked canvas:", this.linkedCanvasFile.path);
       if (this.currentGroupView) {
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
       } else {
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
       }
       let newNode = null;
       await this.saveWithLock(async () => {
@@ -20990,11 +22835,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
           this.renderGrid();
         }
         this.notifyCanvasViewRefresh();
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
       }
     } catch (error) {
       DebugManager.error("\u62D6\u62FD\u521B\u5EFA\u5361\u7247\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
+      new import_obsidian12.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
       this.endSaveOperation();
       this.resetDragState();
     }
@@ -21015,7 +22860,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       }
     } catch (error) {
       DebugManager.error("\u274C createNodeFromDroppedData \u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25");
+      new import_obsidian12.Notice("\u521B\u5EFA\u5361\u7247\u5931\u8D25");
       return null;
     }
   }
@@ -21404,7 +23249,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
   // 增强的源信息导航（支持块引用）
   async navigateToBacklink(node) {
     if (node.type !== "text" || !node.text) {
-      new import_obsidian10.Notice("\u8282\u70B9\u4E0D\u5305\u542B\u6587\u672C\u5185\u5BB9");
+      new import_obsidian12.Notice("\u8282\u70B9\u4E0D\u5305\u542B\u6587\u672C\u5185\u5BB9");
       return;
     }
     try {
@@ -21440,7 +23285,7 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         sourcePath = pathMatch[1].trim();
       }
       if (!fileName || lineNumber === null) {
-        new import_obsidian10.Notice("\u672A\u627E\u5230\u6709\u6548\u7684\u6E90\u4FE1\u606F");
+        new import_obsidian12.Notice("\u672A\u627E\u5230\u6709\u6548\u7684\u6E90\u4FE1\u606F");
         return;
       }
       DebugManager.log("Parsed source info:", { fileName, lineNumber: lineNumber + 1, sourcePath, blockId });
@@ -21453,24 +23298,24 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
         sourceFile = files.find((f) => f.basename === fileName) || null;
       }
       if (!sourceFile) {
-        new import_obsidian10.Notice(`\u6E90\u6587\u4EF6\u4E0D\u5B58\u5728: ${fileName}`);
+        new import_obsidian12.Notice(`\u6E90\u6587\u4EF6\u4E0D\u5B58\u5728: ${fileName}`);
         return;
       }
       await this.openFileAndNavigate(sourceFile, lineNumber);
     } catch (error) {
       DebugManager.error("Failed to navigate to source:", error);
-      new import_obsidian10.Notice("\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6\u5931\u8D25");
+      new import_obsidian12.Notice("\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6\u5931\u8D25");
     }
   }
   // 打开文件并导航到指定位置
   async openFileAndNavigate(file, lineNumber) {
     try {
       DebugManager.log(`Opening file: ${file.path}, line: ${lineNumber + 1}`);
-      const loadingNotice = new import_obsidian10.Notice("\u6B63\u5728\u6253\u5F00\u6E90\u6587\u4EF6...", 0);
+      const loadingNotice = new import_obsidian12.Notice("\u6B63\u5728\u6253\u5F00\u6E90\u6587\u4EF6...", 0);
       const leaf = this.app.workspace.getUnpinnedLeaf();
       await leaf.openFile(file);
       await new Promise((resolve) => setTimeout(resolve, 200));
-      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+      const activeView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
       if (activeView && activeView.editor) {
         const editor = activeView.editor;
         const totalLines = editor.lineCount();
@@ -21495,17 +23340,17 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
           }
         }, 3e3);
         loadingNotice.hide();
-        new import_obsidian10.Notice(`\u2705 \u5DF2\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6: ${file.basename} (\u7B2C${validLineNumber + 1}\u884C)`, 4e3);
+        new import_obsidian12.Notice(`\u2705 \u5DF2\u8DF3\u8F6C\u5230\u6E90\u6587\u4EF6: ${file.basename} (\u7B2C${validLineNumber + 1}\u884C)`, 4e3);
         DebugManager.log("Successfully navigated to backlink position");
       } else {
         loadingNotice.hide();
-        new import_obsidian10.Notice("\u274C \u65E0\u6CD5\u83B7\u53D6\u7F16\u8F91\u5668\u89C6\u56FE\uFF0C\u8BF7\u624B\u52A8\u6253\u5F00\u6587\u4EF6");
+        new import_obsidian12.Notice("\u274C \u65E0\u6CD5\u83B7\u53D6\u7F16\u8F91\u5668\u89C6\u56FE\uFF0C\u8BF7\u624B\u52A8\u6253\u5F00\u6587\u4EF6");
         DebugManager.error("No editor view available");
       }
     } catch (error) {
       DebugManager.error("Failed to open file and navigate:", error);
       const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
-      new import_obsidian10.Notice(`\u274C \u6253\u5F00\u6587\u4EF6\u5931\u8D25: ${errorMessage}`);
+      new import_obsidian12.Notice(`\u274C \u6253\u5F00\u6587\u4EF6\u5931\u8D25: ${errorMessage}`);
     }
   }
   // 块引用导航方法已移除（块双链功能已禁用）
@@ -21563,11 +23408,11 @@ var CanvasGridView = class extends import_obsidian10.ItemView {
       this.renderGrid().catch((error) => {
         DebugManager.error("Failed to render grid after linking canvas:", error);
       });
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
       DebugManager.log("Canvas file linked and data loaded:", canvasFile.path);
     } catch (error) {
       DebugManager.error("Failed to link canvas file:", error);
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
       DebugManager.log("Canvas link removed");
     }
   }
@@ -21788,7 +23633,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
     try {
       if (this.linkedCanvasFile) {
         await this.loadCanvasDataFromFile(this.linkedCanvasFile);
-        new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
+        new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
       } else {
         await this.loadActiveCanvas();
       }
@@ -21796,7 +23641,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
       DebugManager.log("\u2705 Canvas data refreshed and sort reapplied");
     } catch (error) {
       DebugManager.error("Failed to refresh canvas data:", error);
-      new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
+      new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.SHORT_DURATION);
     }
   }
   // 自动关联当前Canvas文件
@@ -21804,15 +23649,15 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
     try {
       const activeFile = this.app.workspace.getActiveFile();
       if (!activeFile || activeFile.extension !== "canvas") {
-        new import_obsidian10.Notice("\u6CA1\u6709\u6D3B\u52A8\u7684Canvas\u6587\u4EF6", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+        new import_obsidian12.Notice("\u6CA1\u6709\u6D3B\u52A8\u7684Canvas\u6587\u4EF6", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
         return;
       }
       await this.setLinkedCanvas(activeFile);
-      new import_obsidian10.Notice(`\u5DF2\u81EA\u52A8\u5173\u8054Canvas\u6587\u4EF6: ${activeFile.basename}`, NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+      new import_obsidian12.Notice(`\u5DF2\u81EA\u52A8\u5173\u8054Canvas\u6587\u4EF6: ${activeFile.basename}`, NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
       DebugManager.log("Auto-linked canvas file:", activeFile.path);
     } catch (error) {
       DebugManager.error("Failed to auto-link canvas file:", error);
-      new import_obsidian10.Notice("\u81EA\u52A8\u5173\u8054Canvas\u6587\u4EF6\u5931\u8D25");
+      new import_obsidian12.Notice("\u81EA\u52A8\u5173\u8054Canvas\u6587\u4EF6\u5931\u8D25");
     }
   }
   // ==================== 文件监听事件处理 ====================
@@ -21840,7 +23685,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
         await this.handleFileChangeWithNewSystem(file);
       } catch (error) {
         DebugManager.error("Failed to sync canvas data:", error);
-        new import_obsidian10.Notice("\u540C\u6B65Canvas\u6570\u636E\u5931\u8D25");
+        new import_obsidian12.Notice("\u540C\u6B65Canvas\u6570\u636E\u5931\u8D25");
       }
     }, 300);
   }
@@ -21859,7 +23704,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
     DebugManager.log("Linked canvas file renamed:", file.path);
     this.linkedCanvasFile = file;
     this.updateLinkedCanvasDisplay(file);
-    new import_obsidian10.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
+    new import_obsidian12.Notice("\u64CD\u4F5C\u5B8C\u6210", NOTIFICATION_CONSTANTS.MEDIUM_DURATION);
   }
   // 通知Canvas视图刷新
   notifyCanvasViewRefresh() {
@@ -22720,16 +24565,16 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
   // 同步所有选中颜色的卡片
   async syncAllSelectedColorCards() {
     if (!this.canvasData || !this.canvasData.nodes) {
-      new import_obsidian10.Notice(this.settings.language === "zh" ? "\u6CA1\u6709\u53EF\u540C\u6B65\u7684\u5361\u7247\u6570\u636E" : "No card data to sync");
+      new import_obsidian12.Notice(this.settings.language === "zh" ? "\u6CA1\u6709\u53EF\u540C\u6B65\u7684\u5361\u7247\u6570\u636E" : "No card data to sync");
       return;
     }
     if (this.settings.ankiConnect.syncColors.length === 0) {
-      new import_obsidian10.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u9009\u62E9\u8981\u540C\u6B65\u7684\u989C\u8272" : "Please select colors to sync first");
+      new import_obsidian12.Notice(this.settings.language === "zh" ? "\u8BF7\u5148\u9009\u62E9\u8981\u540C\u6B65\u7684\u989C\u8272" : "Please select colors to sync first");
       return;
     }
     try {
       if (!this.canvasData || !this.canvasData.nodes || this.canvasData.nodes.length === 0) {
-        new import_obsidian10.Notice(this.settings.language === "zh" ? "\u6CA1\u6709Canvas\u6570\u636E\u53EF\u4EE5\u540C\u6B65" : "No Canvas data to sync");
+        new import_obsidian12.Notice(this.settings.language === "zh" ? "\u6CA1\u6709Canvas\u6570\u636E\u53EF\u4EE5\u540C\u6B65" : "No Canvas data to sync");
         return;
       }
       const validNodes = this.canvasData.nodes.filter((node) => {
@@ -22777,7 +24622,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
         })));
       }
       if (validNodes.length === 0) {
-        new import_obsidian10.Notice(this.settings.language === "zh" ? "\u6CA1\u6709\u6709\u6548\u7684\u8282\u70B9\u53EF\u4EE5\u540C\u6B65" : "No valid nodes to sync");
+        new import_obsidian12.Notice(this.settings.language === "zh" ? "\u6CA1\u6709\u6709\u6548\u7684\u8282\u70B9\u53EF\u4EE5\u540C\u6B65" : "No valid nodes to sync");
         return;
       }
       const { AnkiSyncManager: AnkiSyncManager2 } = await Promise.resolve().then(() => (init_AnkiSyncManager(), AnkiSyncManager_exports));
@@ -22787,15 +24632,15 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
         this.settings.ankiSyncHistory,
         {
           onProgressUpdate: (progress) => {
-            new import_obsidian10.Notice(`${this.settings.language === "zh" ? "\u540C\u6B65\u8FDB\u5EA6:" : "Sync progress:"} ${progress.current}/${progress.total}`);
+            new import_obsidian12.Notice(`${this.settings.language === "zh" ? "\u540C\u6B65\u8FDB\u5EA6:" : "Sync progress:"} ${progress.current}/${progress.total}`);
           },
           onSyncComplete: (result) => {
             const message = this.settings.language === "zh" ? `\u540C\u6B65\u5B8C\u6210\uFF01\u521B\u5EFA ${result.created} \u4E2A\uFF0C\u66F4\u65B0 ${result.updated} \u4E2A\uFF0C\u8DF3\u8FC7 ${result.skipped} \u4E2A` : `Sync completed! Created ${result.created}, updated ${result.updated}, skipped ${result.skipped}`;
-            new import_obsidian10.Notice(message);
+            new import_obsidian12.Notice(message);
           },
           onSyncError: (error) => {
             console.error("Anki\u540C\u6B65\u9519\u8BEF:", error);
-            new import_obsidian10.Notice(`${this.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25:" : "Sync failed:"} ${error}`);
+            new import_obsidian12.Notice(`${this.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25:" : "Sync failed:"} ${error}`);
           }
         }
       );
@@ -22812,7 +24657,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
           errorMessage += `: ${error.message}`;
         }
       }
-      new import_obsidian10.Notice(errorMessage);
+      new import_obsidian12.Notice(errorMessage);
     }
   }
   // 创建同步历史显示
@@ -22857,7 +24702,7 @@ ${validation.errors.map((e) => e.message).join("\n")}`;
     }
   }
 };
-var CanvasGridPlugin = class extends import_obsidian10.Plugin {
+var CanvasGridPlugin = class extends import_obsidian12.Plugin {
   constructor() {
     super(...arguments);
     this.canvasViewButtons = /* @__PURE__ */ new Map();
@@ -22867,9 +24712,17 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
   async onload() {
     await this.loadSettings();
     i18n.setLanguage(this.settings.language);
+    this.protocolHandler = new ProtocolHandler(this.app);
     this.registerObsidianProtocolHandler("canvasgrid-transit", this.handleObsidianProtocol.bind(this));
     MemoryManager.startPeriodicCleanup();
     this.tempFileManager = TempFileManager.getInstance(this.app);
+    this.persistentFileManager = PersistentFileManager.getInstance(this.app);
+    try {
+      await this.persistentFileManager.initialize();
+      DebugManager.log("Persistent file manager initialized in plugin");
+    } catch (error) {
+      DebugManager.error("Failed to initialize persistent file manager in plugin:", error);
+    }
     await this.tempFileManager.recoverFromException();
     this.loadDragSystemStyles();
     this.registerView(
@@ -22923,7 +24776,6 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
     this.addCommand({
       id: "time-capsule-collect",
       name: "\u65F6\u95F4\u80F6\u56CA\u6536\u96C6\u5185\u5BB9",
-      hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "c" }],
       callback: () => {
         this.collectToTimeCapsule();
       }
@@ -22931,7 +24783,6 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
     this.addCommand({
       id: "toggle-time-capsule",
       name: "\u5207\u6362\u65F6\u95F4\u80F6\u56CA\u72B6\u6001",
-      hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "t" }],
       callback: () => {
         this.toggleTimeCapsule();
       }
@@ -22950,10 +24801,14 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
     this.addCanvasViewButtons();
     DebugManager.log("\u{1F3A8} Canvasgrid Transit Plugin loaded - \u70ED\u91CD\u8F7D\u6D4B\u8BD5\u6210\u529F!");
   }
-  onunload() {
+  async onunload() {
     if (this.editorStateCoordinator) {
       this.editorStateCoordinator.destroy();
     }
+    if (this.persistentFileManager) {
+      await this.persistentFileManager.cleanup();
+    }
+    await PersistentFileManager.destroy();
     if (this.tempFileManager) {
       this.tempFileManager.forceCleanup();
     }
@@ -22961,34 +24816,22 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
     MemoryManager.cleanup();
     this.removeAllCanvasViewButtons();
     this.cleanupAllDynamicStyles();
-    DebugManager.log("Plugin unloaded with enhanced cleanup and style leak fix");
+    DebugManager.log("Plugin unloaded with enhanced cleanup including persistent file manager");
   }
   /**
-   * 处理Obsidian协议请求
+   * 处理Obsidian协议请求 - 使用增强的ProtocolHandler
    */
   async handleObsidianProtocol(params) {
     try {
-      const { file, nodeId, x, y } = params;
-      if (!file) {
-        new import_obsidian10.Notice("\u7F3A\u5C11\u6587\u4EF6\u53C2\u6570");
+      if (!this.protocolHandler) {
+        console.error("ProtocolHandler not initialized");
+        new import_obsidian12.Notice("\u534F\u8BAE\u5904\u7406\u5668\u672A\u521D\u59CB\u5316");
         return;
       }
-      const canvasFile = this.app.vault.getAbstractFileByPath(file);
-      if (!canvasFile || !(canvasFile instanceof import_obsidian10.TFile)) {
-        new import_obsidian10.Notice(`\u627E\u4E0D\u5230Canvas\u6587\u4EF6: ${file}`);
-        return;
-      }
-      const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(canvasFile);
-      if (nodeId && x && y) {
-        setTimeout(() => {
-          this.focusCanvasNode(nodeId, parseFloat(x), parseFloat(y));
-        }, 500);
-      }
-      new import_obsidian10.Notice(`\u5DF2\u6253\u5F00Canvas\u6587\u4EF6: ${canvasFile.basename}`);
+      await this.protocolHandler.handleProtocolRequest(params);
     } catch (error) {
       console.error("\u5904\u7406Obsidian\u534F\u8BAE\u5931\u8D25:", error);
-      new import_obsidian10.Notice("\u6253\u5F00Canvas\u6587\u4EF6\u5931\u8D25");
+      new import_obsidian12.Notice("\u6253\u5F00Canvas\u6587\u4EF6\u5931\u8D25");
     }
   }
   /**
@@ -23507,14 +25350,14 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
   collectToTimeCapsule() {
     const gridView = this.getActiveGridView();
     if (!gridView) {
-      new import_obsidian10.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
+      new import_obsidian12.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
       return;
     }
     if (!gridView.isTimeCapsuleActive()) {
-      new import_obsidian10.Notice("\u65F6\u95F4\u80F6\u56CA\u672A\u6FC0\u6D3B\uFF0C\u8BF7\u5148\u542F\u52A8\u65F6\u95F4\u80F6\u56CA");
+      new import_obsidian12.Notice("\u65F6\u95F4\u80F6\u56CA\u672A\u6FC0\u6D3B\uFF0C\u8BF7\u5148\u542F\u52A8\u65F6\u95F4\u80F6\u56CA");
       return;
     }
-    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
     if (activeView) {
       const editor = activeView.editor;
       const selectedText = editor.getSelection();
@@ -23527,9 +25370,9 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
             ch: editor.getCursor("from").ch
           }
         });
-        new import_obsidian10.Notice("\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
+        new import_obsidian12.Notice("\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
       } else {
-        new import_obsidian10.Notice("\u8BF7\u5148\u9009\u62E9\u8981\u6536\u96C6\u7684\u5185\u5BB9");
+        new import_obsidian12.Notice("\u8BF7\u5148\u9009\u62E9\u8981\u6536\u96C6\u7684\u5185\u5BB9");
       }
     } else {
       navigator.clipboard.readText().then((text) => {
@@ -23539,12 +25382,12 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
             sourcePath: "\u526A\u8D34\u677F",
             sourcePosition: null
           });
-          new import_obsidian10.Notice("\u526A\u8D34\u677F\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
+          new import_obsidian12.Notice("\u526A\u8D34\u677F\u5185\u5BB9\u5DF2\u6536\u96C6\u5230\u65F6\u95F4\u80F6\u56CA");
         } else {
-          new import_obsidian10.Notice("\u526A\u8D34\u677F\u4E3A\u7A7A\u6216\u65E0\u53EF\u6536\u96C6\u5185\u5BB9");
+          new import_obsidian12.Notice("\u526A\u8D34\u677F\u4E3A\u7A7A\u6216\u65E0\u53EF\u6536\u96C6\u5185\u5BB9");
         }
       }).catch(() => {
-        new import_obsidian10.Notice("\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F");
+        new import_obsidian12.Notice("\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F");
       });
     }
   }
@@ -23552,7 +25395,7 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
   toggleTimeCapsule() {
     const gridView = this.getActiveGridView();
     if (!gridView) {
-      new import_obsidian10.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
+      new import_obsidian12.Notice("\u8BF7\u5148\u6253\u5F00Canvas\u7F51\u683C\u89C6\u56FE");
       return;
     }
     gridView.toggleTimeCapsule();
@@ -23647,7 +25490,7 @@ var CanvasGridPlugin = class extends import_obsidian10.Plugin {
     }
   }
 };
-var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
+var TabNavigationSettingTab = class extends import_obsidian12.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.currentTab = "basic";
@@ -23808,12 +25651,12 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
   renderBasicSettings() {
     const container = this.contentContainer;
     const layoutSection = this.createSettingSection(container, "\u7F51\u683C\u5E03\u5C40\u8BBE\u7F6E", "Grid Layout Settings");
-    new import_obsidian10.Setting(layoutSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u81EA\u52A8\u5E03\u5C40" : "Enable Auto Layout").setDesc(this.plugin.settings.language === "zh" ? "\u81EA\u52A8\u8C03\u6574\u5361\u7247\u5E03\u5C40\u4EE5\u9002\u5E94\u5BB9\u5668\u5BBD\u5EA6" : "Automatically adjust card layout to fit container width").addToggle((toggle) => toggle.setValue(this.plugin.settings.enableAutoLayout).onChange(async (value) => {
+    new import_obsidian12.Setting(layoutSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u81EA\u52A8\u5E03\u5C40" : "Enable Auto Layout").setDesc(this.plugin.settings.language === "zh" ? "\u81EA\u52A8\u8C03\u6574\u5361\u7247\u5E03\u5C40\u4EE5\u9002\u5E94\u5BB9\u5668\u5BBD\u5EA6" : "Automatically adjust card layout to fit container width").addToggle((toggle) => toggle.setValue(this.plugin.settings.enableAutoLayout).onChange(async (value) => {
       this.plugin.settings.enableAutoLayout = value;
       await this.plugin.saveSettings();
     }));
     const languageSection = this.createSettingSection(container, "\u754C\u9762\u8BED\u8A00", "Interface Language");
-    new import_obsidian10.Setting(languageSection).setName(this.plugin.settings.language === "zh" ? "\u754C\u9762\u8BED\u8A00" : "Interface Language").setDesc(this.plugin.settings.language === "zh" ? "\u9009\u62E9\u63D2\u4EF6\u754C\u9762\u663E\u793A\u8BED\u8A00" : "Select the display language for the plugin interface").addDropdown((dropdown) => dropdown.addOption("zh", "\u4E2D\u6587 (\u7B80\u4F53)").addOption("en", "English").setValue(this.plugin.settings.language).onChange(async (value) => {
+    new import_obsidian12.Setting(languageSection).setName(this.plugin.settings.language === "zh" ? "\u754C\u9762\u8BED\u8A00" : "Interface Language").setDesc(this.plugin.settings.language === "zh" ? "\u9009\u62E9\u63D2\u4EF6\u754C\u9762\u663E\u793A\u8BED\u8A00" : "Select the display language for the plugin interface").addDropdown((dropdown) => dropdown.addOption("zh", "\u4E2D\u6587 (\u7B80\u4F53)").addOption("en", "English").setValue(this.plugin.settings.language).onChange(async (value) => {
       this.plugin.settings.language = value;
       await this.plugin.saveSettings();
       this.display();
@@ -23884,20 +25727,20 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       this.plugin.settings.language === "zh" ? "Anki Connect\u8FDE\u63A5" : "Anki Connect Connection",
       this.plugin.settings.language === "zh" ? "Anki Connect Connection" : "Anki Connect Connection"
     );
-    new import_obsidian10.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528Anki Connect\u540C\u6B65" : "Enable Anki Connect Sync").setDesc(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u5230Anki\u8FDB\u884C\u5361\u7247\u540C\u6B65" : "Connect to Anki for card synchronization").addToggle((toggle) => toggle.setValue(this.plugin.settings.ankiConnect.enabled).onChange(async (value) => {
+    new import_obsidian12.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528Anki Connect\u540C\u6B65" : "Enable Anki Connect Sync").setDesc(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u5230Anki\u8FDB\u884C\u5361\u7247\u540C\u6B65" : "Connect to Anki for card synchronization").addToggle((toggle) => toggle.setValue(this.plugin.settings.ankiConnect.enabled).onChange(async (value) => {
       this.plugin.settings.ankiConnect.enabled = value;
       await this.plugin.saveSettings();
       this.refreshAnkiSettings();
     }));
-    new import_obsidian10.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "API\u5730\u5740" : "API URL").setDesc(this.plugin.settings.language === "zh" ? "Anki Connect\u670D\u52A1\u5730\u5740" : "Anki Connect service URL").addText((text) => text.setPlaceholder("http://localhost:8765").setValue(this.plugin.settings.ankiConnect.apiUrl).onChange(async (value) => {
+    new import_obsidian12.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "API\u5730\u5740" : "API URL").setDesc(this.plugin.settings.language === "zh" ? "Anki Connect\u670D\u52A1\u5730\u5740" : "Anki Connect service URL").addText((text) => text.setPlaceholder("http://localhost:8765").setValue(this.plugin.settings.ankiConnect.apiUrl).onChange(async (value) => {
       this.plugin.settings.ankiConnect.apiUrl = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian10.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "API\u5BC6\u94A5\uFF08\u53EF\u9009\uFF09" : "API Key (Optional)").setDesc(this.plugin.settings.language === "zh" ? "\u5982\u679CAnki Connect\u914D\u7F6E\u4E86\u5BC6\u94A5\u9A8C\u8BC1" : "If Anki Connect is configured with key authentication").addText((text) => text.setPlaceholder(this.plugin.settings.language === "zh" ? "\u7559\u7A7A\u8868\u793A\u65E0\u9700\u5BC6\u94A5" : "Leave empty if no key required").setValue(this.plugin.settings.ankiConnect.apiKey || "").onChange(async (value) => {
+    new import_obsidian12.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "API\u5BC6\u94A5\uFF08\u53EF\u9009\uFF09" : "API Key (Optional)").setDesc(this.plugin.settings.language === "zh" ? "\u5982\u679CAnki Connect\u914D\u7F6E\u4E86\u5BC6\u94A5\u9A8C\u8BC1" : "If Anki Connect is configured with key authentication").addText((text) => text.setPlaceholder(this.plugin.settings.language === "zh" ? "\u7559\u7A7A\u8868\u793A\u65E0\u9700\u5BC6\u94A5" : "Leave empty if no key required").setValue(this.plugin.settings.ankiConnect.apiKey || "").onChange(async (value) => {
       this.plugin.settings.ankiConnect.apiKey = value || void 0;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian10.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u6D4B\u8BD5" : "Connection Test").setDesc(this.plugin.settings.language === "zh" ? "\u6D4B\u8BD5\u4E0EAnki Connect\u7684\u8FDE\u63A5" : "Test connection to Anki Connect").addButton((button) => button.setButtonText(this.plugin.settings.language === "zh" ? "\u6D4B\u8BD5\u8FDE\u63A5" : "Test Connection").onClick(async () => {
+    new import_obsidian12.Setting(connectionSection).setName(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u6D4B\u8BD5" : "Connection Test").setDesc(this.plugin.settings.language === "zh" ? "\u6D4B\u8BD5\u4E0EAnki Connect\u7684\u8FDE\u63A5" : "Test connection to Anki Connect").addButton((button) => button.setButtonText(this.plugin.settings.language === "zh" ? "\u6D4B\u8BD5\u8FDE\u63A5" : "Test Connection").onClick(async () => {
       await this.testAnkiConnection();
     }));
     const syncSection = this.createSettingSection(
@@ -23905,7 +25748,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       this.plugin.settings.language === "zh" ? "\u540C\u6B65\u914D\u7F6E" : "Sync Configuration",
       this.plugin.settings.language === "zh" ? "Sync Configuration" : "Sync Configuration"
     );
-    const deckSetting = new import_obsidian10.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u9ED8\u8BA4\u724C\u7EC4" : "Default Deck").setDesc(this.plugin.settings.language === "zh" ? "\u5361\u7247\u5C06\u540C\u6B65\u5230\u6B64\u724C\u7EC4" : "Cards will be synced to this deck");
+    const deckSetting = new import_obsidian12.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u9ED8\u8BA4\u724C\u7EC4" : "Default Deck").setDesc(this.plugin.settings.language === "zh" ? "\u5361\u7247\u5C06\u540C\u6B65\u5230\u6B64\u724C\u7EC4" : "Cards will be synced to this deck");
     deckSetting.addText((text) => text.setPlaceholder("Default").setValue(this.plugin.settings.ankiConnect.defaultDeck).onChange(async (value) => {
       this.plugin.settings.ankiConnect.defaultDeck = value;
       await this.plugin.saveSettings();
@@ -23913,19 +25756,19 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
     deckSetting.addButton((button) => button.setButtonText(this.plugin.settings.language === "zh" ? "\u5237\u65B0\u724C\u7EC4" : "Refresh Decks").setTooltip(this.plugin.settings.language === "zh" ? "\u4ECEAnki\u83B7\u53D6\u724C\u7EC4\u5217\u8868" : "Get deck list from Anki").onClick(async () => {
       console.log("\u5237\u65B0\u724C\u7EC4\u5217\u8868\u529F\u80FD\u5F85\u5B9E\u73B0");
     }));
-    new import_obsidian10.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u5361\u7247\u6A21\u677F" : "Card Template").setDesc(this.plugin.settings.language === "zh" ? "\u4F7F\u7528\u7684Anki\u5361\u7247\u6A21\u677F" : "Anki card template to use").addText((text) => text.setPlaceholder("Basic").setValue(this.plugin.settings.ankiConnect.modelName).onChange(async (value) => {
+    new import_obsidian12.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u5361\u7247\u6A21\u677F" : "Card Template").setDesc(this.plugin.settings.language === "zh" ? "\u4F7F\u7528\u7684Anki\u5361\u7247\u6A21\u677F" : "Anki card template to use").addText((text) => text.setPlaceholder("Basic").setValue(this.plugin.settings.ankiConnect.modelName).onChange(async (value) => {
       this.plugin.settings.ankiConnect.modelName = value;
       await this.plugin.saveSettings();
     }));
     this.createSyncColorSelection(syncSection);
-    new import_obsidian10.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u5185\u5BB9\u5206\u9694\u7B26" : "Content Divider").setDesc(this.plugin.settings.language === "zh" ? "\u7528\u4E8E\u5206\u9694\u6B63\u9762\u548C\u80CC\u9762\u5185\u5BB9\u7684\u6807\u8BB0\uFF0C\u5206\u9694\u7B26\u524D\u7684\u5185\u5BB9\u663E\u793A\u5728\u6B63\u9762\uFF0C\u540E\u7684\u5185\u5BB9\u663E\u793A\u5728\u80CC\u9762" : "Marker to separate front and back content. Content before divider shows on front, after shows on back").addText((text) => text.setPlaceholder("---div---").setValue(this.plugin.settings.ankiConnect.contentDivider).onChange(async (value) => {
+    new import_obsidian12.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u5185\u5BB9\u5206\u9694\u7B26" : "Content Divider").setDesc(this.plugin.settings.language === "zh" ? "\u7528\u4E8E\u5206\u9694\u6B63\u9762\u548C\u80CC\u9762\u5185\u5BB9\u7684\u6807\u8BB0\uFF0C\u5206\u9694\u7B26\u524D\u7684\u5185\u5BB9\u663E\u793A\u5728\u6B63\u9762\uFF0C\u540E\u7684\u5185\u5BB9\u663E\u793A\u5728\u80CC\u9762" : "Marker to separate front and back content. Content before divider shows on front, after shows on back").addText((text) => text.setPlaceholder("---div---").setValue(this.plugin.settings.ankiConnect.contentDivider).onChange(async (value) => {
       if (!value || value.trim().length === 0) {
         value = "---div---";
       }
       this.plugin.settings.ankiConnect.contentDivider = value.trim();
       await this.plugin.saveSettings();
     }));
-    new import_obsidian10.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u589E\u91CF\u540C\u6B65" : "Enable Incremental Sync").setDesc(this.plugin.settings.language === "zh" ? "\u53EA\u540C\u6B65\u53D8\u66F4\u7684\u5361\u7247\uFF0C\u907F\u514D\u91CD\u590D\u521B\u5EFA" : "Only sync changed cards to avoid duplicates").addToggle((toggle) => toggle.setValue(this.plugin.settings.ankiConnect.enableIncrementalSync).onChange(async (value) => {
+    new import_obsidian12.Setting(syncSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u589E\u91CF\u540C\u6B65" : "Enable Incremental Sync").setDesc(this.plugin.settings.language === "zh" ? "\u53EA\u540C\u6B65\u53D8\u66F4\u7684\u5361\u7247\uFF0C\u907F\u514D\u91CD\u590D\u521B\u5EFA" : "Only sync changed cards to avoid duplicates").addToggle((toggle) => toggle.setValue(this.plugin.settings.ankiConnect.enableIncrementalSync).onChange(async (value) => {
       this.plugin.settings.ankiConnect.enableIncrementalSync = value;
       await this.plugin.saveSettings();
     }));
@@ -23934,15 +25777,15 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       this.plugin.settings.language === "zh" ? "\u9AD8\u7EA7\u8BBE\u7F6E" : "Advanced Settings",
       this.plugin.settings.language === "zh" ? "Advanced Settings" : "Advanced Settings"
     );
-    new import_obsidian10.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u6279\u6B21\u5927\u5C0F" : "Batch Size").setDesc(this.plugin.settings.language === "zh" ? "\u6BCF\u6B21\u540C\u6B65\u7684\u5361\u7247\u6570\u91CF" : "Number of cards to sync at once").addSlider((slider) => slider.setLimits(10, 200, 10).setValue(this.plugin.settings.ankiConnect.batchSize).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian12.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u6279\u6B21\u5927\u5C0F" : "Batch Size").setDesc(this.plugin.settings.language === "zh" ? "\u6BCF\u6B21\u540C\u6B65\u7684\u5361\u7247\u6570\u91CF" : "Number of cards to sync at once").addSlider((slider) => slider.setLimits(10, 200, 10).setValue(this.plugin.settings.ankiConnect.batchSize).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.ankiConnect.batchSize = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian10.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u91CD\u8BD5\u6B21\u6570" : "Retry Attempts").setDesc(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u5931\u8D25\u65F6\u7684\u91CD\u8BD5\u6B21\u6570" : "Number of retry attempts on connection failure").addSlider((slider) => slider.setLimits(1, 10, 1).setValue(this.plugin.settings.ankiConnect.retryAttempts).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian12.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u91CD\u8BD5\u6B21\u6570" : "Retry Attempts").setDesc(this.plugin.settings.language === "zh" ? "\u8FDE\u63A5\u5931\u8D25\u65F6\u7684\u91CD\u8BD5\u6B21\u6570" : "Number of retry attempts on connection failure").addSlider((slider) => slider.setLimits(1, 10, 1).setValue(this.plugin.settings.ankiConnect.retryAttempts).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.ankiConnect.retryAttempts = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian10.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u8D85\u65F6\u65F6\u95F4\uFF08\u79D2\uFF09" : "Timeout (seconds)").setDesc(this.plugin.settings.language === "zh" ? "\u8BF7\u6C42\u8D85\u65F6\u65F6\u95F4" : "Request timeout duration").addSlider((slider) => slider.setLimits(3, 30, 1).setValue(this.plugin.settings.ankiConnect.timeout / 1e3).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian12.Setting(advancedSection).setName(this.plugin.settings.language === "zh" ? "\u8D85\u65F6\u65F6\u95F4\uFF08\u79D2\uFF09" : "Timeout (seconds)").setDesc(this.plugin.settings.language === "zh" ? "\u8BF7\u6C42\u8D85\u65F6\u65F6\u95F4" : "Request timeout duration").addSlider((slider) => slider.setLimits(3, 30, 1).setValue(this.plugin.settings.ankiConnect.timeout / 1e3).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.ankiConnect.timeout = value * 1e3;
       await this.plugin.saveSettings();
     }));
@@ -24096,7 +25939,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
   }
   // 显示支持信息弹窗
   showSupportModal() {
-    const modal = new import_obsidian10.Modal(this.plugin.app);
+    const modal = new import_obsidian12.Modal(this.plugin.app);
     modal.titleEl.setText(this.plugin.settings.language === "zh" ? "\u{1F49D} \u652F\u6301\u6211\u4EEC" : "\u{1F49D} Support Us");
     const content = modal.contentEl;
     content.style.cssText = `
@@ -24127,7 +25970,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
   }
   // 显示开源信息弹窗
   showOpenSourceModal() {
-    const modal = new import_obsidian10.Modal(this.plugin.app);
+    const modal = new import_obsidian12.Modal(this.plugin.app);
     modal.titleEl.setText(this.plugin.settings.language === "zh" ? "\u{1F513} \u5F00\u6E90\u4FE1\u606F" : "\u{1F513} Open Source Info");
     const content = modal.contentEl;
     content.style.cssText = `
@@ -24195,10 +26038,10 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       text: this.plugin.settings.language === "zh" ? "\u26A0\uFE0F \u8B66\u544A\uFF1A\u8FD9\u4E9B\u662F\u9AD8\u7EA7\u8BBE\u7F6E\u9009\u9879\uFF0C\u4EC5\u4F9B\u5F00\u53D1\u8005\u548C\u9AD8\u7EA7\u7528\u6237\u4F7F\u7528\u3002\u9519\u8BEF\u7684\u914D\u7F6E\u53EF\u80FD\u5BFC\u81F4\u63D2\u4EF6\u529F\u80FD\u5F02\u5E38\u3002" : "\u26A0\uFE0F Warning: These are advanced settings for developers and power users only. Incorrect configuration may cause plugin malfunction.",
       cls: "setting-item-description"
     });
-    new import_obsidian10.Setting(container).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u8C03\u8BD5\u6A21\u5F0F" : "Enable Debug Mode").setDesc(this.plugin.settings.language === "zh" ? "\u5728\u63A7\u5236\u53F0\u663E\u793A\u8BE6\u7EC6\u7684\u8C03\u8BD5\u4FE1\u606F" : "Show detailed debug information in console").addToggle((toggle) => toggle.setValue(false).onChange(async (value) => {
+    new import_obsidian12.Setting(container).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u8C03\u8BD5\u6A21\u5F0F" : "Enable Debug Mode").setDesc(this.plugin.settings.language === "zh" ? "\u5728\u63A7\u5236\u53F0\u663E\u793A\u8BE6\u7EC6\u7684\u8C03\u8BD5\u4FE1\u606F" : "Show detailed debug information in console").addToggle((toggle) => toggle.setValue(false).onChange(async (value) => {
       DebugManager.log("Debug mode:", value);
     }));
-    new import_obsidian10.Setting(container).setName(this.plugin.settings.language === "zh" ? "\u6027\u80FD\u76D1\u63A7" : "Performance Monitoring").setDesc(this.plugin.settings.language === "zh" ? "\u76D1\u63A7\u63D2\u4EF6\u6027\u80FD\u6307\u6807" : "Monitor plugin performance metrics").addToggle((toggle) => toggle.setValue(false).onChange(async (value) => {
+    new import_obsidian12.Setting(container).setName(this.plugin.settings.language === "zh" ? "\u6027\u80FD\u76D1\u63A7" : "Performance Monitoring").setDesc(this.plugin.settings.language === "zh" ? "\u76D1\u63A7\u63D2\u4EF6\u6027\u80FD\u6307\u6807" : "Monitor plugin performance metrics").addToggle((toggle) => toggle.setValue(false).onChange(async (value) => {
       DebugManager.log("Performance monitoring:", value);
     }));
     const resetSection = container.createDiv("reset-section");
@@ -24208,7 +26051,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
 			border-top: 2px solid var(--background-modifier-border);
 		`;
     this.createSectionTitle(resetSection, "\u{1F504} \u91CD\u7F6E\u8BBE\u7F6E", "Reset Settings");
-    new import_obsidian10.Setting(resetSection).setName(this.plugin.settings.language === "zh" ? "\u91CD\u7F6E\u6240\u6709\u8BBE\u7F6E" : "Reset All Settings").setDesc(this.plugin.settings.language === "zh" ? "\u5C06\u6240\u6709\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\uFF08\u9700\u8981\u91CD\u542F\u63D2\u4EF6\uFF09" : "Reset all settings to default values (requires plugin restart)").addButton((button) => button.setButtonText(this.plugin.settings.language === "zh" ? "\u91CD\u7F6E" : "Reset").setWarning().onClick(async () => {
+    new import_obsidian12.Setting(resetSection).setName(this.plugin.settings.language === "zh" ? "\u91CD\u7F6E\u6240\u6709\u8BBE\u7F6E" : "Reset All Settings").setDesc(this.plugin.settings.language === "zh" ? "\u5C06\u6240\u6709\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\uFF08\u9700\u8981\u91CD\u542F\u63D2\u4EF6\uFF09" : "Reset all settings to default values (requires plugin restart)").addButton((button) => button.setButtonText(this.plugin.settings.language === "zh" ? "\u91CD\u7F6E" : "Reset").setWarning().onClick(async () => {
       const confirmed = confirm(
         this.plugin.settings.language === "zh" ? "\u786E\u5B9A\u8981\u91CD\u7F6E\u6240\u6709\u8BBE\u7F6E\u5417\uFF1F\u6B64\u64CD\u4F5C\u4E0D\u53EF\u64A4\u9500\u3002" : "Are you sure you want to reset all settings? This action cannot be undone."
       );
@@ -24352,22 +26195,22 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
   // 创建置顶功能设置部分
   createPinnedCardsSection(containerEl) {
     const pinnedSection = this.createSettingSection(containerEl, "\u7F6E\u9876\u529F\u80FD\u8BBE\u7F6E", "Pinned Cards Settings");
-    new import_obsidian10.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u7F6E\u9876\u529F\u80FD" : "Enable Pinned Cards").setDesc(this.plugin.settings.language === "zh" ? "\u5141\u8BB8\u5C06\u91CD\u8981\u5361\u7247\u7F6E\u9876\u663E\u793A" : "Allow important cards to be pinned at the top").addToggle((toggle) => toggle.setValue(this.plugin.settings.enablePinnedCards).onChange(async (value) => {
+    new import_obsidian12.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u542F\u7528\u7F6E\u9876\u529F\u80FD" : "Enable Pinned Cards").setDesc(this.plugin.settings.language === "zh" ? "\u5141\u8BB8\u5C06\u91CD\u8981\u5361\u7247\u7F6E\u9876\u663E\u793A" : "Allow important cards to be pinned at the top").addToggle((toggle) => toggle.setValue(this.plugin.settings.enablePinnedCards).onChange(async (value) => {
       this.plugin.settings.enablePinnedCards = value;
       await this.plugin.saveSettings();
       this.updateAllGridViews();
     }));
-    new import_obsidian10.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u7F6E\u9876\u6807\u7B7E\u540D\u79F0" : "Pinned Tag Name").setDesc(this.plugin.settings.language === "zh" ? "\u7528\u4E8E\u6807\u8BB0\u7F6E\u9876\u5361\u7247\u7684\u6807\u7B7E\u540D\u79F0" : "Tag name used to mark pinned cards").addText((text) => text.setPlaceholder(this.plugin.settings.language === "zh" ? "#\u7F6E\u9876" : "#pinned").setValue(this.plugin.settings.pinnedTagName).onChange(async (value) => {
+    new import_obsidian12.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u7F6E\u9876\u6807\u7B7E\u540D\u79F0" : "Pinned Tag Name").setDesc(this.plugin.settings.language === "zh" ? "\u7528\u4E8E\u6807\u8BB0\u7F6E\u9876\u5361\u7247\u7684\u6807\u7B7E\u540D\u79F0" : "Tag name used to mark pinned cards").addText((text) => text.setPlaceholder(this.plugin.settings.language === "zh" ? "#\u7F6E\u9876" : "#pinned").setValue(this.plugin.settings.pinnedTagName).onChange(async (value) => {
       const trimmedValue = value.trim();
       if (trimmedValue && !trimmedValue.startsWith("#")) {
-        new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u7F6E\u9876\u6807\u7B7E\u5FC5\u987B\u4EE5 # \u5F00\u5934" : "Pinned tag must start with #");
+        new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u7F6E\u9876\u6807\u7B7E\u5FC5\u987B\u4EE5 # \u5F00\u5934" : "Pinned tag must start with #");
         return;
       }
       this.plugin.settings.pinnedTagName = trimmedValue || (this.plugin.settings.language === "zh" ? "#\u7F6E\u9876" : "#pinned");
       await this.plugin.saveSettings();
       this.updateAllGridViewsPinnedStatus();
     }));
-    new import_obsidian10.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u663E\u793A\u7F6E\u9876\u6807\u8BC6" : "Show Pinned Indicator").setDesc(this.plugin.settings.language === "zh" ? "\u5728\u7F6E\u9876\u5361\u7247\u4E0A\u663E\u793A\u89C6\u89C9\u6807\u8BC6" : "Show visual indicator on pinned cards").addToggle((toggle) => toggle.setValue(this.plugin.settings.showPinnedIndicator).onChange(async (value) => {
+    new import_obsidian12.Setting(pinnedSection).setName(this.plugin.settings.language === "zh" ? "\u663E\u793A\u7F6E\u9876\u6807\u8BC6" : "Show Pinned Indicator").setDesc(this.plugin.settings.language === "zh" ? "\u5728\u7F6E\u9876\u5361\u7247\u4E0A\u663E\u793A\u89C6\u89C9\u6807\u8BC6" : "Show visual indicator on pinned cards").addToggle((toggle) => toggle.setValue(this.plugin.settings.showPinnedIndicator).onChange(async (value) => {
       this.plugin.settings.showPinnedIndicator = value;
       await this.plugin.saveSettings();
       this.updateAllGridViews();
@@ -24633,7 +26476,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       if (currentColors.length < 5) {
         currentColors.push(colorValue);
       } else {
-        new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u6700\u591A\u53EA\u80FD\u9009\u62E95\u4E2A\u989C\u8272" : "Maximum 5 colors can be selected");
+        new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u6700\u591A\u53EA\u80FD\u9009\u62E95\u4E2A\u989C\u8272" : "Maximum 5 colors can be selected");
         return;
       }
     }
@@ -24855,7 +26698,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
           if (currentColors.length < 5) {
             currentColors.push(colorOption.value);
           } else {
-            new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u6700\u591A\u53EA\u80FD\u9009\u62E95\u4E2A\u989C\u8272" : "Maximum 5 colors can be selected");
+            new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u6700\u591A\u53EA\u80FD\u9009\u62E95\u4E2A\u989C\u8272" : "Maximum 5 colors can be selected");
             return;
           }
         }
@@ -25144,7 +26987,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
   async testAnkiConnection() {
     const config = this.plugin.settings.ankiConnect;
     if (!config.enabled) {
-      new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u8BF7\u5148\u542F\u7528Anki Connect\u540C\u6B65" : "Please enable Anki Connect sync first");
+      new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u8BF7\u5148\u542F\u7528Anki Connect\u540C\u6B65" : "Please enable Anki Connect sync first");
       return;
     }
     try {
@@ -25152,13 +26995,13 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
       const ankiManager = new AnkiConnectManager2(this.app, config);
       const isConnected = await ankiManager.testConnection();
       if (isConnected) {
-        new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u2705 Anki Connect\u8FDE\u63A5\u6210\u529F\uFF01" : "\u2705 Anki Connect connection successful!");
+        new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u2705 Anki Connect\u8FDE\u63A5\u6210\u529F\uFF01" : "\u2705 Anki Connect connection successful!");
       } else {
-        new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u274C \u65E0\u6CD5\u8FDE\u63A5\u5230Anki Connect\uFF0C\u8BF7\u68C0\u67E5Anki\u662F\u5426\u8FD0\u884C\u4E14\u5DF2\u5B89\u88C5AnkiConnect\u63D2\u4EF6" : "\u274C Cannot connect to Anki Connect. Please check if Anki is running with AnkiConnect plugin installed");
+        new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u274C \u65E0\u6CD5\u8FDE\u63A5\u5230Anki Connect\uFF0C\u8BF7\u68C0\u67E5Anki\u662F\u5426\u8FD0\u884C\u4E14\u5DF2\u5B89\u88C5AnkiConnect\u63D2\u4EF6" : "\u274C Cannot connect to Anki Connect. Please check if Anki is running with AnkiConnect plugin installed");
       }
     } catch (error) {
       console.error("Anki Connect\u6D4B\u8BD5\u5931\u8D25:", error);
-      new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u274C \u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u8BBE\u7F6E\u548C\u7F51\u7EDC" : "\u274C Connection test failed. Please check settings and network");
+      new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u274C \u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u8BBE\u7F6E\u548C\u7F51\u7EDC" : "\u274C Connection test failed. Please check settings and network");
     }
   }
   createSyncColorSelection(container) {
@@ -25279,7 +27122,7 @@ var TabNavigationSettingTab = class extends import_obsidian10.PluginSettingTab {
     });
   }
 };
-var ColorCategoryEditModal = class extends import_obsidian10.Modal {
+var ColorCategoryEditModal = class extends import_obsidian12.Modal {
   constructor(app, plugin, category, index, onSave) {
     super(app);
     this.plugin = plugin;
@@ -25437,7 +27280,7 @@ var ColorCategoryEditModal = class extends import_obsidian10.Modal {
     const newName = this.nameInput.value.trim();
     const newDesc = this.descInput.value.trim();
     if (!newName) {
-      new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u5206\u7C7B\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A" : "Category name cannot be empty");
+      new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u5206\u7C7B\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A" : "Category name cannot be empty");
       this.nameInput.focus();
       return;
     }
@@ -25447,7 +27290,7 @@ var ColorCategoryEditModal = class extends import_obsidian10.Modal {
       description: newDesc
     };
     this.plugin.saveSettings();
-    new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u989C\u8272\u5206\u7C7B\u5DF2\u66F4\u65B0" : "Color category updated");
+    new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u989C\u8272\u5206\u7C7B\u5DF2\u66F4\u65B0" : "Color category updated");
     this.close();
     this.onSave();
   }
@@ -25456,7 +27299,7 @@ var ColorCategoryEditModal = class extends import_obsidian10.Modal {
     contentEl.empty();
   }
 };
-var AnkiSyncModal = class extends import_obsidian10.Modal {
+var AnkiSyncModal = class extends import_obsidian12.Modal {
   constructor(app, view) {
     super(app);
     this.view = view;
@@ -25613,7 +27456,7 @@ var AnkiSyncModal = class extends import_obsidian10.Modal {
       }
     } catch (error) {
       console.error("\u624B\u52A8\u540C\u6B65\u5931\u8D25:", error);
-      new import_obsidian10.Notice(this.plugin.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25" : "Sync failed");
+      new import_obsidian12.Notice(this.plugin.settings.language === "zh" ? "\u540C\u6B65\u5931\u8D25" : "Sync failed");
     }
   }
   // 创建简化的颜色同步选项

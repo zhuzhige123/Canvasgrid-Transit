@@ -1,4 +1,5 @@
 import { App } from 'obsidian';
+import { DebugManager } from '../utils/DebugManager';
 
 // 性能配置接口
 export interface PerformanceConfig {
@@ -118,7 +119,7 @@ export class PerformanceMonitor {
 				navigationObserver.observe({ entryTypes: ['navigation'] });
 				this.observers.push(navigationObserver);
 			} catch (error) {
-				console.warn('Navigation performance observer not supported:', error);
+				DebugManager.warn('Navigation performance observer not supported:', error);
 			}
 
 			// 资源性能观察器
@@ -131,7 +132,7 @@ export class PerformanceMonitor {
 				resourceObserver.observe({ entryTypes: ['resource'] });
 				this.observers.push(resourceObserver);
 			} catch (error) {
-				console.warn('Resource performance observer not supported:', error);
+				DebugManager.warn('Resource performance observer not supported:', error);
 			}
 
 			// 测量性能观察器
@@ -144,7 +145,7 @@ export class PerformanceMonitor {
 				measureObserver.observe({ entryTypes: ['measure'] });
 				this.observers.push(measureObserver);
 			} catch (error) {
-				console.warn('Measure performance observer not supported:', error);
+				DebugManager.warn('Measure performance observer not supported:', error);
 			}
 		}
 	}
@@ -265,7 +266,7 @@ export class PerformanceProfiler {
 	 */
 	start(name: string): void {
 		if (this.activeProfiles.has(name)) {
-			console.warn(`Profile ${name} is already active`);
+			DebugManager.warn(`Profile ${name} is already active`);
 			return;
 		}
 
@@ -508,7 +509,7 @@ export class PerformanceManager {
 			this.alerts = this.alerts.slice(-100);
 		}
 
-		console.warn(`Performance Alert [${type}]: ${message}`, alert);
+		DebugManager.warn(`Performance Alert [${type}]: ${message}`, alert);
 	}
 
 	/**

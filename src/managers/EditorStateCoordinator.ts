@@ -2,6 +2,7 @@ import { App } from 'obsidian';
 import { DebugManager } from '../utils/DebugManager';
 import { EditorStateManager, EditorState } from './EditorStateManager';
 import { TempFileManager } from './TempFileManager';
+import { PersistentFileManager } from './PersistentFileManager';
 import { HiddenEditorManager } from './HiddenEditorManager';
 
 /**
@@ -23,17 +24,20 @@ export interface EditorCreateOptions {
  * - 协调多个编辑器实例的创建、销毁和切换
  * - 管理编辑器与Canvas数据的同步
  * - 处理编辑器的业务逻辑（保存、取消、自动保存等）
- * - 协调临时文件管理器和隐藏编辑器管理器
+ * - 协调文件管理器和隐藏编辑器管理器
  *
  * 与 EditorStateManager 的关系：
  * - 依赖 EditorStateManager 进行状态数据管理
  * - 负责业务逻辑和多编辑器协调
  * - 处理编辑器生命周期管理
+ *
+ * 更新说明：现在支持持久化文件管理器和临时文件管理器两种模式
  */
 export class EditorStateCoordinator {
     private app: App;
     private editorStateManager: EditorStateManager;
-    private tempFileManager: TempFileManager;
+    private tempFileManager: TempFileManager; // 保留作为后备方案
+    private persistentFileManager: PersistentFileManager;
     private hiddenEditorManager: HiddenEditorManager;
     private activeEditorNodeId: string | null = null;
 
@@ -44,12 +48,28 @@ export class EditorStateCoordinator {
         this.app = app;
         this.editorStateManager = editorStateManager;
         this.tempFileManager = TempFileManager.getInstance(app);
+        this.persistentFileManager = PersistentFileManager.getInstance(app);
         this.hiddenEditorManager = new HiddenEditorManager(app);
 
-        // 启动临时文件定期清理
+        // 启动临时文件定期清理（作为后备）
         this.tempFileManager.startPeriodicCleanup();
 
-        DebugManager.log('EditorStateCoordinator initialized');
+        // 初始化持久化文件管理器
+        this.initializePersistentFileManager();
+
+        DebugManager.log('EditorStateCoordinator initialized with persistent file support');
+    }
+
+    /**
+     * 初始化持久化文件管理器
+     */
+    private async initializePersistentFileManager(): Promise<void> {
+        try {
+            await this.persistentFileManager.initialize();
+            DebugManager.log('Persistent file manager initialized in coordinator');
+        } catch (error) {
+            DebugManager.error('Failed to initialize persistent file manager in coordinator:', error);
+        }
     }
 
     /**
@@ -290,14 +310,20 @@ export class EditorStateCoordinator {
         hasActiveEditor: boolean;
         activeNodeId: string | null;
         editorStatus: any;
-        tempFileStatus: any;
+        fileStatus: any;
+        fileMode: string;
         stateManagerStatus: any;
     } {
+        const isPersistentMode = this.hiddenEditorManager.isPersistentFileMode();
+
         return {
             hasActiveEditor: this.activeEditorNodeId !== null,
             activeNodeId: this.activeEditorNodeId,
             editorStatus: this.hiddenEditorManager.getEditorStatus(),
-            tempFileStatus: this.tempFileManager.getTempFileStatus(),
+            fileStatus: isPersistentMode
+                ? this.persistentFileManager.getFileStatus()
+                : this.tempFileManager.getTempFileStatus(),
+            fileMode: isPersistentMode ? 'persistent' : 'temporary',
             stateManagerStatus: {
                 hasActiveEditors: this.editorStateManager.hasActiveEditors(),
                 hasUnsavedChanges: this.editorStateManager.hasUnsavedChanges(),
@@ -316,8 +342,16 @@ export class EditorStateCoordinator {
             // 清理所有编辑器
             await this.cleanupAllEditors();
 
-            // 恢复临时文件管理器
-            await this.tempFileManager.recoverFromException();
+            // 恢复文件管理器
+            if (this.hiddenEditorManager.isPersistentFileMode()) {
+                // 恢复持久化文件到默认状态
+                await this.persistentFileManager.cleanup();
+                DebugManager.log('Persistent file manager recovered');
+            } else {
+                // 恢复临时文件管理器
+                await this.tempFileManager.recoverFromException();
+                DebugManager.log('Temporary file manager recovered');
+            }
 
             // 重置状态
             this.activeEditorNodeId = null;
@@ -342,11 +376,19 @@ export class EditorStateCoordinator {
 
         // 检查状态一致性
         const hasActiveEditor = this.hiddenEditorManager.hasActiveEditor();
-        const hasActiveTempFile = this.tempFileManager.hasActiveTempFile();
         const hasActiveStateManager = this.editorStateManager.hasActiveEditors();
 
-        if (hasActiveEditor !== hasActiveTempFile) {
-            issues.push('编辑器和临时文件状态不一致');
+        // 根据当前使用的文件管理模式检查状态
+        let hasActiveFile = false;
+        if (this.hiddenEditorManager.isPersistentFileMode()) {
+            hasActiveFile = this.persistentFileManager.hasActiveEditorFile();
+        } else {
+            hasActiveFile = this.tempFileManager.hasActiveTempFile();
+        }
+
+        if (hasActiveEditor !== hasActiveFile) {
+            const fileType = this.hiddenEditorManager.isPersistentFileMode() ? '持久化文件' : '临时文件';
+            issues.push(`编辑器和${fileType}状态不一致`);
             recommendations.push('执行异常恢复');
         }
 

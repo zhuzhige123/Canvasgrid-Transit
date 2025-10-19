@@ -8,20 +8,24 @@ import { CanvasNode } from '../types/CanvasTypes';
 export class ObsidianLinkGenerator {
 	
 	/**
-	 * 生成Canvas节点的深链URL
+	 * 生成Canvas节点的深链URL - 增强版本
 	 */
 	static generateCanvasNodeLink(canvasFile: TFile, node: CanvasNode): string {
 		try {
 			const params = new URLSearchParams({
+				action: 'focus-node',
 				file: canvasFile.path,
 				nodeId: node.id,
 				x: node.x.toString(),
-				y: node.y.toString()
+				y: node.y.toString(),
+				fallback: 'true',
+				highlight: 'true',
+				animation: 'true'
 			});
 
-			const deepLink = `obsidian://canvasgrid-transit/open-canvas?${params.toString()}`;
-			console.log('ObsidianLink: 生成深链:', deepLink);
-			
+			const deepLink = `obsidian://canvasgrid-transit?${params.toString()}`;
+			console.log('ObsidianLink: 生成增强深链:', deepLink);
+
 			return deepLink;
 		} catch (error) {
 			console.error('ObsidianLink: 生成深链失败:', error);
@@ -38,26 +42,32 @@ export class ObsidianLinkGenerator {
 	}
 
 	/**
-	 * 解析深链参数
+	 * 解析深链参数 - 增强版本
 	 */
 	static parseCanvasLink(url: string): {
+		action?: string;
 		file?: string;
 		nodeId?: string;
 		x?: number;
 		y?: number;
+		fallback?: boolean;
+		highlight?: boolean;
+		animation?: boolean;
 	} | null {
 		try {
 			const urlObj = new URL(url);
-			
-			if (urlObj.protocol !== 'obsidian:' || 
-				urlObj.hostname !== 'canvasgrid-transit' || 
-				urlObj.pathname !== '/open-canvas') {
+
+			if (urlObj.protocol !== 'obsidian:' ||
+				urlObj.hostname !== 'canvasgrid-transit') {
 				return null;
 			}
 
 			const params = urlObj.searchParams;
 			const result: any = {};
 
+			if (params.has('action')) {
+				result.action = params.get('action');
+			}
 			if (params.has('file')) {
 				result.file = params.get('file');
 			}
@@ -71,6 +81,15 @@ export class ObsidianLinkGenerator {
 			if (params.has('y')) {
 				const y = parseFloat(params.get('y')!);
 				if (!isNaN(y)) result.y = y;
+			}
+			if (params.has('fallback')) {
+				result.fallback = params.get('fallback') === 'true';
+			}
+			if (params.has('highlight')) {
+				result.highlight = params.get('highlight') === 'true';
+			}
+			if (params.has('animation')) {
+				result.animation = params.get('animation') === 'true';
 			}
 
 			return result;

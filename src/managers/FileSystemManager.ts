@@ -1,4 +1,5 @@
 import { App, TFile, TFolder, Vault, Notice } from 'obsidian';
+import { DebugManager } from '../utils/DebugManager';
 
 // 文件系统配置接口
 export interface FileSystemConfig {
@@ -78,7 +79,7 @@ export class TextFileStrategy implements FileOperationStrategy {
 			await this.app.vault.modify(file, content);
 			return true;
 		} catch (error) {
-			console.error('Failed to write text file:', error);
+			DebugManager.error('Failed to write text file:', error);
 			return false;
 		}
 	}
@@ -372,18 +373,19 @@ export class FileSystemManager {
 		const startTime = Date.now();
 		
 		try {
+			// 使用推荐的文件管理器方法
 			if (this.config.enableTrash) {
-				await this.app.vault.trash(file, false);
+				await this.app.fileManager.trashFile(file);
 			} else {
 				await this.app.vault.delete(file);
 			}
-			
+
 			this.recordFileChange({
 				type: 'deleted',
 				file,
 				timestamp: Date.now()
 			});
-			
+
 			return {
 				success: true,
 				file,

@@ -5,7 +5,7 @@ hell
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple.svg)](https://obsidian.md/)
 [![Version](https://img.shields.io/badge/version-0.5.1-blue.svg)](https://github.com/zhuzhige123/Canvasgrid-Transit/releases)
 
-A powerful grid-based plugin for Obsidian Canvas that transforms your Canvas files into organized, searchable card layouts with advanced features like drag-and-drop, time capsule, Anki integration, and intelligent content management.
+Powerful grid card view for Canvas with time capsule, smart bookmarks and enhanced editing capabilities.
 
 ## ✨ Key Features
 
